@@ -40,13 +40,15 @@ class PermissionChecker:
             permissions: 权限列表 [(node, permission), ...]
                         node 为 MarkdownTitleNode 对象或 None（表示根节点）
         """
-        self._permissions: list[tuple[Node | None, Permission]] = permissions or []
+        self._permissions: list[tuple[Node | None, Permission]] = (
+            list(permissions) if permissions else []
+        )
 
     def set_permissions(
         self, permissions: Sequence[tuple[Node | None, Permission]]
     ) -> None:
         """设置权限列表"""
-        self._permissions = permissions
+        self._permissions = list(permissions)
 
     def check_permission(
         self,
@@ -103,9 +105,11 @@ class PermissionChecker:
         """获取节点的描述字符串（用于错误消息）"""
         if node is None:
             return "根节点"
-        if hasattr(node, "title"):
-            return f"'{node.title}'"
-        elif hasattr(node, "name"):
-            return f"'{node.name}'"
-        else:
-            return f"<{type(node).__name__}>"
+        # title / name 是具体子类才有的字段，Node 基类未声明，用 getattr 探测。
+        title = getattr(node, "title", None)
+        if title is not None:
+            return f"'{title}'"
+        name = getattr(node, "name", None)
+        if name is not None:
+            return f"'{name}'"
+        return f"<{type(node).__name__}>"

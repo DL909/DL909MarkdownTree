@@ -44,6 +44,10 @@ from dl909agentframework.llm.tools.registry import default_must_use_check
 logger = logging.getLogger(__name__)
 
 
+class ToolLoopLimitError(Exception):
+    """工具调用循环达到最大迭代次数上限时抛出"""
+
+
 def _create_openai_client() -> OpenAI:
     """创建 OpenAI 客户端实例"""
     return OpenAI(
@@ -202,13 +206,18 @@ def call_llm(
     )
 
     output = response.choices[0].message
-    messages.append(
-        ChatCompletionAssistantMessageParam(
-            content=output.content,
-            tool_calls=output.tool_calls,
-            reasoning_content=output.reasoning_content,
-        )
-    )
+    assistant_message: dict = {
+        "role": "assistant",
+        "content": output.content,
+    }
+    if output.tool_calls:
+        assistant_message["tool_calls"] = output.tool_calls
+    # reasoning_content 是部分模型（如带思考模式的）返回的非标准扩展字段，
+    # 标准 OpenAI 响应上并不存在，用 getattr 保护避免 AttributeError。
+    reasoning_content = getattr(output, "reasoning_content", None)
+    if reasoning_content is not None:
+        assistant_message["reasoning_content"] = reasoning_content
+    messages.append(assistant_message)  # pyright: ignore[reportArgumentType]
 
     _try_dump_log_for_tool_call(call_llm_information_file, messages)
 
@@ -297,10 +306,12 @@ def tool_loop(
         }
         if output.tool_calls:
             assistant_message["tool_calls"] = output.tool_calls
-        if hasattr(output, "reasoning_content"):
-            assistant_message["reasoning_content"] = output.reasoning_content
-        if hasattr(output, "refusal") and output.refusal:
-            assistant_message["refusal"] = output.refusal
+        reasoning_content = getattr(output, "reasoning_content", None)
+        if reasoning_content is not None:
+            assistant_message["reasoning_content"] = reasoning_content
+        refusal = getattr(output, "refusal", None)
+        if refusal:
+            assistant_message["refusal"] = refusal
         messages.append(assistant_message)  # pyright: ignore[reportArgumentType]
 
         if (
@@ -340,9 +351,12 @@ def tool_loop(
 
     if tool_call_loop_time >= max_tool_iterations:
         logger.error(
-            "LLM tool call loop interruptted due to reach tool call max loop limitation"
+            "LLM tool call loop interrupted: reached max iteration limit (%d)",
+            max_tool_iterations,
         )
-        raise Exception()
+        raise ToolLoopLimitError(
+            f"工具调用循环达到最大迭代次数上限（{max_tool_iterations} 次）"
+        )
 
     _try_dump_log_for_tool_call(call_llm_information_file_name, messages)
     return messages
@@ -496,8 +510,10 @@ def _dump_messages_to_file(
                 if "tool_calls" in msg_copy:
                     tool_calls_serializable = []
                     for tc in msg_copy["tool_calls"]:
-                        if hasattr(tc, "model_dump"):
-                            tool_calls_serializable.append(tc.model_dump())
+                        # tool_call 可能是 pydantic 模型（响应对象）或普通 dict（TypedDict）
+                        model_dump = getattr(tc, "model_dump", None)
+                        if callable(model_dump):
+                            tool_calls_serializable.append(model_dump())
                         else:
                             tool_calls_serializable.append(dict(tc))
                     msg_copy["tool_calls"] = tool_calls_serializable
@@ -543,9 +559,8 @@ def call_llm_with_edit_single_markdown_file_tool(
     logger.info("Starting call_llm_with_edit_single_markdown_file_tool")
     logger.debug(
         "Target markdown file: %s",
-        markdown_file_node.file_path
-        if hasattr(markdown_file_node, "file_path")
-        else "unknown",
+        # file_path 是具体文件节点类才有的属性，协议未声明，用 getattr 探测。
+        getattr(markdown_file_node, "file_path", "unknown"),
     )
     if registry is None:
         registry = create_markdown_edit_tools_registry(permissions=permissions)

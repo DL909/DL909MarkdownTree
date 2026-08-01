@@ -15,9 +15,11 @@ class Node(BaseModel, metaclass=MyMeta):
     deprecated: bool = False  # 使用较消极的更新策略。一个节点被注销时，只需要将deprecated属性设为真，之后父节点更新时将移除该节点。
 
     def update(self) -> Self:
-        for i, child in enumerate(self.children):
+        for child in self.children:
             child.update()
-            if child.deprecated:
+        # 反向遍历删除，避免在正向遍历中删除元素导致跳过后一个节点
+        for i in range(len(self.children) - 1, -1, -1):
+            if self.children[i].deprecated:
                 del self.children[i]
         return self
 

@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import inspect
 import logging
-from functools import wraps
 from typing import (
     Any,
     Callable,
     Self,
     Sequence,
+    TypeAlias,
     get_args,
     get_origin,
     overload,
@@ -32,7 +32,8 @@ from dl909agentframework.llm.tools.context import ToolContext
 
 logger = logging.getLogger(__name__)
 
-type ToolCheck = Callable[[ToolRegistry, ToolContext], str | None]
+# 3.11 兼容：不用 3.12 的 `type` 语句；ToolRegistry 在本文件后方定义，用字符串前向引用。
+ToolCheck: TypeAlias = Callable[["ToolRegistry", ToolContext], "str | None"]
 
 
 class FatalToolException(Exception):
@@ -129,7 +130,7 @@ class PermissionTool(Tool):
         end_after_use: bool = False,
         permission: Permission = Permission.NONE,
     ):
-        super.__init__(
+        super().__init__(
             name=name,
             description=description,
             parameters_schema=parameters_schema,
@@ -186,9 +187,9 @@ class ToolRegistry:
 
         return tool.execute(context, arguments)
 
-    def merge(self, *registries: ToolRegistry) -> Self:
+    def merge(self, *registries: ToolRegistry) -> ToolRegistry:
         """合并多个注册表，返回新注册表"""
-        new_registry = Self()
+        new_registry = ToolRegistry()
         for tool in self._tools.values():
             new_registry.register(tool)
         for registry in registries:
@@ -508,24 +509,30 @@ def tool(
                     if param.default is inspect.Parameter.empty:
                         params_schema.setdefault("required", []).append(param_name)
 
-        tool_instance = Tool(
-            name=tool_name,
-            description=tool_description,
-            parameters_schema=params_schema,
-            func=f,
-            param_model=actual_param_model,
-            must_use_time=must_use_time,
-            end_after_use=end_after_use,
-        )
+        # 声明了权限时构造 PermissionTool，使 PermissionToolRegistry 能真正强制该权限；
+        # 否则构造普通 Tool（PermissionToolRegistry 会跳过它的权限检查）。
+        if required_permission != Permission.NONE:
+            tool_instance: Tool = PermissionTool(
+                name=tool_name,
+                description=tool_description,
+                parameters_schema=params_schema,
+                func=f,
+                param_model=actual_param_model,
+                must_use_time=must_use_time,
+                end_after_use=end_after_use,
+                permission=required_permission,
+            )
+        else:
+            tool_instance = Tool(
+                name=tool_name,
+                description=tool_description,
+                parameters_schema=params_schema,
+                func=f,
+                param_model=actual_param_model,
+                must_use_time=must_use_time,
+                end_after_use=end_after_use,
+            )
 
-        if required_permission is not None:
-            tool_instance.required_permission = required_permission
-
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            return f(*args, **kwargs)
-
-        wrapper._tool = tool_instance
         return tool_instance
 
     if func is None:

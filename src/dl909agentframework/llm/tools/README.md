@@ -247,6 +247,7 @@ type ToolCheck = Callable[[ToolRegistry, ToolContext], str | None]
 ```
 
 **返回值语义**：
+
 - 返回 `None` → 检查通过，循环正常退出
 - 返回 `str` → 该字符串作为 system message 注入，循环继续
 
@@ -572,5 +573,5 @@ print(f"移除限制后读取章节：{success}")  # 取决于父节点权限
 
 ## 相关文档
 
-- [AGENTS.md](../../AGENTS.md) - 项目开发指南
+- [AGENTS.md](../../../../AGENTS.md) - 项目开发指南
 - [pyproject.toml](../../pyproject.toml) - 项目配置和依赖

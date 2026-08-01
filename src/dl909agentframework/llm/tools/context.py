@@ -25,7 +25,7 @@ class ToolContext:
         **extra_resources: Any,
     ):
         self.markdown_file_node = markdown_file_node
-        self.resources: dict[str, Any] = extra_resources
+        self.resources: dict[str, Any] = dict(extra_resources)
 
         self._available_resource_names: list[str] = []
         if markdown_file_node is not None:
@@ -38,16 +38,20 @@ class ToolContext:
         return self._available_resource_names
 
     def __getattr__(self, name: str) -> Any:
-        if name in self._extra_resources:
-            return self._extra_resources[name]
+        # __getattr__ 仅在常规属性查找失败时被调用。直接读 self.__dict__ 取
+        # resources，避免访问 self.resources 时（若尚未初始化）再次触发 __getattr__
+        # 造成无限递归。
+        resources = self.__dict__.get("resources", {})
+        if name in resources:
+            return resources[name]
         raise AttributeError(f"Resource '{name}' not available in context")
 
     def add_resource(self, name: str, value: Any) -> None:
         """添加资源到上下文"""
-        self._extra_resources[name] = value
+        self.resources[name] = value
         if name not in self._available_resource_names:
             self._available_resource_names.append(name)
 
     def get_resource(self, name: str, default: Any = None) -> Any:
         """获取资源，如果不存在则返回默认值"""
-        return self._extra_resources.get(name, default)
+        return self.resources.get(name, default)

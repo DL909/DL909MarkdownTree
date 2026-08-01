@@ -1,7 +1,5 @@
 # tree_doc - Markdown Document Tree Module
 
-**Location**: `novelWriter/tree_doc/`
-
 **Purpose**: A Python library for symbolizing and manipulating multiple Markdown files in a tree-like structure. Provides a node-based architecture for parsing, generating, and transforming markdown documents with support for hierarchical titles, numbered outlines, foldable content, and YAML frontmatter.
 
 ---
@@ -378,6 +376,7 @@ MarkdownFolderNode(FileNode, TextNode)
 **File Lifecycle**:
 
 `save()` handles file mapping by number:
+
 | Internal Tree | Disk State | Action |
 |---------------|-----------|--------|
 | `[1]` → Title: "New" | `1_Old.mdp` exists | Rename to `1_New.mdp` + rewrite |
