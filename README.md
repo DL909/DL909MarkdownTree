@@ -43,7 +43,7 @@ Node
 
 ### 文件夹节点（.mdp）
 
-`*MarkdownFolderNode` （包含 `NumberedmarkdownFolderNode` 、`FoldableMarkdownFolderNode` 和 `AttributedMarkdownFolderNode`） 将目录作为逻辑文件管理：`0.mdp` 为序言，`N_Title.mdp` 为编号章节。`save()` 自动分发到独立文件，`reload()` 重新合成为合成文本后解析。
+`*MarkdownFolderNode` （包含 `NumberedmarkdownFolderNode` 、`FoldableMarkdownFolderNode` 和 `AttributedMarkdownFolderNode`） 将目录作为逻辑文件管理：`0.mdp` 为序言，`N_Title.mdp` 为编号章节。`save()` 自动分发到独立文件，`reload()` 重新合成为合成文本后解析；空文件夹调用 `save()` 时仅创建目录，不生成内容文件。
 
 ### 协议（Protocols）
 
@@ -75,6 +75,7 @@ from dl909markdowntree import Permission, PermissionChecker
 # 基础：读写标准 Markdown（文件不存在时自动创建空文件）
 node = MarkdownTextFileNode(Path("doc.md"))
 node.set_text("# Hello\n\nSome text.")
+# get_text() 返回不带末尾换行的纯 Markdown 文本
 print(node.get_text())
 node.save()
 
@@ -85,6 +86,7 @@ numbered.set_text("# Chapter 1\n\nContent.")
 
 # 可折叠
 foldable = FoldableMarkdownTextFileNode(Path("fold.md"), auto_correct=True)
+# recursive_find_title_node_by_name 参数需包含 "# " 前缀
 foldable.recursive_find_title_node_by_name("# 1. Introduction").unfold()
 
 # 带属性（泛型）—— 属性类建议提供默认值，否则创建文件时需传入 attribute
@@ -124,7 +126,7 @@ AttributedMarkdownTextFileNode.create_file(Path("post.md"), attribute_type=Front
 AttributedMarkdownTextFileNode.create_file(Path("post.md"), attribute_type=FrontMatter, attribute=custom_attr)
 
 # 文件夹节点
-MarkdownFolderNode.create_file(Path("my_doc/"))
+NumberedMarkdownFolderNode.create_file(Path("my_doc/"))
 FoldableMarkdownFolderNode.create_file(Path("foldable_doc/"))
 AttributedMarkdownFolderNode.create_file(Path("attr_doc/"), attribute_type=FrontMatter, attribute=custom_attr)
 ```
