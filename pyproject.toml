@@ -21,6 +21,11 @@ packages = ["src/dl909markdowntree"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 
+[project.optional-dependencies]
+mcp = ["fastmcp>=0.4.0"]
+langchain = ["langchain-core>=0.3.0"]
+all = ["fastmcp>=0.4.0", "langchain-core>=0.3.0"]
+
 [dependency-groups]
 dev = [
   "pdbpp>=0.12.1",

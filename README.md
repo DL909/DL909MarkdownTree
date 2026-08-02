@@ -151,7 +151,51 @@ pip install -e .
 
 ## Extra
 
-MCP Server、LangChain BaseToolKit 等 Extra 集成尚未实现（`NotImplementedError`）。
+### MCP Server
+
+```python
+from pathlib import Path
+from dl909markdowntree import MarkdownTextFileNode
+from dl909markdowntree.extra.mcp import create_mcp_server
+
+node = MarkdownTextFileNode(Path("doc.md"))
+server = create_mcp_server(node)
+server.run()  # stdio 模式
+```
+
+`create_mcp_server` 返回一个 `FastMCP` 实例，暴露 `read` / `replace` / `append` / `unfold` / `replace_lines` / `rename_title` 六个工具。支持可选的 `permissions` 参数，传入 `PermissionChecker` 权限列表。
+
+安装可选依赖：
+
+```bash
+pip install "dl909markdowntree[mcp]"
+```
+
+### LangChain BaseToolKit
+
+```python
+from pathlib import Path
+from dl909markdowntree import MarkdownTextFileNode
+from dl909markdowntree.extra.langchain import MarkdownTreeToolkit
+
+node = MarkdownTextFileNode(Path("doc.md"))
+toolkit = MarkdownTreeToolkit(node)
+tools = toolkit.get_tools()  # list[BaseTool]，6 个工具
+```
+
+每个工具都带有 `args_schema`（Pydantic 模型），可直接用于 LangChain Agent 或 Chain。支持可选的 `permissions` 参数。
+
+安装可选依赖：
+
+```bash
+pip install "dl909markdowntree[langchain]"
+```
+
+全部 Extra：
+
+```bash
+pip install "dl909markdowntree[all]"
+```
 
 ## 开发
 

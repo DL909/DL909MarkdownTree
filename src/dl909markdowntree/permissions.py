@@ -26,6 +26,11 @@ class Permission(Enum):
     NONE = 3  # 跳过权限检查（仅用于工具声明）
 
 
+class PermissionError(Exception):
+    """权限检查失败时抛出"""
+    pass
+
+
 class PermissionChecker:
     """权限检查器
 
