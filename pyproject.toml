@@ -1,17 +1,14 @@
 [project]
-name = "dl909agentframework"
+name = "dl909markdowntree"
 version = "0.1.0"
-description = "A tree-structured Markdown document framework with LLM tool-calling for AI-assisted editing."
+description = "A library for tree-structured Markdown document parsing and read/write permission control."
 readme = "README.md"
 authors = [{ name = "DL909", email = "matthewDingL@outlook.com" }]
 requires-python = ">=3.11"
 dependencies = [
   "lxml>=6.1.1",
-  "openai>=2.43.0",
   "pydantic>=2.13.4",
   "pydantic-yaml>=1.6.0",
-  "python-dotenv>=1.2.2",
-  "send2trash>=2.1.0",
 ]
 
 [build-system]
@@ -19,7 +16,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/dl909agentframework"]
+packages = ["src/dl909markdowntree"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel
 
-from dl909agentframework.tree_doc.attributed_markdown_nodes import (
+from dl909markdowntree.attributed_markdown_nodes import (
     AttributedMarkdownTextFileNode,
 )
-from dl909agentframework.tree_doc.foldable_markdown_nodes import (
+from dl909markdowntree.foldable_markdown_nodes import (
     FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
 )

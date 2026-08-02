@@ -11,7 +11,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Sequence
 
-from dl909agentframework.tree_doc.node import Node
+from .node import Node
 
 
 class Permission(Enum):

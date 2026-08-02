@@ -9,7 +9,7 @@ from .numbered_markdown_nodes import (
     NumberedMarkdownTitleNode,
     NumberedMarkdownTextFileNode,
 )
-from .plain_text_file_node import PlainTextNode
+from .plain_text_nodes import PlainTextNode
 
 
 class FoldMode(Enum):
@@ -213,8 +213,17 @@ class FoldableMarkdownTextFileNode(NumberedMarkdownTextFileNode):
             with_fold_info=with_fold_info, full_text=full_text
         )
 
+    @staticmethod
+    def create_file(file_path: Path) -> None:
+        file_path = Path(file_path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text("", encoding="utf-8")
+
     def __init__(self, file_path: Path, **kargs):
+        file_path = Path(file_path)
         auto_correct = kargs.pop("auto_correct", True)
+        if not file_path.exists():
+            self.create_file(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
             markdown_text_node = FoldableMarkdownTextNode(
                 f.read(), auto_correct=auto_correct

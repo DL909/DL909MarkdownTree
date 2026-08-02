@@ -16,14 +16,21 @@ from .numbered_markdown_nodes import (
 MDP_FILE_PATTERN = re.compile(r"^(\d+)_(.+)\.mdp$")
 
 
-class MarkdownFolderNode(FileNode, TextNode):
+class NumberedMarkdownFolderNode(FileNode, TextNode):
     markdown_text_node: NumberedMarkdownTextNode = Field(
         default_factory=lambda: NumberedMarkdownTextNode("")
     )
     auto_correct: bool = Field(default=True)
 
+    @staticmethod
+    def create_file(file_path: Path) -> None:
+        Path(file_path).mkdir(parents=True, exist_ok=True)
+
     def __init__(self, file_path: Path, **kargs):
+        file_path = Path(file_path)
         auto_correct = kargs.pop("auto_correct", True)
+        if not file_path.exists():
+            self.create_file(file_path)
         if kargs.get("markdown_text_node"):
             markdown_text_node = kargs.pop("markdown_text_node")
         else:
@@ -31,7 +38,7 @@ class MarkdownFolderNode(FileNode, TextNode):
             if mdf_dir.is_dir():
                 synthetic_text = self._build_synthetic_text_from_dir(mdf_dir)
             else:
-                synthetic_text = ""
+                raise NotADirectoryError(f"Expect a Folder but got a File: {mdf_dir}")
             markdown_text_node = self._create_text_node(synthetic_text, auto_correct)
         super().__init__(
             file_path=file_path,

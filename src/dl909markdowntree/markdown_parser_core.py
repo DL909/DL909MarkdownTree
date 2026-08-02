@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from .plain_text_file_node import PlainTextNode
+from .plain_text_nodes import PlainTextNode
 
 
 class _MarkdownParserCore:

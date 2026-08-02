@@ -2,13 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from dl909agentframework.tree_doc.foldable_markdown_nodes import (
+from dl909markdowntree.foldable_markdown_nodes import (
     FoldMode,
     FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
     FoldableMarkdownTextFileNode,
 )
-from dl909agentframework.tree_doc.plain_text_file_node import PlainTextNode
+from dl909markdowntree.plain_text_nodes import PlainTextNode
 
 
 def test_foldable_markdown_title_node():

@@ -2,12 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from dl909agentframework.tree_doc.numbered_markdown_nodes import (
+from dl909markdowntree.numbered_markdown_nodes import (
     NumberedMarkdownTextNode,
     NumberedMarkdownTitleNode,
     NumberedMarkdownTextFileNode,
 )
-from dl909agentframework.tree_doc.plain_text_file_node import PlainTextNode
+from dl909markdowntree.plain_text_nodes import PlainTextNode
 
 
 def test_parse_title():

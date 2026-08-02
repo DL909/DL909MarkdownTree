@@ -46,6 +46,15 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
     def save(self):
         self.save_to_file(file_path=Path(self.file_path))
 
+    @staticmethod
+    def create_file(file_path: Path, attribute_type: type[T], attribute: T | None = None) -> None:
+        file_path = Path(file_path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        if attribute is None:
+            attribute = attribute_type()
+        content = f"---\n{to_yaml_str(attribute)}\n---\n"
+        file_path.write_text(content, encoding="utf-8")
+
     @override
     def reload(self):
         with open(self.file_path, "r", encoding="utf-8") as f:
@@ -59,6 +68,10 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
         self.attribute = parse_yaml_raw_as(type(self.attribute), yaml_data)
 
     def __init__(self, file_path: Path, attribute_type: type[T], **kargs):
+        file_path = Path(file_path)
+        if not file_path.exists():
+            attribute = kargs.pop("attribute", None)
+            self.create_file(file_path, attribute_type, attribute)
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
         assert content.startswith("---\n")

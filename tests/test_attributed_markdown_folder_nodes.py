@@ -4,14 +4,14 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from dl909agentframework.tree_doc.attributed_markdown_folder_nodes import (
+from dl909markdowntree.attributed_markdown_folder_nodes import (
     AttributedMarkdownFolderNode,
 )
-from dl909agentframework.tree_doc.foldable_markdown_nodes import (
+from dl909markdowntree.foldable_markdown_nodes import (
     FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
 )
-from dl909agentframework.tree_doc.markdown_nodes import MarkdownTitleNode
+from dl909markdowntree.markdown_nodes import MarkdownTitleNode
 
 
 class _ChapterMeta(BaseModel):

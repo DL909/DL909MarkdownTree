@@ -4,24 +4,24 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from dl909agentframework.tree_doc.attributed_markdown_folder_nodes import (
+from dl909markdowntree.attributed_markdown_folder_nodes import (
     AttributedMarkdownFolderNode,
 )
-from dl909agentframework.tree_doc.attributed_markdown_nodes import (
+from dl909markdowntree.attributed_markdown_nodes import (
     AttributedMarkdownTextFileNode,
 )
-from dl909agentframework.tree_doc.foldable_markdown_folder_nodes import (
+from dl909markdowntree.foldable_markdown_folder_nodes import (
     FoldableMarkdownFolderNode,
 )
-from dl909agentframework.tree_doc.foldable_markdown_nodes import (
+from dl909markdowntree.foldable_markdown_nodes import (
     FoldableMarkdownTextFileNode,
 )
-from dl909agentframework.tree_doc.markdown_folder_nodes import MarkdownFolderNode
-from dl909agentframework.tree_doc.markdown_nodes import MarkdownTextFileNode
-from dl909agentframework.tree_doc.numbered_markdown_nodes import (
+from dl909markdowntree.markdown_folder_nodes import NumberedMarkdownFolderNode
+from dl909markdowntree.markdown_nodes import MarkdownTextFileNode
+from dl909markdowntree.numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
 )
-from dl909agentframework.tree_doc.protocols import (
+from dl909markdowntree.protocols import (
     AttributedMarkdownTextFileProtocol,
     FoldableMarkdownTextFileProtocol,
     MarkdownTextFileProtocol,
@@ -87,13 +87,13 @@ def test_attributed_node_get_text_accepts_with_fold_info(fs):
 # ── Phase 3: FolderNode 作为 Protocol 的另一实现 ──────────────────────────────
 
 
-def test_markdown_folder_node_satisfies_numbered_protocol(fs):
+def test_numbered_markdown_folder_node_satisfies_numbered_protocol(fs):
     fs.create_dir("/tmp/test.mdf")
     fs.create_file("/tmp/test.mdf/1_Chapter.mdp", contents="## 1.1 Section\nContent")
-    node = MarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
+    node = NumberedMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
     assert isinstance(node, MarkdownTextFileProtocol)
     assert isinstance(node, NumberedMarkdownTextFileProtocol)
-    assert isinstance(node, MarkdownFolderNode)
+    assert isinstance(node, NumberedMarkdownFolderNode)
 
 
 def test_foldable_folder_node_satisfies_foldable_protocol(fs):
@@ -155,7 +155,7 @@ def test_polymorphic_numbered_protocol_with_file(fs):
 def test_polymorphic_numbered_protocol_with_folder(fs):
     fs.create_dir("/tmp/test.mdf")
     fs.create_file("/tmp/test.mdf/1_Chapter.mdp", contents="## 1.1 Section\nContent")
-    node = MarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
+    node = NumberedMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
     text = _use_numbered_protocol(node)
     assert "# 1. Chapter" in text
 

@@ -1,19 +1,141 @@
-# dl909agentframework
+# Dl909MarkdownTree
 
-一个面向「树状 Markdown 文档」的轻量 Agent 框架：把 Markdown 文档解析为可折叠、带编号、
-带属性的节点树，并通过 OpenAI 兼容的 function-calling 让 LLM 以工具（`read` / `replace` /
-`append` / `unfold` / `replace_lines` / `rename_title`）为粒度、在带权限控制的前提下编辑文档。
+树状 Markdown 文档解析与读写控制库。将 Markdown 文本解析为带层级的节点树，支持编号、折叠、属性 FrontMatter，以及基于节点树继承的细粒度权限控制。
 
-## 组成
+## 模块设计
 
-- `tree_doc/` —— 文档节点体系（`Node` 基类 + Markdown / numbered / foldable / attributed 各层），
-  以及对应的 `protocols.py` 协议接口。
-- `llm/` —— LLM 交互层：
-  - `llm_client.py`：`call_llm`、`tool_loop`、交互式对话、面向单文件的
-    `call_llm_with_edit_single_markdown_file_tool` 等封装。
-  - `tools/`：`registry.py`（`@tool` 装饰器 + `ToolRegistry` / `PermissionToolRegistry`）、
-    `permissions.py`（基于节点树继承的权限）、`markdown_edit_tools.py`（内置编辑工具集）、
-    `context.py`（工具执行上下文）。
+### 节点体系
+
+所有节点继承自 `Node`（Pydantic BaseModel），分为三类角色：
+
+- **TextNode** — 提供 `get_text()` / `set_text()`，是 Markdown 标题、正文等文本节点的基类。
+- **FileNode** — 提供 `save()` / `reload()`，代表磁盘上的文件或文件夹。
+- **PlainTextNode** — 纯文本叶节点，无子节点。
+
+```
+Node
+├── TextNode
+│   ├── PlainTextNode
+│   ├── MarkdownTitleNode          ← # 标题，level=1..6
+│   ├── MarkdownTextNode           ← 根文本，children 为标题序列
+│   ├── NumberedMarkdownTitleNode  ← 带编号的标题（# 1.2.3 Title）
+│   ├── FoldableMarkdownTitleNode  ← 可折叠标题（fold_mode）
+│   └── FoldableMarkdownTextNode
+└── FileNode
+    ├── MarkdownTextFileNode       ← 包装 MarkdownTextNode，读写 .md 文件
+    │   └── NumberedMarkdownTextFileNode
+    │       └── FoldableMarkdownTextFileNode
+    │           └── AttributedMarkdownTextFileNode[T]  ← 带 FrontMatter YAML 属性
+    ├── NumberedMarkdownFolderNode         ← 管理 .mdp 文件夹（0.mdp + N_Title.mdp）
+    │   └── FoldableMarkdownFolderNode
+    │       └── AttributedMarkdownFolderNode[T]
+    └── PlainTextFileNode
+```
+
+### Markdown 变体
+
+| 类型 | 说明 |
+|:------|:------|
+| 基础 | `MarkdownTextFileNode` / `MarkdownTitleNode` — 标准 Markdown 解析，无编号 |
+| 带序号 | `NumberedMarkdownTextFileNode` / `NumberedMarkdownTitleNode` — 标题含 `# 1.2.3 Title` 格式编号 |
+| 可折叠 | `FoldableMarkdownTextFileNode` / `FoldableMarkdownTitleNode` — `fold_mode` 控制子标题是否展开，`get_text(with_fold_info, full_text)` 控制输出 |
+| 带属性 | `AttributedMarkdownTextFileNode[T]` / `AttributedMarkdownFolderNode[T]` — 文件头部 YAML FrontMatter，泛型 `T` 为 Pydantic 模型 |
+
+### 文件夹节点（.mdp）
+
+`*MarkdownFolderNode` （包含 `NumberedmarkdownFolderNode` 、`FoldableMarkdownFolderNode` 和 `AttributedMarkdownFolderNode`） 将目录作为逻辑文件管理：`0.mdp` 为序言，`N_Title.mdp` 为编号章节。`save()` 自动分发到独立文件，`reload()` 重新合成为合成文本后解析。
+
+### 协议（Protocols）
+
+`protocols.py` 定义四层协议，用于类型标注和依赖倒置：
+
+```
+MarkdownTextFileProtocol
+└── NumberedMarkdownTextFileProtocol
+    └── FoldableMarkdownTextFileProtocol
+        └── AttributedMarkdownTextFileProtocol[T]
+```
+
+### 权限控制
+
+`PermissionChecker` 沿节点树向上继承，根据 `[(node, Permission), ...]` 列表检查有效权限：
+
+- `DENY` — 不可读写
+- `READ` — 可读不可写
+- `READ_WRITE` — 可读可写
+- 列表为空 → 默认 `READ_WRITE`；列表非空但未命中 → 默认 `DENY`
+
+## 快速使用
+
+```python
+from pathlib import Path
+from dl909markdowntree import MarkdownTextFileNode, FoldableMarkdownTextFileNode, AttributedMarkdownTextFileNode
+from dl909markdowntree import Permission, PermissionChecker
+
+# 基础：读写标准 Markdown（文件不存在时自动创建空文件）
+node = MarkdownTextFileNode(Path("doc.md"))
+node.set_text("# Hello\n\nSome text.")
+print(node.get_text())
+node.save()
+
+# 带编号（auto_correct=False 需手动保证编号正确）
+from dl909markdowntree import NumberedMarkdownTextFileNode
+numbered = NumberedMarkdownTextFileNode(Path("numbered.md"), auto_correct=True)
+numbered.set_text("# Chapter 1\n\nContent.")
+
+# 可折叠
+foldable = FoldableMarkdownTextFileNode(Path("fold.md"), auto_correct=True)
+foldable.recursive_find_title_node_by_name("# 1. Introduction").unfold()
+
+# 带属性（泛型）—— 属性类建议提供默认值，否则创建文件时需传入 attribute
+from pydantic import BaseModel
+class FrontMatter(BaseModel):
+    title: str = "Untitled"
+    author: str = "Anonymous"
+
+attributed = AttributedMarkdownTextFileNode(Path("post.md"), attribute_type=FrontMatter)
+print(attributed.attribute.title)
+# 或创建时传入自定义 attribute
+custom_attr = FrontMatter(title="My Post", author="Alice")
+# 若文件存在，这将会覆写原始的attribute
+attributed2 = AttributedMarkdownTextFileNode(Path("post2.md"), attribute_type=FrontMatter, attribute=custom_attr)
+
+# 文件夹
+from dl909markdowntree import NumberedMarkdownFolderNode
+folder = NumberedMarkdownFolderNode(Path("my_doc/"))
+folder.save()  # 分发为 0.mdp + N_Title.mdp
+
+# 权限
+checker = PermissionChecker([(some_title_node, Permission.READ)])
+ok, msg = checker.check_permission(some_title_node, Permission.READ_WRITE)
+```
+
+### create_file
+
+每个文件/文件夹节点均提供 `create_file` 静态方法，用于手动初始化磁盘上的空文件或空文件夹：
+
+```python
+# 文件节点
+MarkdownTextFileNode.create_file(Path("doc.md"))
+NumberedMarkdownTextFileNode.create_file(Path("numbered.md"))
+FoldableMarkdownTextFileNode.create_file(Path("fold.md"))
+AttributedMarkdownTextFileNode.create_file(Path("post.md"), attribute_type=FrontMatter)
+# 带自定义属性创建
+AttributedMarkdownTextFileNode.create_file(Path("post.md"), attribute_type=FrontMatter, attribute=custom_attr)
+
+# 文件夹节点
+MarkdownFolderNode.create_file(Path("my_doc/"))
+FoldableMarkdownFolderNode.create_file(Path("foldable_doc/"))
+AttributedMarkdownFolderNode.create_file(Path("attr_doc/"), attribute_type=FrontMatter, attribute=custom_attr)
+```
+
+`__init__` 在目标文件/文件夹不存在时会自动调用对应的 `create_file`，因此以下两种写法等价：
+
+```python
+node = MarkdownTextFileNode(Path("doc.md"))          # 自动创建
+MarkdownTextFileNode.create_file(Path("doc.md"))
+node = MarkdownTextFileNode(Path("doc.md"))          # 文件已存在，直接读取
+```
 
 ## 安装
 
@@ -25,57 +147,14 @@ pip install -e .
 
 要求 Python >= 3.11。
 
-## 环境变量
+## Extra
 
-运行前通过 `.env`（`setup_globals()` 会自动加载当前工作目录下的 `.env`）或进程环境提供：
-
-| 变量 | 说明 |
-| --- | --- |
-| `LLM_API_KEY` | OpenAI 兼容 API key |
-| `LLM_API_BASE` | API base url |
-| `LLM_MODEL` | 模型名 |
-| `LLM_TEMPERATURE` | 采样温度（默认 `0.8`） |
-| `MAX_TOOL_LOOP` | 工具调用循环最大迭代次数（默认 `20`） |
-
-## 最小用例
-
-```python
-from dl909agentframework.llm.initialization import setup_globals
-from dl909agentframework.llm.tools.markdown_edit_tools import (
-    create_markdown_edit_tools_registry,
-)
-
-setup_globals()  # 加载 .env
-
-# 不带 permissions 时得到普通 ToolRegistry（默认全开）；
-# 带 permissions 时得到 PermissionToolRegistry，声明了权限的工具会被强制检查。
-registry = create_markdown_edit_tools_registry()
-
-# 传入一个实现了 AttributedMarkdownTextFileProtocol 的文档节点，
-# 让 LLM 自主读取并按需调用编辑工具，最终保存文件。
-# from dl909agentframework.llm.llm_client import call_llm_with_edit_single_markdown_file_tool
-# call_llm_with_edit_single_markdown_file_tool(
-#     markdown_file_node=my_node,
-#     system_content="你是一个文档编辑助手……",
-#     user_content="把第 2 章扩写到 1000 字。",
-# )
-```
-
-## 权限
-
-`PermissionToolRegistry` 按 `[(node, Permission), ...]` 配置权限，并沿节点树向上继承：
-
-- 权限列表为空 → 默认 `READ_WRITE`（全部允许）。
-- 非空但某节点及其祖先都未命中 → 默认 `DENY`。
-- `Permission`：`DENY < READ < READ_WRITE`（`NONE` 表示工具不参与权限检查）。
-
-内置工具已声明各自所需权限（如 `replace` 需 `READ_WRITE`、`read` 需 `READ`），
-在 `PermissionToolRegistry` 下会被实际强制。
+MCP Server、LangChain BaseToolKit 等 Extra 集成尚未实现（`NotImplementedError`）。
 
 ## 开发
 
 ```bash
 uv run pytest -q        # 测试
-uv run pyright src/     # 类型检查
 uv run ruff check src/  # lint
+# pyright src/          # 类型检查（需单独安装 pyright）
 ```

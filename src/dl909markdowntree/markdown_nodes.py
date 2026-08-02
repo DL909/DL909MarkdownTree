@@ -4,7 +4,7 @@ from typing import Self, override
 from pydantic import Field
 
 from .file_node import FileNode
-from .plain_text_file_node import PlainTextNode
+from .plain_text_nodes import PlainTextNode
 from .text_node import TextNode
 from .markdown_parser_core import _MarkdownParserCore
 
@@ -201,12 +201,21 @@ class MarkdownTextFileNode(FileNode, TextNode):
     def save(self):
         self.save_to_file(file_path=self.file_path)
 
+    @staticmethod
+    def create_file(file_path: Path) -> None:
+        file_path = Path(file_path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text("", encoding="utf-8")
+
     @override
     def reload(self):
         with open(self.file_path, "r", encoding="utf-8") as f:
             self.markdown_text_node = MarkdownTextNode(f.read())
 
     def __init__(self, file_path: Path, **kargs):
+        file_path = Path(file_path)
+        if not file_path.exists():
+            self.create_file(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
             markdown_text_node = MarkdownTextNode(f.read())
         if kargs.get("markdown_text_node"):

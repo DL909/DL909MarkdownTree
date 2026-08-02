@@ -9,13 +9,17 @@ from .foldable_markdown_nodes import (
     FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
 )
-from .markdown_folder_nodes import MarkdownFolderNode
+from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .numbered_markdown_nodes import NumberedMarkdownTitleNode
 
 
-class FoldableMarkdownFolderNode(MarkdownFolderNode):
+class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
     markdown_text_node: FoldableMarkdownTextNode  # type: ignore
     use_fold_states: bool = False
+
+    @staticmethod
+    def create_file(file_path: Path) -> None:
+        NumberedMarkdownFolderNode.create_file(file_path)
 
     def _create_text_node(
         self, text: str, auto_correct: bool = True

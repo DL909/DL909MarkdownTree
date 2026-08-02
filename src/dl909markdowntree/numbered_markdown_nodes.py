@@ -9,7 +9,7 @@ from .markdown_nodes import (
     MarkdownTitleNode,
     MarkdownTextFileNode,
 )
-from .plain_text_file_node import PlainTextNode
+from .plain_text_nodes import PlainTextNode
 
 
 class NumberedMarkdownTitleNode(MarkdownTitleNode):
@@ -301,9 +301,19 @@ class NumberedMarkdownTextFileNode(MarkdownTextFileNode):
             title_name=title_name
         )
 
+    @staticmethod
+    def create_file(file_path: Path) -> None:
+        file_path = Path(file_path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text("", encoding="utf-8")
+
     def __init__(self, file_path: Path, **kargs):
+        file_path = Path(file_path)
+        auto_correct = kargs.pop("auto_correct", False)
+        if not file_path.exists():
+            self.create_file(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
-            markdown_text_node = NumberedMarkdownTextNode(f.read())
+            markdown_text_node = NumberedMarkdownTextNode(f.read(), auto_correct=auto_correct)
         if kargs.get("markdown_text_node"):
             markdown_text_node = kargs.pop("markdown_text_node")
         super().__init__(
