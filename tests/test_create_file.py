@@ -72,14 +72,14 @@ def test_numbered_markdown_text_file_node_init_reads_existing(fs):
 # ─── FoldableMarkdownTextFileNode ───────────────────────────────────
 
 
-def test_foldable_markdown_text_file_node_create_file():
+def test_foldable_markdown_text_file_node_create_file(fs):
     path = Path("/tmp/new_fold.md")
     FoldableMarkdownTextFileNode.create_file(path)
     assert path.exists()
     assert path.read_text(encoding="utf-8") == ""
 
 
-def test_foldable_markdown_text_file_node_init_creates_if_missing():
+def test_foldable_markdown_text_file_node_init_creates_if_missing(fs):
     path = Path("/tmp/auto_created_fold.md")
     assert not path.exists()
     node = FoldableMarkdownTextFileNode(file_path=path)
@@ -96,7 +96,7 @@ def test_foldable_markdown_text_file_node_init_reads_existing(fs):
 # ─── AttributedMarkdownTextFileNode ─────────────────────────────────
 
 
-def test_attributed_markdown_text_file_node_create_file_default():
+def test_attributed_markdown_text_file_node_create_file_default(fs):
     path = Path("/tmp/new_attr.md")
     AttributedMarkdownTextFileNode.create_file(path, attribute_type=_SimpleAttr)
     assert path.exists()
@@ -106,7 +106,7 @@ def test_attributed_markdown_text_file_node_create_file_default():
     assert "version: 1.0.0" in content
 
 
-def test_attributed_markdown_text_file_node_create_file_with_attribute():
+def test_attributed_markdown_text_file_node_create_file_with_attribute(fs):
     path = Path("/tmp/new_attr_custom.md")
     custom_attr = _SimpleAttr(author="alice", version="2.0.0")
     AttributedMarkdownTextFileNode.create_file(
@@ -118,7 +118,7 @@ def test_attributed_markdown_text_file_node_create_file_with_attribute():
     assert "version: 2.0.0" in content
 
 
-def test_attributed_markdown_text_file_node_init_creates_if_missing():
+def test_attributed_markdown_text_file_node_init_creates_if_missing(fs):
     path = Path("/tmp/auto_created_attr.md")
     assert not path.exists()
     node = AttributedMarkdownTextFileNode(file_path=path, attribute_type=_SimpleAttr)
@@ -127,7 +127,7 @@ def test_attributed_markdown_text_file_node_init_creates_if_missing():
     assert node.get_text() == ""
 
 
-def test_attributed_markdown_text_file_node_init_creates_with_attribute():
+def test_attributed_markdown_text_file_node_init_creates_with_attribute(fs):
     path = Path("/tmp/auto_created_attr_custom.md")
     custom_attr = _SimpleAttr(author="bob", version="3.0.0")
     node = AttributedMarkdownTextFileNode(
@@ -154,14 +154,14 @@ def test_attributed_markdown_text_file_node_init_reads_existing(fs):
 # ─── MarkdownFolderNode ─────────────────────────────────────────────
 
 
-def test_markdown_folder_node_create_file():
+def test_markdown_folder_node_create_file(fs):
     path = Path("/tmp/new_folder")
     NumberedMarkdownFolderNode.create_file(path)
     assert path.exists()
     assert path.is_dir()
 
 
-def test_markdown_folder_node_init_creates_if_missing():
+def test_markdown_folder_node_init_creates_if_missing(fs):
     path = Path("/tmp/auto_created_folder")
     assert not path.exists()
     _ = NumberedMarkdownFolderNode(file_path=path)
@@ -181,14 +181,14 @@ def test_markdown_folder_node_init_reads_existing(fs):
 # ─── FoldableMarkdownFolderNode ─────────────────────────────────────
 
 
-def test_foldable_markdown_folder_node_create_file():
+def test_foldable_markdown_folder_node_create_file(fs):
     path = Path("/tmp/new_fold_folder")
     FoldableMarkdownFolderNode.create_file(path)
     assert path.exists()
     assert path.is_dir()
 
 
-def test_foldable_markdown_folder_node_init_creates_if_missing():
+def test_foldable_markdown_folder_node_init_creates_if_missing(fs):
     path = Path("/tmp/auto_created_fold_folder")
     assert not path.exists()
     _ = FoldableMarkdownFolderNode(file_path=path)
@@ -206,7 +206,7 @@ def test_foldable_markdown_folder_node_init_reads_existing(fs):
 # ─── AttributedMarkdownFolderNode ───────────────────────────────────
 
 
-def test_attributed_markdown_folder_node_create_file_default():
+def test_attributed_markdown_folder_node_create_file_default(fs):
     path = Path("/tmp/new_attr_folder")
     AttributedMarkdownFolderNode.create_file(path, attribute_type=_SimpleAttr)
     assert path.exists()
@@ -216,7 +216,7 @@ def test_attributed_markdown_folder_node_create_file_default():
     assert "author: default" in yaml_path.read_text(encoding="utf-8")
 
 
-def test_attributed_markdown_folder_node_create_file_with_attribute():
+def test_attributed_markdown_folder_node_create_file_with_attribute(fs):
     path = Path("/tmp/new_attr_folder_custom")
     custom_attr = _SimpleAttr(author="carol", version="5.0.0")
     AttributedMarkdownFolderNode.create_file(
@@ -228,7 +228,7 @@ def test_attributed_markdown_folder_node_create_file_with_attribute():
     assert "version: 5.0.0" in yaml_path.read_text(encoding="utf-8")
 
 
-def test_attributed_markdown_folder_node_init_creates_if_missing():
+def test_attributed_markdown_folder_node_init_creates_if_missing(fs):
     path = Path("/tmp/auto_created_attr_folder")
     assert not path.exists()
     node = AttributedMarkdownFolderNode(file_path=path, attribute_type=_SimpleAttr)
@@ -237,7 +237,7 @@ def test_attributed_markdown_folder_node_init_creates_if_missing():
     assert node.attribute.author == "default"
 
 
-def test_attributed_markdown_folder_node_init_creates_with_attribute():
+def test_attributed_markdown_folder_node_init_creates_with_attribute(fs):
     path = Path("/tmp/auto_created_attr_folder_custom")
     custom_attr = _SimpleAttr(author="dave", version="7.0.0")
     node = AttributedMarkdownFolderNode(
