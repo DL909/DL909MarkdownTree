@@ -79,9 +79,9 @@ node.set_text("# Hello\n\nSome text.")
 print(node.get_text())
 node.save()
 
-# 带编号（auto_correct=False 需手动保证编号正确）
+# 带编号（auto_correct 默认 True，自动纠正编号；传 False 需手动保证编号正确）
 from dl909markdowntree import NumberedMarkdownTextFileNode
-numbered = NumberedMarkdownTextFileNode(Path("numbered.md"), auto_correct=True)
+numbered = NumberedMarkdownTextFileNode(Path("numbered.md"))
 numbered.set_text("# Chapter 1\n\nContent.")
 
 # 可折叠
@@ -147,7 +147,7 @@ uv sync          # 开发环境（含 pytest / pyright / ruff）
 pip install -e .
 ```
 
-要求 Python >= 3.11。
+要求 Python >= 3.12。
 
 ## Extra
 
@@ -202,5 +202,5 @@ pip install "dl909markdowntree[all]"
 ```bash
 uv run pytest -q        # 测试
 uv run ruff check src/  # lint
-# pyright src/          # 类型检查（需单独安装 pyright）
+uv run pyright src/     # 类型检查
 ```

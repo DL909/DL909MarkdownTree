@@ -92,12 +92,11 @@ class TestNumberedMarkdownTitleNodeAutoCorrect:
         with pytest.raises(Exception):
             title_node.set_text("## 1.5. Wrong Number")
 
-    def test_auto_correct_default_is_disabled(self):
-        """测试默认自纠正功能是关闭的"""
+    def test_auto_correct_default_enabled(self):
+        """测试默认自纠正功能是开启的"""
         title_node = NumberedMarkdownTitleNode(title="Test", level=1, number=[1])
-        assert title_node.auto_correct is False
-        with pytest.raises(Exception):
-            title_node.set_text("## Wrong Number")
+        assert title_node.auto_correct is True
+        title_node.set_text("## Wrong Number")
 
 
 class TestNumberedMarkdownTextNodeAutoCorrect:
@@ -150,12 +149,11 @@ class TestNumberedMarkdownTextNodeAutoCorrect:
         with pytest.raises(Exception):
             NumberedMarkdownTextNode(text="# Wrong Number", auto_correct=False)
 
-    def test_auto_correct_text_node_default_disabled(self):
-        """测试 TextNode 默认自纠正是关闭的"""
+    def test_auto_correct_text_node_default_enabled(self):
+        """测试 TextNode 默认自纠正是开启的"""
         text_node = NumberedMarkdownTextNode(text="# 1. Correct")
-        assert text_node.auto_correct is False
-        with pytest.raises(Exception):
-            text_node.add_text("# Wrong Number")
+        assert text_node.auto_correct is True
+        text_node.add_text("# Wrong Number")
 
 
 class TestAutoCorrectEdgeCases:

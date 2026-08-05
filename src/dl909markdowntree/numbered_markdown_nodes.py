@@ -17,7 +17,7 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode):
     level: int = Field(le=6, ge=1)
     title: str = Field()
     number: list[int] = Field()
-    auto_correct: bool = Field(default=False)
+    auto_correct: bool = Field(default=True)
 
     # 当所有子节点都是标题节点时返回真
     # 注意当没有子节点时也返回真
@@ -169,7 +169,7 @@ class NumberedMarkdownTextNode(MarkdownTextNode):
     children: list[PlainTextNode | NumberedMarkdownTitleNode] = Field(  # type: ignore - children type is intentionally narrowed from base class
         default_factory=list
     )
-    auto_correct: bool = Field(default=False)
+    auto_correct: bool = Field(default=True)
 
     def recursive_find_title_node_by_name(
         self, title_name: str
@@ -309,7 +309,7 @@ class NumberedMarkdownTextFileNode(MarkdownTextFileNode):
 
     def __init__(self, file_path: Path, **kargs):
         file_path = Path(file_path)
-        auto_correct = kargs.pop("auto_correct", False)
+        auto_correct = kargs.pop("auto_correct", True)
         if not file_path.exists():
             self.create_file(file_path)
         with open(file_path, "r", encoding="utf-8") as f:

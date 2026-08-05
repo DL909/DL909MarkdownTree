@@ -19,7 +19,9 @@ def test_parse_title():
 
 
 def test_numbered_markdown_title_node():
-    test_title_node = NumberedMarkdownTitleNode(title="test", level=2, number=[1, 2])
+    test_title_node = NumberedMarkdownTitleNode(
+        title="test", level=2, number=[1, 2], auto_correct=False
+    )
     assert test_title_node.get_title() == "## 1.2. test"
     with pytest.raises(Exception):
         test_title_node.set_text("test text\n### 1.2.2. test2\ntest text2")
@@ -34,7 +36,8 @@ def test_numbered_markdown_title_node():
 
 def test_numbered_markdown_text_node():
     test_text_node = NumberedMarkdownTextNode(
-        text="test text 0\n# 1. test1\n## 1.1. test2\ntest text\n# 2. test2\n## 2.1. test3\ntest text"
+        text="test text 0\n# 1. test1\n## 1.1. test2\ntest text\n# 2. test2\n## 2.1. test3\ntest text",
+        auto_correct=False,
     )
     assert isinstance(test_text_node.children[0], PlainTextNode)
     assert isinstance(test_text_node.children[1], NumberedMarkdownTitleNode)
