@@ -380,7 +380,7 @@ author: test
             file_path=Path("/tmp/auto_correct.md"), attribute_type=_TestAttribute
         )
         test_file_node.markdown_text_node.auto_correct = False
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="编号标题解析失败"):
             test_file_node.set_text("# Wrong Number")
 
     def test_attributed_auto_correct_default_enabled(self, fs):
@@ -417,3 +417,46 @@ Some content here"""
 
     assert "Some content here" not in test_file_node.get_text()
     assert "Some content here" in test_file_node.get_text(full_text=True)
+
+
+def test_attributed_markdown_text_file_node_attribute_constructor(fs):
+    """测试通过 attribute 参数直接传入属性"""
+    content = """---
+author: test_author
+---
+# 1. Title"""
+    fs.create_file("/tmp/attributed.md", contents=content)
+    test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
+        file_path=Path("/tmp/attributed.md"),
+        attribute_type=_TestAttribute,
+        attribute=_TestAttribute(author="direct_author", version="9.0.0"),
+    )
+    assert test_file_node.attribute.author == "direct_author"
+    assert test_file_node.attribute.version == "9.0.0"
+
+
+def test_attributed_markdown_folder_node_missing_frontmatter_fallback(fs):
+    """测试缺少 FrontMatter.yaml 时使用属性默认值"""
+    from dl909markdowntree.attributed_markdown_folder_nodes import (
+        AttributedMarkdownFolderNode,
+    )
+
+    folder_path = Path("/tmp/attributed_folder")
+    folder_path.mkdir(parents=True)
+    (folder_path / "1_Section.mdp").write_text("## 1.1. Sub\nContent", encoding="utf-8")
+    node = AttributedMarkdownFolderNode[_TestAttribute](
+        file_path=folder_path, attribute_type=_TestAttribute
+    )
+    assert isinstance(node.attribute, _TestAttribute)
+    assert node.attribute.author == "default_author"
+
+
+def test_markdown_parser_core_parse_code_block_start_boundary():
+    """测试 _parse_code_block_start 边界：多单词视为普通文本"""
+    from dl909markdowntree.markdown_parser_core import _MarkdownParserCore
+
+    core = _MarkdownParserCore()
+    assert core._parse_code_block_start("```") is True
+    assert core._parse_code_block_start("```python") is True
+    assert core._parse_code_block_start("```python hello") is False
+    assert core._parse_code_block_start("``` ") is False

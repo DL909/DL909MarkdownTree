@@ -23,9 +23,9 @@ def test_numbered_markdown_title_node():
         title="test", level=2, number=[1, 2], auto_correct=False
     )
     assert test_title_node.get_title() == "## 1.2. test"
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match=r"isn't"):
         test_title_node.set_text("test text\n### 1.2.2. test2\ntest text2")
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="过低等级的标题"):
         test_title_node.set_text("test text\n## 1.3. test2")
     test_title_node.set_text("test text\n### 1.2.1. test2\ntest text2")
     assert isinstance(test_title_node.children[0], PlainTextNode)
@@ -41,7 +41,7 @@ def test_numbered_markdown_text_node():
     )
     assert isinstance(test_text_node.children[0], PlainTextNode)
     assert isinstance(test_text_node.children[1], NumberedMarkdownTitleNode)
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match=r"isn't"):
         test_text_node.add_text("# 2. test5")
 
 
@@ -110,8 +110,7 @@ def test_numbered_markdown_text_file_node_reload(fs):
         contents="# 1. Title\nReloaded content\n## 1.1. New",
     )
     test_file_node.reload()
-    assert "# 1. Title" in test_file_node.get_text()
-    assert "Reloaded content" in test_file_node.get_text()
+    assert test_file_node.get_text() == "# 1. Title\n\nReloaded content\n\n## 1.1. New"
 
 
 def test_numbered_markdown_title_node_all_children_are_titles():
@@ -124,3 +123,13 @@ def test_numbered_markdown_title_node_all_children_are_titles():
         NumberedMarkdownTitleNode(title="Child", level=2, number=[1, 1])
     )
     assert title_node.all_children_are_titles()
+
+
+def test_numbered_markdown_text_node_recursive_find_trailing_newline():
+    test_text_node = NumberedMarkdownTextNode(
+        text="# 1. Title\n## 1.1. Subtitle\nContent"
+    )
+    found = test_text_node.recursive_find_title_node_by_name("## 1.1. Subtitle\n")
+    assert found is not None
+    assert found.title == "Subtitle"
+    assert found.number == [1, 1]

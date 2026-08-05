@@ -28,7 +28,7 @@ class _MarkdownParserCore:
     注意：本 Mixin 依赖子类提供 `children: list` 和 `addchild()` 方法
     """
 
-    def _get_root_level(self) -> int:
+    def _get_root_level(self, **kwargs) -> int:
         """
         获取根节点的标题级别
 
@@ -37,7 +37,7 @@ class _MarkdownParserCore:
         """
         raise NotImplementedError()
 
-    def _get_root_title(self) -> str | None:
+    def _get_root_title(self, **kwargs) -> str | None:
         """
         获取根节点的标题文本（如果有）
 
@@ -46,7 +46,7 @@ class _MarkdownParserCore:
         """
         return None
 
-    def _should_consume_first_line(self) -> bool:
+    def _should_consume_first_line(self, **kwargs) -> bool:
         """
         是否需要在解析前消费第一行（作为自身标题）
 
@@ -55,7 +55,7 @@ class _MarkdownParserCore:
         """
         return False
 
-    def _process_first_line_if_needed(self, first_line: str) -> None:
+    def _process_first_line_if_needed(self, first_line: str, **kwargs) -> None:
         """
         处理第一行（如果需要）
 
@@ -64,11 +64,11 @@ class _MarkdownParserCore:
         """
         pass
 
-    def _is_code_block_boundary(self, line: str) -> bool:
+    def _is_code_block_boundary(self, line: str, **kwargs) -> bool:
         """检测行是否为代码块边界（```）"""
         return line.startswith("```")
 
-    def _parse_code_block_start(self, line: str) -> bool:
+    def _parse_code_block_start(self, line: str, **kwargs) -> bool:
         """
         解析代码块开始行，返回是否确实是代码块
 
@@ -81,11 +81,11 @@ class _MarkdownParserCore:
             index += 1
         return len(line) == index
 
-    def _is_title_line(self, line: str) -> bool:
+    def _is_title_line(self, line: str, **kwargs) -> bool:
         """检测行是否为标题行（以 # 开头）"""
         return line.startswith("#")
 
-    def _parse_title_line(self, line: str) -> tuple[int, list[int] | None, str]:
+    def _parse_title_line(self, line: str, **kwargs) -> tuple[int, list[int] | None, str]:
         """
         解析标题行
 
@@ -109,7 +109,7 @@ class _MarkdownParserCore:
         title_text = line[index + 1 :]
         return (level, None, title_text)
 
-    def _validate_title_level(self, title_level: int) -> None:
+    def _validate_title_level(self, title_level: int, **kwargs) -> None:
         """
         验证标题级别是否合法
 
@@ -120,7 +120,7 @@ class _MarkdownParserCore:
         if title_level <= root_level:
             raise Exception(f"过低等级的标题：{title_level} <= {root_level}")
 
-    def _create_title_node(self, level: int, number: list[int] | None, title: str):
+    def _create_title_node(self, level: int, number: list[int] | None, title: str, **kwargs):
         """
         创建标题节点实例
 
@@ -137,6 +137,7 @@ class _MarkdownParserCore:
         titles: list[Any],
         line_index: int,
         full_text: str,
+        **kwargs,
     ) -> list[int]:
         """
         验证并计算正确的标题编号
@@ -167,6 +168,7 @@ class _MarkdownParserCore:
         level: int,
         titles: list[Any],
         last_title,
+        **kwargs,
     ) -> tuple[list[Any], Any]:
         """
         将新标题添加到层级结构中
@@ -188,7 +190,7 @@ class _MarkdownParserCore:
         return (titles, last_title)
 
     def _flush_cached_text(
-        self, cached_text: str, last_title, clear_cache: bool = True
+        self, cached_text: str, last_title, clear_cache: bool = True, **kwargs
     ) -> str:
         """
         提交缓存的文本到最后一个标题节点
@@ -211,7 +213,7 @@ class _MarkdownParserCore:
         return cached_text
 
     def _handle_code_block_line(
-        self, line: str, cached_text: str, in_code_block: bool
+        self, line: str, cached_text: str, in_code_block: bool, **kwargs
     ) -> tuple[str, bool]:
         """
         处理代码块内的行
@@ -231,6 +233,7 @@ class _MarkdownParserCore:
         titles: list[Any],
         line_index: int,
         full_text: str,
+        **kwargs,
     ) -> tuple[str, Any, list[Any]]:
         """
         处理标题行
@@ -258,7 +261,7 @@ class _MarkdownParserCore:
 
         return (cached_text, last_title, titles)
 
-    def _handle_text_line(self, line: str, cached_text: str) -> str:
+    def _handle_text_line(self, line: str, cached_text: str, **kwargs) -> str:
         """
         处理普通文本行
 
@@ -269,7 +272,7 @@ class _MarkdownParserCore:
             return cached_text + line + "\n"
         return cached_text
 
-    def _parse_markdown_core(self, text: str) -> None:
+    def _parse_markdown_core(self, text: str, **kwargs) -> None:
         """
         核心解析方法 - 模板方法模式
 
@@ -294,45 +297,45 @@ class _MarkdownParserCore:
 
         lines = text.splitlines()
 
-        if self._should_consume_first_line() and lines:
+        if self._should_consume_first_line(**kwargs) and lines:
             first_line = lines[0]
             if first_line.startswith("#" * root_level + " "):
-                self._process_first_line_if_needed(first_line)
+                self._process_first_line_if_needed(first_line, **kwargs)
                 lines = lines[1:]
 
         for line_index, line in enumerate(lines):
             if code_block_flag:
                 cached_text, code_block_flag = self._handle_code_block_line(
-                    line, cached_text, code_block_flag
+                    line, cached_text, code_block_flag, **kwargs
                 )
                 continue
 
-            if self._is_code_block_boundary(line):
-                if self._parse_code_block_start(line):
+            if self._is_code_block_boundary(line, **kwargs):
+                if self._parse_code_block_start(line, **kwargs):
                     code_block_flag = True
-                cached_text = self._handle_text_line(line, cached_text)
+                cached_text = self._handle_text_line(line, cached_text, **kwargs)
                 continue
 
-            if self._is_title_line(line):
+            if self._is_title_line(line, **kwargs):
                 cached_text, last_title, titles = self._handle_title_line(
-                    line, cached_text, last_title, titles, line_index, text
+                    line, cached_text, last_title, titles, line_index, text, **kwargs
                 )
                 continue
 
-            cached_text = self._handle_text_line(line, cached_text)
+            cached_text = self._handle_text_line(line, cached_text, **kwargs)
 
         if cached_text != "":
-            self._flush_cached_text(cached_text, last_title)
+            self._flush_cached_text(cached_text, last_title, **kwargs)
 
-    def parse_markdown(self, text: str) -> None:
+    def parse_markdown(self, text: str, **kwargs) -> None:
         """
         解析 Markdown 文本的公共入口
 
         子类可以重写此方法添加额外逻辑，或调用 _parse_markdown_core()
         """
-        self._parse_markdown_core(text)
+        self._parse_markdown_core(text, **kwargs)
 
-    def set_text(self, text: str) -> None:
+    def set_text(self, text: str, **kwargs) -> None:
         """
         设置文本的公共入口
 
@@ -343,7 +346,7 @@ class _MarkdownParserCore:
         original_children = list(self.children)  # type: ignore - children provided by parent class (Node)
 
         try:
-            self.parse_markdown(text)
+            self.parse_markdown(text, **kwargs)
         except Exception:
             # 解析失败时恢复原有 children
             self.children.clear()  # type: ignore - children provided by parent class (Node)

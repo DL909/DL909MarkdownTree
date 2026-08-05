@@ -20,34 +20,36 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
     attribute: T
 
     def recursive_find_title_node_by_name(
-        self, title_name: str, within_shown: bool = False
+        self, title_name: str, within_shown: bool = False, **kwargs
     ) -> FoldableMarkdownTitleNode | None:
         return self.markdown_text_node.recursive_find_title_node_by_name(
-            title_name=title_name, within_shown=within_shown
+            title_name=title_name, within_shown=within_shown, **kwargs
         )
 
     @override
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
+    def get_text(self, with_fold_info: bool = True, full_text: bool = False, **kwargs) -> str:
         return self.markdown_text_node.get_text(
-            with_fold_info=with_fold_info, full_text=full_text
+            with_fold_info=with_fold_info, full_text=full_text, **kwargs
         )
 
     @override
-    def set_text(self, text) -> None:
-        self.markdown_text_node.set_text(text)
+    def set_text(self, text, **kwargs) -> None:
+        self.markdown_text_node.set_text(text, **kwargs)
 
-    def save_to_file(self, file_path: Path) -> None:
+    def save_to_file(self, file_path: Path, **kwargs) -> None:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(
-                f"---\n{to_yaml_str(self.attribute)}\n---\n{self.get_text(full_text=True)}"
+                f"---\n{to_yaml_str(self.attribute)}\n---\n{self.get_text(full_text=True, **kwargs)}"
             )
 
     @override
-    def save(self):
-        self.save_to_file(file_path=Path(self.file_path))
+    def save(self, **kwargs):
+        self.save_to_file(file_path=Path(self.file_path), **kwargs)
 
     @staticmethod
-    def create_file(file_path: Path, attribute_type: type[T], attribute: T | None = None) -> None:
+    def create_file(
+        file_path: Path, attribute_type: type[T], attribute: T | None = None, **kwargs
+    ) -> None:
         file_path = Path(file_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         if attribute is None:
@@ -56,7 +58,7 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
         file_path.write_text(content, encoding="utf-8")
 
     @override
-    def reload(self):
+    def reload(self, **kwargs):
         with open(self.file_path, "r", encoding="utf-8") as f:
             content = f.read()
         assert content.startswith("---\n")
@@ -64,14 +66,14 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
         assert content[i : i + 4] == "---\n"
         yaml_data = content[4 : i - 1]
         markdown_content = content[i + 4 :]
-        self.markdown_text_node = FoldableMarkdownTextNode(text=markdown_content)
+        self.markdown_text_node = FoldableMarkdownTextNode(text=markdown_content, **kwargs)
         self.attribute = parse_yaml_raw_as(type(self.attribute), yaml_data)
 
     def __init__(self, file_path: Path, attribute_type: type[T], **kargs):
         file_path = Path(file_path)
+        explicit_attribute = kargs.pop("attribute", None)
         if not file_path.exists():
-            attribute = kargs.pop("attribute", None)
-            self.create_file(file_path, attribute_type, attribute)
+            self.create_file(file_path, attribute_type, explicit_attribute)
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
         assert content.startswith("---\n")
@@ -83,7 +85,7 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
         markdown_text_node = FoldableMarkdownTextNode(
             text=markdown_content, auto_correct=auto_correct
         )
-        attribute = parse_yaml_raw_as(attribute_type, yaml_data)
+        attribute = explicit_attribute if explicit_attribute is not None else parse_yaml_raw_as(attribute_type, yaml_data)
         if kargs.get("markdown_text_node"):
             markdown_text_node = kargs.pop("markdown_text_node")
 

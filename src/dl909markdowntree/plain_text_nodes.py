@@ -17,11 +17,11 @@ class PlainTextNode(TextNode):
         self._text = text
 
     @override
-    def get_text(self) -> str:
+    def get_text(self, **kwargs) -> str:
         return self.text
 
     @override
-    def set_text(self, text: str) -> None:
+    def set_text(self, text: str, **kwargs) -> None:
         self.text = text
 
 
@@ -29,22 +29,22 @@ class TextFileNode(FileNode, TextNode):
     textNode: TextNode = Field(default_factory=PlainTextNode)
 
     @override
-    def save(self):
+    def save(self, **kwargs):
         with open(self.file_path, "w", encoding="utf-8") as f:
             if isinstance(self.textNode, PlainTextNode):
                 f.write(self.textNode.text)
 
     @override
-    def reload(self):
+    def reload(self, **kwargs):
         with open(self.file_path, "r", encoding="utf-8") as f:
             self.textNode.set_text(f.read())
 
     @override
-    def get_text(self):
+    def get_text(self, **kwargs):
         return self.textNode.get_text()
 
     @override
-    def set_text(self, text):
+    def set_text(self, text, **kwargs):
         self.textNode.set_text(text)
 
     def __init__(self, file_path: pathlib.Path, **kargs):

@@ -6,11 +6,11 @@ from .node import Node
 
 class TextNode(Node, ABC):
     @abstractmethod
-    def get_text(self) -> str:
+    def get_text(self, **kwargs) -> str:
         pass
 
     @abstractmethod
-    def set_text(self, text) -> None:
+    def set_text(self, text, **kwargs) -> None:
         pass
 
     @override

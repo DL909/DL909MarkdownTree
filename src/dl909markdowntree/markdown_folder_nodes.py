@@ -23,7 +23,7 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
     auto_correct: bool = Field(default=True)
 
     @staticmethod
-    def create_file(file_path: Path) -> None:
+    def create_file(file_path: Path, **kwargs) -> None:
         Path(file_path).mkdir(parents=True, exist_ok=True)
 
     def __init__(self, file_path: Path, **kargs):
@@ -88,7 +88,7 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
         return NumberedMarkdownTextNode(text=text, auto_correct=auto_correct)
 
     @override
-    def reload(self):
+    def reload(self, **kwargs):
         synthetic_text = self._build_synthetic_text_from_dir(Path(self.file_path))
         self.markdown_text_node = self._create_text_node(
             synthetic_text, self.auto_correct
@@ -103,7 +103,7 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
         return text
 
     @override
-    def save(self):
+    def save(self, **kwargs):
         mdf_dir = Path(self.file_path)
         if not mdf_dir.exists():
             mdf_dir.mkdir(parents=True)
@@ -169,14 +169,14 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
             zero_path.unlink()
 
     @override
-    def get_text(self) -> str:
-        return self.markdown_text_node.get_text()
+    def get_text(self, **kwargs) -> str:
+        return self.markdown_text_node.get_text(**kwargs)
 
     @override
-    def set_text(self, text) -> None:
-        self.markdown_text_node.set_text(text)
+    def set_text(self, text, **kwargs) -> None:
+        self.markdown_text_node.set_text(text, **kwargs)
 
     def recursive_find_title_node_by_name(
-        self, title_name: str
+        self, title_name: str, **kwargs
     ) -> NumberedMarkdownTitleNode | None:
-        return self.markdown_text_node.recursive_find_title_node_by_name(title_name)
+        return self.markdown_text_node.recursive_find_title_node_by_name(title_name, **kwargs)

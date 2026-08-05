@@ -2,15 +2,12 @@
 
 from pathlib import Path
 
-import pytest
-
 from dl909markdowntree import (
     FoldableMarkdownTextFileNode,
     MarkdownTextFileNode,
     Permission,
     PermissionChecker,
 )
-from dl909markdowntree.permissions import PermissionError
 
 
 def _make_node(tmp_path: Path) -> MarkdownTextFileNode:
@@ -158,11 +155,6 @@ def test_get_node_description_no_title_no_name(tmp_path: Path):
     checker = PermissionChecker()
     desc = checker._get_node_description(node)
     assert desc == f"<{type(node).__name__}>"
-
-
-def test_permission_error_is_exception():
-    with pytest.raises(PermissionError):
-        raise PermissionError("test denial")
 
 
 def test_check_permission_foldable_node_inherits_parent_permission(tmp_path: Path):

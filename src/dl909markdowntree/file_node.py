@@ -7,9 +7,9 @@ class FileNode(Node, ABC):
     file_path: pathlib.Path
 
     @abstractmethod
-    def save(self):
+    def save(self, **kwargs):
         pass
 
     @abstractmethod
-    def reload(self):
+    def reload(self, **kwargs):
         pass

@@ -115,22 +115,16 @@ def test_foldable_markdown_folder_node_fold_and_save_round_trip(fs):
         "/tmp/test.mdf/1_Intro.mdp",
         contents="## 1.1 Opening\nContent",
     )
-    node = FoldableMarkdownFolderNode(
-        file_path=Path("/tmp/test.mdf"), use_fold_states=True
-    )
-    assert node.use_fold_states
+    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
     node.markdown_text_node.children[0].fold_mode = FoldMode.SHOW_CHILD
     node.markdown_text_node.children[0].children[0].fold_mode = FoldMode.SHOW_TITLE
     node.save()
     node.reload()
     assert node.markdown_text_node.children[0].fold_mode is FoldMode.SHOW_CHILD
-    assert "Opening" in node.get_text()
-    node = FoldableMarkdownFolderNode(
-        file_path=Path("/tmp/test.mdf"), use_fold_states=True
-    )
+    assert node.get_text() == "# 1. Intro\n\n## 1.1. Opening [text folded]"
+    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
     assert node.markdown_text_node.children[0].fold_mode is FoldMode.SHOW_TITLE
-    assert "# 1. Intro" in node.get_text()
-    assert "Content" not in node.get_text()
+    assert node.get_text() == "# 1. Intro [1 child title folded]"
 
 
 def test_foldable_markdown_folder_node_fold_mode_default(fs):

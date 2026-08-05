@@ -362,3 +362,12 @@ Paragraph 2
     assert "Paragraph 2" in result
     assert "List item 1" in result
     assert "List item 2" in result
+
+
+def test_markdown_text_node_recursive_find_trailing_newline():
+    test_text_node = MarkdownTextNode(
+        text="# Title\nContent\n## Subtitle\nMore content"
+    )
+    found = test_text_node.recursive_find_title_node_by_name("## Subtitle\n")
+    assert found is not None
+    assert found.title == "Subtitle"

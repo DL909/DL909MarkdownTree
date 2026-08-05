@@ -10,7 +10,6 @@ from dl909markdowntree import (
     PermissionChecker,
 )
 from dl909markdowntree.node import Node
-from dl909markdowntree.permissions import PermissionError
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP

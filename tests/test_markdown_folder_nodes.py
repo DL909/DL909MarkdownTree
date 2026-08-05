@@ -54,7 +54,7 @@ def test_numbered_markdown_folder_node_reload_invalid_filename_raises(fs):
     fs.create_dir("/tmp/test.mdf")
     fs.create_file("/tmp/test.mdf/1_Valid.mdp", contents="## Content")
     fs.create_file("/tmp/test.mdf/invalid_name.mdp", contents="## Content")
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="Invalid .mdp filename format"):
         NumberedMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
 
 

@@ -81,7 +81,7 @@ class TestNumberedMarkdownTitleNodeAutoCorrect:
         title_node = NumberedMarkdownTitleNode(
             title="Test", level=1, number=[1], auto_correct=False
         )
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="编号标题解析失败"):
             title_node.set_text("## Title without number")
 
     def test_auto_correct_disabled_throws_error_wrong_number(self):
@@ -89,7 +89,7 @@ class TestNumberedMarkdownTitleNodeAutoCorrect:
         title_node = NumberedMarkdownTitleNode(
             title="Chapter 1", level=1, number=[1], auto_correct=False
         )
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match=r"isn't"):
             title_node.set_text("## 1.5. Wrong Number")
 
     def test_auto_correct_default_enabled(self):
@@ -146,7 +146,7 @@ class TestNumberedMarkdownTextNodeAutoCorrect:
 
     def test_auto_correct_text_node_disabled(self):
         """测试 TextNode 关闭自纠正时抛出异常"""
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="编号标题解析失败"):
             NumberedMarkdownTextNode(text="# Wrong Number", auto_correct=False)
 
     def test_auto_correct_text_node_default_enabled(self):

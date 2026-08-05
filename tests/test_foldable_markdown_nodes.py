@@ -16,9 +16,9 @@ def test_foldable_markdown_title_node():
         title="test", level=2, number=[1, 2], auto_correct=False
     )
     assert test_title_node.get_title() == "## 1.2. test"
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match=r"isn't"):
         test_title_node.set_text("test text\n### 1.2.2. test2\ntest text2")
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="过低等级的标题"):
         test_title_node.set_text("test text\n## 1.3. test2")
     test_title_node.set_text("test text\n### 1.2.1. test2\ntest text2")
     assert isinstance(test_title_node.children[0], PlainTextNode)
@@ -77,6 +77,37 @@ def test_foldable_markdown_title_node_unfold():
     assert unfolded == "## 1.1. Child\n\nGrandchild content"
 
 
+def test_foldable_markdown_title_node_recursive_up_unfold():
+    title_node = FoldableMarkdownTitleNode(title="Root", level=1, number=[1])
+    child = FoldableMarkdownTitleNode(title="Child", level=2, number=[1, 1])
+    child.set_text("Grandchild content")
+    title_node.addchild(child)
+    assert title_node.fold_mode is FoldMode.SHOW_TITLE
+    assert child.fold_mode is FoldMode.SHOW_TITLE
+    child.recursive_up_unfold()
+    assert child.fold_mode is FoldMode.SHOW_CHILD
+    assert title_node.fold_mode is FoldMode.SHOW_CHILD
+
+
+def test_foldable_markdown_title_node_recursive_up_unfold_nested_chain():
+    title_node = FoldableMarkdownTitleNode(title="Root", level=1, number=[1])
+    mid = FoldableMarkdownTitleNode(title="Mid", level=2, number=[1, 1])
+    leaf = FoldableMarkdownTitleNode(title="Leaf", level=3, number=[1, 1, 1])
+    leaf.set_text("content")
+    title_node.addchild(mid)
+    mid.addchild(leaf)
+    leaf.recursive_up_unfold()
+    assert leaf.fold_mode is FoldMode.SHOW_CHILD
+    assert mid.fold_mode is FoldMode.SHOW_CHILD
+    assert title_node.fold_mode is FoldMode.SHOW_CHILD
+
+
+def test_foldable_markdown_title_node_recursive_up_unfold_no_parent():
+    title_node = FoldableMarkdownTitleNode(title="Root", level=1, number=[1])
+    title_node.recursive_up_unfold()
+    assert title_node.fold_mode is FoldMode.SHOW_CHILD
+
+
 def test_foldable_markdown_title_node_set_load_depth():
     title_node = FoldableMarkdownTitleNode(title="Root", level=1, number=[1])
     title_node.set_text("## 1.1. Level1\n### 1.1.1. Level2\n#### 1.1.1.1. Level3")
@@ -84,6 +115,30 @@ def test_foldable_markdown_title_node_set_load_depth():
     text = title_node.get_text()
     assert "## 1.1. Level1" in text
     assert "### 1.1.1. Level2" in text
+
+
+def test_foldable_markdown_title_node_set_load_depth_zero_is_noop():
+    title_node = FoldableMarkdownTitleNode(title="Root", level=1, number=[1])
+    title_node.set_text("## 1.1. Level1\n### 1.1.1. Level2")
+    title_node.set_load_depth(0)
+    text = title_node.get_text()
+    assert text == "# 1. Root [1 child title folded]"
+    assert title_node.fold_mode is FoldMode.SHOW_TITLE
+
+
+def test_foldable_markdown_title_node_set_load_depth_negative_raises():
+    title_node = FoldableMarkdownTitleNode(title="Root", level=1, number=[1])
+    title_node.set_text("## 1.1. Level1")
+    with pytest.raises(Exception, match="无效的加载深度"):
+        title_node.set_load_depth(-1)
+
+
+def test_foldable_markdown_text_node_set_load_depth_negative_raises():
+    test_text_node = FoldableMarkdownTextNode(
+        text="# 1. Title1\n## 1.1. Subtitle1"
+    )
+    with pytest.raises(Exception, match="无效的加载深度"):
+        test_text_node.set_load_depth(-1)
 
 
 def test_foldable_markdown_text_node_recursive_find():
@@ -166,11 +221,11 @@ def test_foldable_markdown_text_file_node_reload(fs):
         contents="# 1. Title\nReloaded content\n## 1.1. New",
     )
     test_file_node.reload()
-    assert "# 1. Title" in test_file_node.get_text(
-        with_fold_info=False, full_text=False
+    assert (
+        test_file_node.get_text(with_fold_info=False, full_text=False)
+        == "# 1. Title"
     )
-    assert "Reloaded content" in test_file_node.get_text(full_text=True)
-    assert "## 1.1. New" in test_file_node.get_text(full_text=True)
+    assert test_file_node.get_text(full_text=True) == "# 1. Title\n\nReloaded content\n\n## 1.1. New"
 
 
 def test_foldable_markdown_title_node_multiple_children():
@@ -247,7 +302,7 @@ class TestFoldableMarkdownAutoCorrect:
         title_node = FoldableMarkdownTitleNode(
             title="Test", level=1, number=[1], auto_correct=False
         )
-        with pytest.raises(Exception):
+        with pytest.raises(Exception, match="编号标题解析失败"):
             title_node.set_text("## Wrong Number")
 
     def test_foldable_auto_correct_default_enabled(self):
@@ -279,3 +334,34 @@ class TestFoldableMarkdownAutoCorrect:
         assert title_node.children[1].number == [1, 2]
         text = title_node.get_text()
         assert "[2 child title folded]" in text
+
+
+def test_foldable_markdown_text_node_recursive_find_trailing_newline():
+    test_text_node = FoldableMarkdownTextNode(
+        text="# 1. Title\n## 1.1. Subtitle\nContent"
+    )
+    found = test_text_node.recursive_find_title_node_by_name("## 1.1. Subtitle\n")
+    assert found is not None
+    assert found.title == "Subtitle"
+    assert found.number == [1, 1]
+
+
+def test_foldable_markdown_title_node_within_shown_does_not_leak_folded():
+    """折叠的子标题不应在 within_shown=True 时泄露"""
+    title_node = FoldableMarkdownTitleNode(title="Root", level=1, number=[1])
+    child = FoldableMarkdownTitleNode(title="Child", level=2, number=[1, 1])
+    grandchild = FoldableMarkdownTitleNode(
+        title="Grandchild", level=3, number=[1, 1, 1]
+    )
+    child.addchild(grandchild)
+    title_node.addchild(child)
+    title_node.fold_mode = FoldMode.SHOW_CHILD
+    child.fold_mode = FoldMode.SHOW_TITLE
+    found = title_node.recursive_find_title_node_by_name(
+        "### 1.1.1. Grandchild", within_shown=True
+    )
+    assert found is None
+    found_unrestricted = title_node.recursive_find_title_node_by_name(
+        "### 1.1.1. Grandchild", within_shown=False
+    )
+    assert found_unrestricted is not None

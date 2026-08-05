@@ -27,20 +27,20 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode):
                 return False
         return True
 
-    def _get_root_level(self) -> int:
+    def _get_root_level(self, **kwargs) -> int:
         return self.level
 
-    def _should_consume_first_line(self) -> bool:
+    def _should_consume_first_line(self, **kwargs) -> bool:
         return True
 
-    def _process_first_line_if_needed(self, first_line: str) -> None:
+    def _process_first_line_if_needed(self, first_line: str, **kwargs) -> None:
         if first_line.startswith("#" * self.level + " "):
             (_, number, title) = self._parse_title_line(first_line)
             if number is not None and number != self.number:
                 raise Exception(f"标题编号不匹配：期望 {self.number}, 得到 {number}")
             self.title = title
 
-    def _parse_title_line(self, line: str) -> tuple[int, list[int] | None, str]:
+    def _parse_title_line(self, line: str, **kwargs) -> tuple[int, list[int] | None, str]:
         level: int = 0
         while level < len(line) and line[level] == "#":
             level += 1
@@ -91,7 +91,7 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode):
         number_list = [int(i) for i in number_str_list]
         return (level, number_list, title_str[index + 1 :])
 
-    def _validate_title_level(self, title_level: int) -> None:
+    def _validate_title_level(self, title_level: int, **kwargs) -> None:
         if title_level <= self.level:
             raise Exception(f"过低等级的标题：{title_level} <= {self.level}")
 
@@ -102,6 +102,7 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode):
         titles: list,
         line_index: int,
         full_text: str,
+        **kwargs,
     ) -> list[int]:
         temp = titles[level]
         if temp is None:
@@ -148,11 +149,11 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode):
         return number
 
     def _create_title_node(
-        self, level: int, number: list[int] | None, title: str
+        self, level: int, number: list[int] | None, title: str, **kwargs
     ) -> "NumberedMarkdownTitleNode":
         assert number is not None
         return NumberedMarkdownTitleNode(
-            level=level, number=number, title=title, auto_correct=self.auto_correct
+            level=level, number=number, title=title, auto_correct=self.auto_correct, **kwargs
         )
 
     def get_title(self, show_level_sign: bool = True) -> str:
@@ -174,7 +175,7 @@ class NumberedMarkdownTextNode(MarkdownTextNode):
     auto_correct: bool = Field(default=True)
 
     def recursive_find_title_node_by_name(
-        self, title_name: str
+        self, title_name: str, **kwargs
     ) -> NumberedMarkdownTitleNode | None:
         """
         recursively find title by name in this title and its children
@@ -183,21 +184,20 @@ class NumberedMarkdownTextNode(MarkdownTextNode):
         return:
             title node if found, None if failed
         """
-        if title_name[-1] == "\n":
+        if title_name and title_name[-1] == "\n":
             title_name = title_name[:-1]
-        else:
-            for child in self.children:
-                if isinstance(child, NumberedMarkdownTitleNode):
-                    if (
-                        result := child.recursive_find_title_node_by_name(title_name)
-                    ) is not None:
-                        return result
+        for child in self.children:
+            if isinstance(child, NumberedMarkdownTitleNode):
+                if (
+                    result := child.recursive_find_title_node_by_name(title_name, **kwargs)
+                ) is not None:
+                    return result
         return None
 
-    def add_text(self, text: str) -> None:
-        self.set_text(self.get_text() + "\n" + text)
+    def add_text(self, text: str, **kwargs) -> None:
+        self.set_text(self.get_text(**kwargs) + "\n" + text, **kwargs)
 
-    def _parse_title_line(self, line: str) -> tuple[int, list[int] | None, str]:
+    def _parse_title_line(self, line: str, **kwargs) -> tuple[int, list[int] | None, str]:
         level: int = 0
         while level < len(line) and line[level] == "#":
             level += 1
@@ -237,6 +237,7 @@ class NumberedMarkdownTextNode(MarkdownTextNode):
         titles: list,
         line_index: int,
         full_text: str,
+        **kwargs,
     ) -> list[int]:
         temp = titles[level]
         if temp is None:
@@ -284,29 +285,29 @@ class NumberedMarkdownTextNode(MarkdownTextNode):
         return number
 
     def _create_title_node(
-        self, level: int, number: list[int] | None, title: str
+        self, level: int, number: list[int] | None, title: str, **kwargs
     ) -> NumberedMarkdownTitleNode:
         assert number is not None
         return NumberedMarkdownTitleNode(
             level=level, number=number, title=title, auto_correct=self.auto_correct
         )
 
-    def parse_markdown(self, text) -> None:
-        self._parse_markdown_core(text)
+    def parse_markdown(self, text, **kwargs) -> None:
+        self._parse_markdown_core(text, **kwargs)
 
 
 class NumberedMarkdownTextFileNode(MarkdownTextFileNode):
     markdown_text_node: NumberedMarkdownTextNode = Field()  # type: ignore - children type is intentionally narrowed from base class
 
     def recursive_find_title_node_by_name(
-        self, title_name
+        self, title_name, **kwargs
     ) -> NumberedMarkdownTitleNode | None:
         return self.markdown_text_node.recursive_find_title_node_by_name(
-            title_name=title_name
+            title_name=title_name, **kwargs
         )
 
     @staticmethod
-    def create_file(file_path: Path) -> None:
+    def create_file(file_path: Path, **kwargs) -> None:
         file_path = Path(file_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text("", encoding="utf-8")
