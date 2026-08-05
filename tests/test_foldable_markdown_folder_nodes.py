@@ -47,7 +47,7 @@ def test_foldable_markdown_folder_node_get_text_folded(fs):
     assert "# 1. Intro" in text
     assert "# 2. Body" in text
     assert "[2 child title folded]" in text
-    assert "[text folded]"
+    assert "[1 child title folded]" in text
 
 
 def test_foldable_markdown_folder_node_unfold(fs):

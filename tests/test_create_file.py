@@ -262,3 +262,89 @@ def test_attributed_markdown_folder_node_init_reads_existing(fs):
     )
     assert node.attribute.author == "folder_author"
     assert "Chapter" in node.get_text()
+
+
+# ─── create_file 边界：父目录缺失 ─────────────────────────────────────
+
+
+def test_markdown_text_file_node_create_file_missing_parent_dir(fs):
+    path = Path("/tmp/nested/one/two/doc.md")
+    MarkdownTextFileNode.create_file(path)
+    assert path.parent.exists()
+    assert path.exists()
+    assert path.read_text(encoding="utf-8") == ""
+
+
+def test_numbered_markdown_text_file_node_create_file_missing_parent_dir(fs):
+    path = Path("/tmp/nested/one/two/num.md")
+    NumberedMarkdownTextFileNode.create_file(path)
+    assert path.parent.exists()
+    assert path.read_text(encoding="utf-8") == ""
+
+
+def test_attributed_markdown_text_file_node_create_file_missing_parent_dir(fs):
+    path = Path("/tmp/nested/one/two/attr.md")
+    AttributedMarkdownTextFileNode.create_file(path, attribute_type=_SimpleAttr)
+    assert path.parent.exists()
+    assert "author: default" in path.read_text(encoding="utf-8")
+
+
+def test_foldable_markdown_folder_node_create_file_missing_parent_dir(fs):
+    path = Path("/tmp/nested/one/two/new_folder")
+    FoldableMarkdownFolderNode.create_file(path)
+    assert path.parent.exists()
+    assert path.exists()
+    assert path.is_dir()
+
+
+def test_attributed_markdown_folder_node_create_file_missing_parent_dir(fs):
+    path = Path("/tmp/nested/one/two/new_attr_folder")
+    AttributedMarkdownFolderNode.create_file(path, attribute_type=_SimpleAttr)
+    assert path.parent.exists()
+    assert path.is_dir()
+    assert (path / "FrontMatter.yaml").exists()
+
+
+# ─── create_file 边界：目标已存在 ─────────────────────────────────────
+
+
+def test_markdown_text_file_node_create_file_existing_truncates(fs):
+    path = Path("/tmp/with_old_content.md")
+    fs.create_file(path, contents="# Old\ncontent")
+    MarkdownTextFileNode.create_file(path)
+    assert path.read_text(encoding="utf-8") == ""
+
+
+def test_foldable_markdown_text_file_node_create_file_existing_truncates(fs):
+    path = Path("/tmp/with_old_content_fold.md")
+    fs.create_file(path, contents="# Old\ncontent")
+    FoldableMarkdownTextFileNode.create_file(path)
+    assert path.read_text(encoding="utf-8") == ""
+
+
+def test_attributed_markdown_text_file_node_create_file_existing_overwrites(fs):
+    path = Path("/tmp/attr_with_old_content.md")
+    fs.create_file(path, contents="---\nauthor: old\nversion: 0.0.1\n---\n# T\nbody")
+    AttributedMarkdownTextFileNode.create_file(path, attribute_type=_SimpleAttr)
+    content = path.read_text(encoding="utf-8")
+    assert "author: old" not in content
+    assert "author: default" in content
+    assert "version: 1.0.0" in content
+
+
+def test_foldable_markdown_folder_node_create_file_existing_preserves(fs):
+    path = Path("/tmp/existing_dir_with_content")
+    fs.create_dir(path)
+    fs.create_file(path / "1_Chapter.mdp", contents="## 1.1 Section")
+    FoldableMarkdownFolderNode.create_file(path)
+    assert path.is_dir()
+    assert (path / "1_Chapter.mdp").exists()
+
+
+def test_attributed_markdown_folder_node_create_file_existing_overwrites_yaml(fs):
+    path = Path("/tmp/attr_folder_with_old_yaml")
+    fs.create_dir(path)
+    fs.create_file(path / "FrontMatter.yaml", contents="author: old\n")
+    AttributedMarkdownFolderNode.create_file(path, attribute_type=_SimpleAttr)
+    assert "author: old" not in (path / "FrontMatter.yaml").read_text(encoding="utf-8")
+    assert "author: default" in (path / "FrontMatter.yaml").read_text(encoding="utf-8")

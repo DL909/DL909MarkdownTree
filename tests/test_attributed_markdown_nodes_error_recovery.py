@@ -1,11 +1,15 @@
 """test_attributed_markdown_nodes_error_recovery.py - 测试属性化 Markdown 文件节点解析失败时的内容恢复功能"""
 
+from pathlib import Path
+
 import pytest
 from pydantic import BaseModel
-from pathlib import Path
 
 from dl909markdowntree.attributed_markdown_nodes import (
     AttributedMarkdownTextFileNode,
+)
+from dl909markdowntree.foldable_markdown_nodes import (
+    FoldableMarkdownTitleNode,
 )
 
 
@@ -41,8 +45,10 @@ Content""",
 Content
 ## 999.2 Wrong Number"""
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         file_node.set_text(invalid_text)
+
+    assert "isn't" in str(exc_info.value)
 
     # 验证内容已恢复
     assert file_node.get_text() == original_text
@@ -71,8 +77,10 @@ Content""",
 Content
 ## 999.1 Wrong Number"""
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         file_node.set_text(invalid_text)
+
+    assert "isn't" in str(exc_info.value)
 
     # 验证内容已恢复
     assert file_node.get_text() == original_text
@@ -94,9 +102,11 @@ Content""",
     )
     original_text = file_node.get_text()
 
-    # 尝试设置空标题（编号标题解析会抛出不同的错误）
-    with pytest.raises(Exception):
+    # 尝试设置空标题（应该失败）
+    with pytest.raises(Exception) as exc_info:
         file_node.set_text("#")
+
+    assert "无内容的标题" in str(exc_info.value)
 
     # 验证内容已恢复
     assert file_node.get_text() == original_text
@@ -129,8 +139,10 @@ Content
 Subcontent
 ## 999.2 Invalid Number"""
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         file_node.set_text(invalid_text)
+
+    assert "isn't" in str(exc_info.value)
 
     # 验证内容已恢复
     assert file_node.get_text() == original_text
@@ -157,10 +169,9 @@ Content""",
     file_node.set_text("## 1.1 Child Title\nChild content")
 
     assert len(file_node.markdown_text_node.children) == 1
-    assert isinstance(
-        file_node.markdown_text_node.children[0],
-        type(file_node.markdown_text_node.children[0]),
-    )
+    child = file_node.markdown_text_node.children[0]
+    assert isinstance(child, FoldableMarkdownTitleNode)
+    assert child.title == "Child Title"
 
 
 def test_attributed_file_node_markdown_text_node_direct_error_recovery(fs):
@@ -180,8 +191,10 @@ Content""",
     original_text = file_node.markdown_text_node.get_text()
 
     # 直接调用 markdown_text_node 的 set_text
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         file_node.markdown_text_node.set_text("#")
+
+    assert "无内容的标题" in str(exc_info.value)
 
     # 验证内容已恢复
     assert file_node.markdown_text_node.get_text() == original_text

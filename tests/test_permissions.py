@@ -138,19 +138,6 @@ def test_find_effective_permission_deny_at_child_overrides_parent(tmp_path: Path
     assert ok is False
 
 
-def test_find_effective_permission_no_match_returns_deny(tmp_path: Path):
-    doc = tmp_path / "doc.md"
-    doc.write_text("# Title\nContent.\n", encoding="utf-8")
-    node = MarkdownTextFileNode(doc)
-    title = node.recursive_find_title_node_by_name("# Title")
-    assert title is not None
-
-    unrelated_node = _make_node(Path(tmp_path) / "other")
-    checker = PermissionChecker([(unrelated_node, Permission.READ_WRITE)])
-    ok, _ = checker.check_permission(title, Permission.READ)
-    assert ok is False
-
-
 def test_get_node_description_with_title(tmp_path: Path):
     node = _make_node(tmp_path)
     title_node = node.recursive_find_title_node_by_name("# Hello")

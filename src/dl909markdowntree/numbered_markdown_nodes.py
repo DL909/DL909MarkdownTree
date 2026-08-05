@@ -42,8 +42,10 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode):
 
     def _parse_title_line(self, line: str) -> tuple[int, list[int] | None, str]:
         level: int = 0
-        while line[level] == "#":
+        while level < len(line) and line[level] == "#":
             level += 1
+        if level >= len(line):
+            raise Exception(f"无内容的标题：{line}")
         if line[level] != " ":
             raise Exception(f"标题格式错误：{line}")
         index = level + 1
@@ -197,8 +199,10 @@ class NumberedMarkdownTextNode(MarkdownTextNode):
 
     def _parse_title_line(self, line: str) -> tuple[int, list[int] | None, str]:
         level: int = 0
-        while line[level] == "#":
+        while level < len(line) and line[level] == "#":
             level += 1
+        if level >= len(line):
+            raise Exception(f"无内容的标题：{line}")
         if line[level] != " ":
             raise Exception(f"标题格式错误：{line}")
         index = level + 1

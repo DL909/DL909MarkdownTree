@@ -26,7 +26,7 @@ class PlainTextNode(TextNode):
 
 
 class TextFileNode(FileNode, TextNode):
-    textNode: TextNode = Field(default_factory=TextNode)
+    textNode: TextNode = Field(default_factory=PlainTextNode)
 
     @override
     def save(self):

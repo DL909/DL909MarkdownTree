@@ -11,7 +11,6 @@ from dl909markdowntree.foldable_markdown_nodes import (
     FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
 )
-from dl909markdowntree.markdown_nodes import MarkdownTitleNode
 
 
 class _ChapterMeta(BaseModel):
@@ -37,7 +36,7 @@ def test_attributed_markdown_folder_node_init(fs):
     assert node.attribute.status == "completed"
     assert node.attribute.word_count == 5000
     assert isinstance(node.markdown_text_node, FoldableMarkdownTextNode)
-    assert isinstance(node.markdown_text_node.children[0], MarkdownTitleNode)
+    assert isinstance(node.markdown_text_node.children[0], FoldableMarkdownTitleNode)
     assert node.markdown_text_node.children[0].title == "Chapter"
 
 

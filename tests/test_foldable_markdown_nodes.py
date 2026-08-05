@@ -151,7 +151,8 @@ def test_foldable_markdown_text_file_node_save(fs):
     with open("/var/data/foldable.md", "r", encoding="utf-8") as f:
         content = f.read()
     assert "# 1. Title" in content
-    assert "[text folded]" in content or "Modified content" in content
+    assert "Modified content" in content
+    assert "## 1.1. New section" in content
 
 
 def test_foldable_markdown_text_file_node_reload(fs):

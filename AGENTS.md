@@ -14,7 +14,7 @@ uv run pyright src/                       # 类型检查（pyright 已在 dev �
 
 - 无 CI、无 pre-commit、无 opencode.json，本地手工验证。
 - `pyright src/` 当前有 8 个既有错误（langchain toolkit 的 `args_schema` 覆写、`AttributedMarkdownFolderNode.create_file` 签名等），属已知存量问题。**不要对 tests/ 跑 pyright**（约 196 个误报）。改代码时应避免新增错误，但不必消除这些存量。
-- 测试用 pyfakefs 的 `fs` fixture，全部为内存文件系统，无真实磁盘 I/O，无需任何外部服务。
+- 测试大部分用 pyfakefs 的 `fs` fixture（内存文件系统，无真实磁盘 I/O）；但 `tests/test_permissions.py` 与 `tests/extra/` 使用真实 `tmp_path` 写盘。整体无需任何外部服务。
 
 ## 架构
 

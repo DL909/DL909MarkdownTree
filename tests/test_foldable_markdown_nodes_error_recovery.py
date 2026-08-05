@@ -3,6 +3,7 @@
 import pytest
 
 from dl909markdowntree.foldable_markdown_nodes import (
+    FoldMode,
     FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
 )
@@ -17,8 +18,10 @@ def test_foldable_title_node_set_text_invalid_level_recovers_content():
     original_children_count = len(title_node.children)
 
     # 尝试设置包含低级别标题的文本（应该失败）
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         title_node.set_text("# 1. Lower level title")
+
+    assert "过低等级的标题" in str(exc_info.value)
 
     # 验证内容已恢复
     assert title_node.get_text() == original_text
@@ -38,8 +41,10 @@ def test_foldable_title_node_set_text_invalid_number_recovers_content():
 Content
 ## 999.2 Wrong Number"""
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         title_node.set_text(invalid_text)
+
+    assert "isn't" in str(exc_info.value)
 
     # 验证内容已恢复
     assert title_node.get_text() == original_text
@@ -55,8 +60,10 @@ def test_foldable_text_node_set_text_invalid_number_recovers_content():
 Content
 ## 999.1 Wrong Number"""
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         text_node.set_text(invalid_text)
+
+    assert "isn't" in str(exc_info.value)
 
     # 验证内容已恢复
     assert text_node.get_text() == original_text
@@ -69,9 +76,11 @@ def test_foldable_title_node_set_text_empty_title_recovers_content():
     )
     original_text = title_node.get_text()
 
-    # 尝试设置空标题（编号标题解析会抛出不同的错误）
-    with pytest.raises(Exception):
+    # 尝试设置空标题（应该失败）
+    with pytest.raises(Exception) as exc_info:
         title_node.set_text("#")
+
+    assert "无内容的标题" in str(exc_info.value)
 
     # 验证内容已恢复
     assert title_node.get_text() == original_text
@@ -89,8 +98,10 @@ def test_foldable_text_node_set_text_mid_parse_failure_recovers_content():
 Some content
 ## 999.2 Invalid Number"""
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         text_node.set_text(invalid_text)
+
+    assert "isn't" in str(exc_info.value)
 
     # 验证内容已恢复
     assert text_node.get_text() == original_text
@@ -110,21 +121,26 @@ def test_foldable_title_node_set_text_success_no_recovery_needed():
     assert title_node.children[0].title == "Child Title"
 
 
-def test_foldable_title_node_set_text_with_fold_mode_recovers_content():
-    """测试可折叠标题节点在折叠模式下解析失败时恢复内容和折叠状态"""
+def test_foldable_title_node_set_text_failure_preserves_fold_state():
+    """测试可折叠标题节点解析失败时内容和折叠状态均不受影响"""
     title_node = FoldableMarkdownTitleNode(
         title="Root", level=1, number=[1], text="Original content"
     )
     # 先设置一个合法的子标题
     title_node.set_text("## 1.1 Child\nContent")
+    # 改变折叠状态为非默认值
+    title_node.fold_mode = FoldMode.SHOW_CHILD
+    title_node.children[0].fold_mode = FoldMode.SHOW_CHILD
     original_text = title_node.get_text()
 
-    # 改变折叠模式
-    title_node.children[0].fold_mode = title_node.children[0].fold_mode.SHOW_TITLE
-
     # 尝试设置非法文本
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as exc_info:
         title_node.set_text("#")
 
-    # 验证内容已恢复
+    assert "无内容的标题" in str(exc_info.value)
+
+    # 验证内容与折叠状态均已恢复/保持
     assert title_node.get_text() == original_text
+    assert title_node.fold_mode is FoldMode.SHOW_CHILD
+    assert title_node.children[0].fold_mode is FoldMode.SHOW_CHILD
+    assert title_node.children[0].title == "Child"
