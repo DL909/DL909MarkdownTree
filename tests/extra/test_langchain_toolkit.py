@@ -16,20 +16,19 @@ from dl909markdowntree import (
 from dl909markdowntree.extra.langchain import MarkdownTreeToolkit
 
 
-def _make_node(tmp_path: Path) -> MarkdownTextFileNode:
-    doc = tmp_path / "doc.md"
-    doc.write_text("# Hello\n\nWorld content.\n", encoding="utf-8")
-    return MarkdownTextFileNode(doc)
+def _make_node(fs) -> MarkdownTextFileNode:
+    fs.create_file("/tmp/doc.md", contents="# Hello\n\nWorld content.\n")
+    return MarkdownTextFileNode(Path("/tmp/doc.md"))
 
 
-def test_toolkit_creation(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_creation(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     assert toolkit is not None
 
 
-def test_toolkit_get_tools_returns_six(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_get_tools_returns_six(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     assert len(tools) == 6
@@ -37,10 +36,10 @@ def test_toolkit_get_tools_returns_six(tmp_path: Path):
     assert tool_names == {"read", "replace", "append", "unfold", "replace_lines", "rename_title"}
 
 
-def test_toolkit_read_tool_run(tmp_path: Path):
+def test_toolkit_read_tool_run(fs):
     from langchain_core.tools import BaseTool
 
-    node = _make_node(tmp_path)
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     read_tool = next(t for t in tools if t.name == "read")
@@ -51,8 +50,8 @@ def test_toolkit_read_tool_run(tmp_path: Path):
     assert "World content." in result
 
 
-def test_toolkit_tool_schemas(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_tool_schemas(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
 
@@ -66,8 +65,8 @@ def test_toolkit_tool_schemas(tmp_path: Path):
     assert "replace_text" in schema.model_fields
 
 
-def test_toolkit_permission_denied(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_permission_denied(fs):
+    node = _make_node(fs)
     title_node = node.recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
@@ -82,8 +81,8 @@ def test_toolkit_permission_denied(tmp_path: Path):
     assert "权限不足" in result
 
 
-def test_toolkit_read_tool_target_not_found(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_read_tool_target_not_found(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     read_tool = next(t for t in tools if t.name == "read")
@@ -92,8 +91,8 @@ def test_toolkit_read_tool_target_not_found(tmp_path: Path):
     assert "read failed" in result
 
 
-def test_toolkit_replace_tool_run(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_replace_tool_run(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     replace_tool = next(t for t in tools if t.name == "replace")
@@ -104,8 +103,8 @@ def test_toolkit_replace_tool_run(tmp_path: Path):
     assert "# Hello" not in node.get_text()
 
 
-def test_toolkit_replace_tool_target_not_found(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_replace_tool_target_not_found(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     replace_tool = next(t for t in tools if t.name == "replace")
@@ -114,8 +113,8 @@ def test_toolkit_replace_tool_target_not_found(tmp_path: Path):
     assert "replace failed" in result
 
 
-def test_toolkit_append_tool_run(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_append_tool_run(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     append_tool = next(t for t in tools if t.name == "append")
@@ -125,8 +124,8 @@ def test_toolkit_append_tool_run(tmp_path: Path):
     assert "Appended." in node.get_text()
 
 
-def test_toolkit_append_tool_target_not_found(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_append_tool_target_not_found(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     append_tool = next(t for t in tools if t.name == "append")
@@ -135,10 +134,9 @@ def test_toolkit_append_tool_target_not_found(tmp_path: Path):
     assert "append failed" in result
 
 
-def test_toolkit_unfold_tool_run(tmp_path: Path):
-    doc = tmp_path / "fold.md"
-    doc.write_text("# 1. Parent\n## 1.1. Child\nChild content.\n", encoding="utf-8")
-    node = FoldableMarkdownTextFileNode(doc)
+def test_toolkit_unfold_tool_run(fs):
+    fs.create_file("/tmp/fold.md", contents="# 1. Parent\n## 1.1. Child\nChild content.\n")
+    node = FoldableMarkdownTextFileNode(Path("/tmp/fold.md"))
     parent_title = node.recursive_find_title_node_by_name("# 1. Parent")
     child_title = node.recursive_find_title_node_by_name("## 1.1. Child")
     assert child_title is not None
@@ -154,8 +152,8 @@ def test_toolkit_unfold_tool_run(tmp_path: Path):
     assert "Child content." in result
 
 
-def test_toolkit_unfold_tool_target_not_found(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_unfold_tool_target_not_found(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     unfold_tool = next(t for t in tools if t.name == "unfold")
@@ -164,8 +162,8 @@ def test_toolkit_unfold_tool_target_not_found(tmp_path: Path):
     assert "unfold failed" in result
 
 
-def test_toolkit_replace_lines_tool_exact_match(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_replace_lines_tool_exact_match(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     rl_tool = next(t for t in tools if t.name == "replace_lines")
@@ -179,8 +177,8 @@ def test_toolkit_replace_lines_tool_exact_match(tmp_path: Path):
     assert "Replaced content." in node.get_text()
 
 
-def test_toolkit_replace_lines_tool_fuzzy_match(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_replace_lines_tool_fuzzy_match(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     rl_tool = next(t for t in tools if t.name == "replace_lines")
@@ -194,10 +192,9 @@ def test_toolkit_replace_lines_tool_fuzzy_match(tmp_path: Path):
     assert "Replaced content." in node.get_text()
 
 
-def test_toolkit_replace_lines_tool_multiple_matches(tmp_path: Path):
-    doc = tmp_path / "dup.md"
-    doc.write_text("# Hello\n\nSame.\nSame.\n", encoding="utf-8")
-    node = MarkdownTextFileNode(doc)
+def test_toolkit_replace_lines_tool_multiple_matches(fs):
+    fs.create_file("/tmp/dup.md", contents="# Hello\n\nSame.\nSame.\n")
+    node = MarkdownTextFileNode(Path("/tmp/dup.md"))
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     rl_tool = next(t for t in tools if t.name == "replace_lines")
@@ -210,8 +207,8 @@ def test_toolkit_replace_lines_tool_multiple_matches(tmp_path: Path):
     assert "matches found" in result
 
 
-def test_toolkit_replace_lines_tool_no_match(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_replace_lines_tool_no_match(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     rl_tool = next(t for t in tools if t.name == "replace_lines")
@@ -224,8 +221,8 @@ def test_toolkit_replace_lines_tool_no_match(tmp_path: Path):
     assert "no match found" in result
 
 
-def test_toolkit_replace_lines_tool_empty_old_lines(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_replace_lines_tool_empty_old_lines(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     rl_tool = next(t for t in tools if t.name == "replace_lines")
@@ -238,8 +235,8 @@ def test_toolkit_replace_lines_tool_empty_old_lines(tmp_path: Path):
     assert "matches found" in result
 
 
-def test_toolkit_rename_title_tool_run(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_rename_title_tool_run(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     rename_tool = next(t for t in tools if t.name == "rename_title")
@@ -250,8 +247,8 @@ def test_toolkit_rename_title_tool_run(tmp_path: Path):
     assert "# Hello" not in node.get_text()
 
 
-def test_toolkit_rename_title_tool_target_not_found(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_rename_title_tool_target_not_found(fs):
+    node = _make_node(fs)
     toolkit = MarkdownTreeToolkit(node)
     tools = toolkit.get_tools()
     rename_tool = next(t for t in tools if t.name == "rename_title")
@@ -260,8 +257,8 @@ def test_toolkit_rename_title_tool_target_not_found(tmp_path: Path):
     assert "rename_title failed" in result
 
 
-def test_toolkit_append_permission_denied(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_append_permission_denied(fs):
+    node = _make_node(fs)
     title_node = node.recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
@@ -276,10 +273,9 @@ def test_toolkit_append_permission_denied(tmp_path: Path):
     assert "权限不足" in result
 
 
-def test_toolkit_unfold_permission_denied(tmp_path: Path):
-    doc = tmp_path / "fold.md"
-    doc.write_text("# 1. Parent\n## 1.1. Child\nChild content.\n", encoding="utf-8")
-    node = FoldableMarkdownTextFileNode(doc)
+def test_toolkit_unfold_permission_denied(fs):
+    fs.create_file("/tmp/fold.md", contents="# 1. Parent\n## 1.1. Child\nChild content.\n")
+    node = FoldableMarkdownTextFileNode(Path("/tmp/fold.md"))
     child_title = node.recursive_find_title_node_by_name("## 1.1. Child")
     assert child_title is not None
     child_title.fold_mode = FoldMode.SHOW_TITLE
@@ -295,8 +291,8 @@ def test_toolkit_unfold_permission_denied(tmp_path: Path):
     assert "权限不足" in result
 
 
-def test_toolkit_replace_lines_permission_denied(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_replace_lines_permission_denied(fs):
+    node = _make_node(fs)
     title_node = node.recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
@@ -315,8 +311,8 @@ def test_toolkit_replace_lines_permission_denied(tmp_path: Path):
     assert "权限不足" in result
 
 
-def test_toolkit_rename_title_permission_denied(tmp_path: Path):
-    node = _make_node(tmp_path)
+def test_toolkit_rename_title_permission_denied(fs):
+    node = _make_node(fs)
     title_node = node.recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
