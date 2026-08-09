@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   test:
@@ -12,7 +12,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
+      - name: astral-sh/setup-uv
+        uses: astral-sh/setup-uv@v9.0.0
       - run: uv sync
       - run: uv run pytest -q
       - run: uv run ruff check src/
@@ -28,10 +30,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
+      - name: astral-sh/setup-uv
+        uses: astral-sh/setup-uv@v9.0.0
       - run: uv sync
-      - run: uv pip install build
-      - run: uv run python -m build
+      - run: uv build
       - uses: pypa/gh-action-pypi-publish@release/v1
       - name: Check if prerelease
         id: prerelease
@@ -58,5 +61,6 @@ jobs:
           PYEOF
       - uses: softprops/action-gh-release@v1
         with:
+          files: dist/*
           body_path: release_body.md
           prerelease: ${{ steps.prerelease.outputs.prerelease }}
