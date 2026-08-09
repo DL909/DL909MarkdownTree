@@ -196,6 +196,9 @@ class MarkdownTextFileNode(FileNode, TextNode):
     def set_text(self, text: str, **kwargs) -> None:
         self.markdown_text_node.set_text(text, **kwargs)
 
+    def get_markdown_text_node(self) -> MarkdownTextNode:
+        return self.markdown_text_node
+
     def save_to_file(self, file_path: Path, **kwargs) -> None:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(self.get_text(**kwargs))

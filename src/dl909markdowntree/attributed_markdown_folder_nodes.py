@@ -29,6 +29,9 @@ class AttributedMarkdownFolderNode(FoldableMarkdownFolderNode, Generic[T]):
         yaml_path = file_path / "FrontMatter.yaml"
         yaml_path.write_text(to_yaml_str(attribute), encoding="utf-8")
 
+    def get_markdown_text_node(self) -> FoldableMarkdownTextNode:
+        return self.markdown_text_node
+
     def __init__(self, file_path: Path, attribute_type: type[T], **kargs):
         file_path = Path(file_path)
         if not file_path.exists():

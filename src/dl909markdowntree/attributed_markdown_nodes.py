@@ -34,6 +34,9 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
             with_fold_info=with_fold_info, full_text=full_text, **kwargs
         )
 
+    def get_markdown_text_node(self) -> FoldableMarkdownTextNode:
+        return self.markdown_text_node
+
     @override
     def set_text(self, text, **kwargs) -> None:
         self.markdown_text_node.set_text(text, **kwargs)

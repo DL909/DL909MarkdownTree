@@ -20,6 +20,9 @@ class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
     def create_file(file_path: Path, **kwargs) -> None:
         NumberedMarkdownFolderNode.create_file(file_path, **kwargs)
 
+    def get_markdown_text_node(self) -> FoldableMarkdownTextNode:
+        return self.markdown_text_node
+
     def _create_text_node(
         self, text: str, auto_correct: bool = True
     ) -> FoldableMarkdownTextNode:

@@ -228,6 +228,9 @@ class FoldableMarkdownTextFileNode(NumberedMarkdownTextFileNode):
             with_fold_info=with_fold_info, full_text=full_text, **kwargs
         )
 
+    def get_markdown_text_node(self) -> FoldableMarkdownTextNode:
+        return self.markdown_text_node
+
     @staticmethod
     def create_file(file_path: Path, **kwargs) -> None:
         file_path = Path(file_path)

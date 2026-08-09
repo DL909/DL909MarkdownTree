@@ -26,6 +26,9 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
     def create_file(file_path: Path, **kwargs) -> None:
         Path(file_path).mkdir(parents=True, exist_ok=True)
 
+    def get_markdown_text_node(self) -> NumberedMarkdownTextNode:
+        return self.markdown_text_node
+
     def __init__(self, file_path: Path, **kargs):
         file_path = Path(file_path)
         auto_correct = kargs.pop("auto_correct", True)

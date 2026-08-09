@@ -322,6 +322,9 @@ class NumberedMarkdownTextFileNode(MarkdownTextFileNode):
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text("", encoding="utf-8")
 
+    def get_markdown_text_node(self) -> NumberedMarkdownTextNode:
+        return self.markdown_text_node
+
     def __init__(self, file_path: Path, **kargs):
         file_path = Path(file_path)
         auto_correct = kargs.pop("auto_correct", True)
