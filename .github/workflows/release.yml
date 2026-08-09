@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: uv sync
+      - run: uv run pytest -q
+      - run: uv run ruff check src/
+      - run: uv run pyright src/
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: uv sync
+      - run: uv pip install build
+      - run: uv run python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Check if prerelease
+        id: prerelease
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" =~ -(alpha|beta|rc)\. ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Extract release notes
+        run: |
+          python << 'PYEOF'
+          import re
+          with open("CHANGELOG.md") as f:
+              content = f.read()
+          match = re.search(r'## \[([^\]]+)\].*?\n(.*?)(?=\n## \[|\Z)', content, re.DOTALL)
+          if match:
+              with open("release_body.md", "w") as out:
+                  out.write(match.group(0).strip())
+          else:
+              with open("release_body.md", "w") as out:
+                  out.write("Release ${{ github.ref_name }}")
+          PYEOF
+      - uses: softprops/action-gh-release@v1
+        with:
+          body_path: release_body.md
+          prerelease: ${{ steps.prerelease.outputs.prerelease }}
