@@ -179,4 +179,6 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
     def recursive_find_title_node_by_name(
         self, title_name: str, **kwargs
     ) -> NumberedMarkdownTitleNode | None:
-        return self.markdown_text_node.recursive_find_title_node_by_name(title_name, **kwargs)
+        return self.markdown_text_node.recursive_find_title_node_by_name(
+            title_name, **kwargs
+        )

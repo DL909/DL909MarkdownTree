@@ -50,7 +50,8 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode):
                     for child in self.children:
                         if isinstance(child, FoldableMarkdownTitleNode):
                             text += (
-                                child.get_text(with_fold_info=with_fold_info, **kwargs) + "\n" * 2
+                                child.get_text(with_fold_info=with_fold_info, **kwargs)
+                                + "\n" * 2
                             )
                         else:
                             text += child.get_text(**kwargs) + "\n" * 2
@@ -100,7 +101,11 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode):
     ) -> "FoldableMarkdownTitleNode":
         assert number is not None
         return FoldableMarkdownTitleNode(
-            level=level, number=number, title=title, auto_correct=self.auto_correct, **kwargs
+            level=level,
+            number=number,
+            title=title,
+            auto_correct=self.auto_correct,
+            **kwargs,
         )
 
     @override
@@ -173,7 +178,11 @@ class FoldableMarkdownTextNode(NumberedMarkdownTextNode):
     ) -> FoldableMarkdownTitleNode:
         assert number is not None
         return FoldableMarkdownTitleNode(
-            level=level, number=number, title=title, auto_correct=self.auto_correct, **kwargs
+            level=level,
+            number=number,
+            title=title,
+            auto_correct=self.auto_correct,
+            **kwargs,
         )
 
     def set_load_depth(self, depth: int, **kwargs) -> None:
@@ -182,12 +191,16 @@ class FoldableMarkdownTextNode(NumberedMarkdownTextNode):
                 child.set_load_depth(depth, **kwargs)
 
     @override
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False, **kwargs) -> str:
+    def get_text(
+        self, with_fold_info: bool = True, full_text: bool = False, **kwargs
+    ) -> str:
         text = ""
         for child in self.children:
             if isinstance(child, FoldableMarkdownTitleNode):
                 text += (
-                    child.get_text(with_fold_info=with_fold_info, full_text=full_text, **kwargs)
+                    child.get_text(
+                        with_fold_info=with_fold_info, full_text=full_text, **kwargs
+                    )
                     + "\n"
                 )
             else:
@@ -208,7 +221,9 @@ class FoldableMarkdownTextFileNode(NumberedMarkdownTextFileNode):
         )
 
     @override
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False, **kwargs) -> str:
+    def get_text(
+        self, with_fold_info: bool = True, full_text: bool = False, **kwargs
+    ) -> str:
         return self.markdown_text_node.get_text(
             with_fold_info=with_fold_info, full_text=full_text, **kwargs
         )

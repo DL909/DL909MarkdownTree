@@ -84,7 +84,9 @@ class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
                 fold_states_path.unlink()
 
     @override
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False, **kwargs) -> str:
+    def get_text(
+        self, with_fold_info: bool = True, full_text: bool = False, **kwargs
+    ) -> str:
         return self.markdown_text_node.get_text(
             with_fold_info=with_fold_info, full_text=full_text, **kwargs
         )

@@ -40,7 +40,9 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode):
                 raise Exception(f"标题编号不匹配：期望 {self.number}, 得到 {number}")
             self.title = title
 
-    def _parse_title_line(self, line: str, **kwargs) -> tuple[int, list[int] | None, str]:
+    def _parse_title_line(
+        self, line: str, **kwargs
+    ) -> tuple[int, list[int] | None, str]:
         level: int = 0
         while level < len(line) and line[level] == "#":
             level += 1
@@ -153,7 +155,11 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode):
     ) -> "NumberedMarkdownTitleNode":
         assert number is not None
         return NumberedMarkdownTitleNode(
-            level=level, number=number, title=title, auto_correct=self.auto_correct, **kwargs
+            level=level,
+            number=number,
+            title=title,
+            auto_correct=self.auto_correct,
+            **kwargs,
         )
 
     def get_title(self, show_level_sign: bool = True) -> str:
@@ -189,7 +195,9 @@ class NumberedMarkdownTextNode(MarkdownTextNode):
         for child in self.children:
             if isinstance(child, NumberedMarkdownTitleNode):
                 if (
-                    result := child.recursive_find_title_node_by_name(title_name, **kwargs)
+                    result := child.recursive_find_title_node_by_name(
+                        title_name, **kwargs
+                    )
                 ) is not None:
                     return result
         return None
@@ -197,7 +205,9 @@ class NumberedMarkdownTextNode(MarkdownTextNode):
     def add_text(self, text: str, **kwargs) -> None:
         self.set_text(self.get_text(**kwargs) + "\n" + text, **kwargs)
 
-    def _parse_title_line(self, line: str, **kwargs) -> tuple[int, list[int] | None, str]:
+    def _parse_title_line(
+        self, line: str, **kwargs
+    ) -> tuple[int, list[int] | None, str]:
         level: int = 0
         while level < len(line) and line[level] == "#":
             level += 1
@@ -318,7 +328,9 @@ class NumberedMarkdownTextFileNode(MarkdownTextFileNode):
         if not file_path.exists():
             self.create_file(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
-            markdown_text_node = NumberedMarkdownTextNode(f.read(), auto_correct=auto_correct)
+            markdown_text_node = NumberedMarkdownTextNode(
+                f.read(), auto_correct=auto_correct
+            )
         if kargs.get("markdown_text_node"):
             markdown_text_node = kargs.pop("markdown_text_node")
         super().__init__(

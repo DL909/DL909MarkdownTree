@@ -193,7 +193,7 @@ class MarkdownTextFileNode(FileNode, TextNode):
         return self.markdown_text_node.get_text(**kwargs)
 
     @override
-    def set_text(self, text, **kwargs) -> None:
+    def set_text(self, text: str, **kwargs) -> None:
         self.markdown_text_node.set_text(text, **kwargs)
 
     def save_to_file(self, file_path: Path, **kwargs) -> None:
