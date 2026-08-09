@@ -135,7 +135,9 @@ class MarkdownTextNode(TextNode, _MarkdownParserCore):
         for child in self.children:
             if isinstance(child, MarkdownTitleNode):
                 if (
-                    result := child.recursive_find_title_node_by_name(title_name, **kwargs)
+                    result := child.recursive_find_title_node_by_name(
+                        title_name, **kwargs
+                    )
                 ) is not None:
                     return result
         return None
@@ -179,7 +181,9 @@ class MarkdownTextNode(TextNode, _MarkdownParserCore):
 class MarkdownTextFileNode(FileNode, TextNode):
     markdown_text_node: MarkdownTextNode
 
-    def recursive_find_title_node_by_name(self, title_name, **kwargs) -> MarkdownTitleNode | None:
+    def recursive_find_title_node_by_name(
+        self, title_name, **kwargs
+    ) -> MarkdownTitleNode | None:
         return self.markdown_text_node.recursive_find_title_node_by_name(
             title_name=title_name, **kwargs
         )

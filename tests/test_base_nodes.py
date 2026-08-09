@@ -4,7 +4,7 @@ import pathlib
 
 import pytest
 
-from dl909markdowntree import FileNode, Node, PlainTextNode, TextFileNode, TextNode
+from dl909markdowntree import FileNode, Node, PlainTextNode, PlainTextFileNode, TextNode
 
 
 # ─── Node：树结构操作 ──────────────────────────────────────────────────
@@ -87,14 +87,14 @@ def test_plain_text_node_str_returns_text():
 
 def test_text_file_node_init_reads_file(fs):
     fs.create_file("/tmp/plain.txt", contents="initial content")
-    node = TextFileNode(file_path=pathlib.Path("/tmp/plain.txt"))
+    node = PlainTextFileNode(file_path=pathlib.Path("/tmp/plain.txt"))
     assert node.get_text() == "initial content"
     assert isinstance(node.textNode, PlainTextNode)
 
 
 def test_text_file_node_save_writes_disk(fs):
     fs.create_file("/tmp/plain.txt", contents="old")
-    node = TextFileNode(file_path=pathlib.Path("/tmp/plain.txt"))
+    node = PlainTextFileNode(file_path=pathlib.Path("/tmp/plain.txt"))
     node.set_text("new content")
     node.save()
     assert pathlib.Path("/tmp/plain.txt").read_text(encoding="utf-8") == "new content"
@@ -102,7 +102,7 @@ def test_text_file_node_save_writes_disk(fs):
 
 def test_text_file_node_reload_rerereads_disk(fs):
     fs.create_file("/tmp/plain.txt", contents="first")
-    node = TextFileNode(file_path=pathlib.Path("/tmp/plain.txt"))
+    node = PlainTextFileNode(file_path=pathlib.Path("/tmp/plain.txt"))
     pathlib.Path("/tmp/plain.txt").write_text("second", encoding="utf-8")
     node.reload()
     assert node.get_text() == "second"
@@ -110,4 +110,4 @@ def test_text_file_node_reload_rerereads_disk(fs):
 
 def test_text_file_node_init_missing_file_raises(fs):
     with pytest.raises(FileNotFoundError):
-        TextFileNode(file_path=pathlib.Path("/tmp/not_there.txt"))
+        PlainTextFileNode(file_path=pathlib.Path("/tmp/not_there.txt"))

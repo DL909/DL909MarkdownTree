@@ -27,7 +27,9 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
         )
 
     @override
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False, **kwargs) -> str:
+    def get_text(
+        self, with_fold_info: bool = True, full_text: bool = False, **kwargs
+    ) -> str:
         return self.markdown_text_node.get_text(
             with_fold_info=with_fold_info, full_text=full_text, **kwargs
         )
@@ -66,7 +68,9 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
         assert content[i : i + 4] == "---\n"
         yaml_data = content[4 : i - 1]
         markdown_content = content[i + 4 :]
-        self.markdown_text_node = FoldableMarkdownTextNode(text=markdown_content, **kwargs)
+        self.markdown_text_node = FoldableMarkdownTextNode(
+            text=markdown_content, **kwargs
+        )
         self.attribute = parse_yaml_raw_as(type(self.attribute), yaml_data)
 
     def __init__(self, file_path: Path, attribute_type: type[T], **kargs):
@@ -85,7 +89,11 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
         markdown_text_node = FoldableMarkdownTextNode(
             text=markdown_content, auto_correct=auto_correct
         )
-        attribute = explicit_attribute if explicit_attribute is not None else parse_yaml_raw_as(attribute_type, yaml_data)
+        attribute = (
+            explicit_attribute
+            if explicit_attribute is not None
+            else parse_yaml_raw_as(attribute_type, yaml_data)
+        )
         if kargs.get("markdown_text_node"):
             markdown_text_node = kargs.pop("markdown_text_node")
 

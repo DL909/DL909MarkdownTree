@@ -25,7 +25,7 @@ class PlainTextNode(TextNode):
         self.text = text
 
 
-class TextFileNode(FileNode, TextNode):
+class PlainTextFileNode(FileNode, TextNode):
     textNode: TextNode = Field(default_factory=PlainTextNode)
 
     @override

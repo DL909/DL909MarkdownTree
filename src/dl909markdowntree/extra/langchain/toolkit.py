@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from langchain_core.tools import BaseTool
+from langchain_core.tools import ArgsSchema, BaseTool
 from pydantic import BaseModel, Field
 
 from dl909markdowntree import (
+    Node,
     AttributedMarkdownTextFileProtocol,
     Permission,
     PermissionChecker,
@@ -49,9 +50,13 @@ class _RenameTitleArgs(BaseModel):
 class _MarkdownReadTool(BaseTool):
     name: str = "read"
     description: str = "Read the full document or a specific title section."
-    args_schema: type[BaseModel] | None = _ReadArgs
+    args_schema: ArgsSchema | None = _ReadArgs
 
-    def __init__(self, node: AttributedMarkdownTextFileProtocol, checker: PermissionChecker | None = None):
+    def __init__(
+        self,
+        node: AttributedMarkdownTextFileProtocol,
+        checker: PermissionChecker | None = None,
+    ):
         super().__init__()
         self._node = node
         self._checker = checker
@@ -76,9 +81,13 @@ class _MarkdownReadTool(BaseTool):
 class _MarkdownReplaceTool(BaseTool):
     name: str = "replace"
     description: str = "Replace the content of a specific title."
-    args_schema: type[BaseModel] | None = _ReplaceArgs
+    args_schema: ArgsSchema | None = _ReplaceArgs
 
-    def __init__(self, node: AttributedMarkdownTextFileProtocol, checker: PermissionChecker | None = None):
+    def __init__(
+        self,
+        node: AttributedMarkdownTextFileProtocol,
+        checker: PermissionChecker | None = None,
+    ):
         super().__init__()
         self._node = node
         self._checker = checker
@@ -105,9 +114,13 @@ class _MarkdownReplaceTool(BaseTool):
 class _MarkdownAppendTool(BaseTool):
     name: str = "append"
     description: str = "Append text to a specific title section."
-    args_schema: type[BaseModel] | None = _AppendArgs
+    args_schema: ArgsSchema | None = _AppendArgs
 
-    def __init__(self, node: AttributedMarkdownTextFileProtocol, checker: PermissionChecker | None = None):
+    def __init__(
+        self,
+        node: AttributedMarkdownTextFileProtocol,
+        checker: PermissionChecker | None = None,
+    ):
         super().__init__()
         self._node = node
         self._checker = checker
@@ -134,9 +147,13 @@ class _MarkdownAppendTool(BaseTool):
 class _MarkdownUnfoldTool(BaseTool):
     name: str = "unfold"
     description: str = "Unfold a foldable title and return its full content."
-    args_schema: type[BaseModel] | None = _UnfoldArgs
+    args_schema: ArgsSchema | None = _UnfoldArgs
 
-    def __init__(self, node: AttributedMarkdownTextFileProtocol, checker: PermissionChecker | None = None):
+    def __init__(
+        self,
+        node: AttributedMarkdownTextFileProtocol,
+        checker: PermissionChecker | None = None,
+    ):
         super().__init__()
         self._node = node
         self._checker = checker
@@ -161,10 +178,16 @@ class _MarkdownUnfoldTool(BaseTool):
 
 class _MarkdownReplaceLinesTool(BaseTool):
     name: str = "replace_lines"
-    description: str = "Replace specific lines within a title section (fuzzy match supported)."
-    args_schema: type[BaseModel] | None = _ReplaceLinesArgs
+    description: str = (
+        "Replace specific lines within a title section (fuzzy match supported)."
+    )
+    args_schema: ArgsSchema | None = _ReplaceLinesArgs
 
-    def __init__(self, node: AttributedMarkdownTextFileProtocol, checker: PermissionChecker | None = None):
+    def __init__(
+        self,
+        node: AttributedMarkdownTextFileProtocol,
+        checker: PermissionChecker | None = None,
+    ):
         super().__init__()
         self._node = node
         self._checker = checker
@@ -214,7 +237,9 @@ class _MarkdownReplaceLinesTool(BaseTool):
                 except Exception as e:
                     return f"replace_lines failed: {e}"
             else:
-                return "replace_lines failed: no match found (best similarity below 80%)"
+                return (
+                    "replace_lines failed: no match found (best similarity below 80%)"
+                )
         elif match_count > 1:
             return f"replace_lines failed: {match_count} matches found, provide more context"
 
@@ -228,9 +253,13 @@ class _MarkdownReplaceLinesTool(BaseTool):
 class _MarkdownRenameTitleTool(BaseTool):
     name: str = "rename_title"
     description: str = "Rename a markdown title (keep level sign and number)."
-    args_schema: type[BaseModel] | None = _RenameTitleArgs
+    args_schema: ArgsSchema | None = _RenameTitleArgs
 
-    def __init__(self, node: AttributedMarkdownTextFileProtocol, checker: PermissionChecker | None = None):
+    def __init__(
+        self,
+        node: AttributedMarkdownTextFileProtocol,
+        checker: PermissionChecker | None = None,
+    ):
         super().__init__()
         self._node = node
         self._checker = checker
@@ -260,10 +289,10 @@ class MarkdownTreeToolkit:
     def __init__(
         self,
         markdown_node: AttributedMarkdownTextFileProtocol,
-        permissions: Sequence[tuple[object, Permission]] | None = None,
+        permissions: Sequence[tuple[Node | None, Permission]] | None = None,
     ):
         self._node = markdown_node
-        self._checker = PermissionChecker(permissions) if permissions else None
+        self._checker = PermissionChecker(permissions)
 
     def get_tools(self) -> list[BaseTool]:
         return [

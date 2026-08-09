@@ -1,7 +1,7 @@
 from .node import Node
 from .text_node import TextNode
 from .file_node import FileNode
-from .plain_text_nodes import PlainTextNode, TextFileNode
+from .plain_text_nodes import PlainTextNode, PlainTextFileNode
 
 from .markdown_nodes import MarkdownTitleNode, MarkdownTextNode, MarkdownTextFileNode
 from .numbered_markdown_nodes import (
@@ -34,7 +34,7 @@ __all__ = [
     "TextNode",
     "FileNode",
     "PlainTextNode",
-    "TextFileNode",
+    "PlainTextFileNode",
     "MarkdownTitleNode",
     "MarkdownTextNode",
     "MarkdownTextFileNode",

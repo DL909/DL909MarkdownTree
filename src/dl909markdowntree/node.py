@@ -4,12 +4,12 @@ from typing import Self
 from pydantic import BaseModel, Field
 
 
-class MyMeta(type(BaseModel), type(ABC)):
+class _MyMeta(type(BaseModel), type(ABC)):
     pass
 
 
 # 确保 Node 使用正确的元类
-class Node(BaseModel, metaclass=MyMeta):
+class Node(BaseModel, metaclass=_MyMeta):
     parent: Node | None = None
     children: list[Node] = Field(default_factory=list)
     deprecated: bool = False  # 使用较消极的更新策略。一个节点被注销时，只需要将deprecated属性设为真，之后父节点更新时将移除该节点。
