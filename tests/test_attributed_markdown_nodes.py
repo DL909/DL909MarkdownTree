@@ -284,10 +284,11 @@ def test_attributed_markdown_text_file_node_assertion_invalid_format(fs):
     content = """This is not valid YAML frontmatter
 # 1. Title"""
     fs.create_file("/tmp/invalid.md", contents=content)
-    with pytest.raises(AssertionError):
+    with pytest.raises(Exception) as e:
         AttributedMarkdownTextFileNode[_TestAttribute](
             file_path=Path("/tmp/invalid.md"), attribute_type=_TestAttribute
         )
+    assert "FrontMatter" in str(e)
 
 
 def test_attributed_markdown_text_file_node_multiple_save_reload_cycles(fs):
