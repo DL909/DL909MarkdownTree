@@ -74,9 +74,10 @@ from dl909markdowntree import Permission, PermissionChecker
 
 # 基础：读写标准 Markdown（文件不存在时自动创建空文件）
 node = MarkdownTextFileNode(Path("doc.md"))
-node.set_text("# Hello\n\nSome text.")
+# set_text() 设置节点存储的markdown文本。注意连续的换行将在解析式被去除。
+node.set_text("# Hello\n\n\nSome text.")
 # get_text() 返回不带末尾换行的纯 Markdown 文本
-print(node.get_text())
+print(node.get_text()) # "# Hello\n\nSome text."
 node.save()
 
 # 带编号（auto_correct 默认 True，自动纠正编号；传 False 需手动保证编号正确）
