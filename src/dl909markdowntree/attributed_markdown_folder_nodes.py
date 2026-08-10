@@ -34,22 +34,24 @@ class AttributedMarkdownFolderNode(FoldableMarkdownFolderNode, Generic[T]):
 
     def __init__(self, file_path: Path, attribute_type: type[T], **kargs):
         file_path = Path(file_path)
+        explicit_attribute = kargs.pop("attribute", None)
         if not file_path.exists():
-            attribute = kargs.pop("attribute", None)
-            self.create_file(file_path, attribute_type, attribute)
-            if attribute is None:
+            self.create_file(file_path, attribute_type, explicit_attribute)
+            if explicit_attribute is None:
                 yaml_path = file_path / "FrontMatter.yaml"
                 yaml_data = yaml_path.read_text(encoding="utf-8")
-                attribute = parse_yaml_raw_as(attribute_type, yaml_data)
+                explicit_attribute = parse_yaml_raw_as(attribute_type, yaml_data)
             super().__init__(
                 file_path=file_path,
-                attribute=attribute,
+                attribute=explicit_attribute,
                 **kargs,
             )
             return
 
         yaml_path = Path(file_path) / "FrontMatter.yaml"
-        if yaml_path.exists():
+        if explicit_attribute is not None:
+            attribute = explicit_attribute
+        elif yaml_path.exists():
             yaml_data = yaml_path.read_text(encoding="utf-8")
             attribute = parse_yaml_raw_as(attribute_type, yaml_data)
         else:
