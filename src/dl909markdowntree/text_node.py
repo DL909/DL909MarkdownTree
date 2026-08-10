@@ -10,11 +10,11 @@ class TextNode(Node, ABC):
     """
 
     @abstractmethod
-    def get_text(self, **kwargs) -> str:
+    def get_text(self) -> str:
         pass
 
     @abstractmethod
-    def set_text(self, text, **kwargs) -> None:
+    def set_text(self, text) -> None:
         pass
 
     @override

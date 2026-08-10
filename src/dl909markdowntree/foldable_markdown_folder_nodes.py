@@ -17,8 +17,8 @@ class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
     markdown_text_node: FoldableMarkdownTextNode  # type: ignore
 
     @staticmethod
-    def create_file(file_path: Path, **kwargs) -> None:
-        NumberedMarkdownFolderNode.create_file(file_path, **kwargs)
+    def create_file(file_path: Path) -> None:
+        NumberedMarkdownFolderNode.create_file(file_path)
 
     def get_markdown_text_node(self) -> FoldableMarkdownTextNode:
         return self.markdown_text_node
@@ -65,8 +65,8 @@ class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
         _walk(self.markdown_text_node)
 
     @override
-    def reload(self, **kwargs):
-        super().reload(**kwargs)
+    def reload(self):
+        super().reload()
         fold_states_path = Path(self.file_path) / "fold_state.json"
         if fold_states_path.exists():
             raw = fold_states_path.read_text(encoding="utf-8")
@@ -75,8 +75,8 @@ class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
                 self._apply_fold_states(states)
 
     @override
-    def save(self, **kwargs):
-        super().save(**kwargs)
+    def save(self):
+        super().save()
         states = self._collect_fold_states()
         if states:
             fold_states_path = Path(self.file_path) / "fold_state.json"
@@ -87,17 +87,15 @@ class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
                 fold_states_path.unlink()
 
     @override
-    def get_text(
-        self, with_fold_info: bool = True, full_text: bool = False, **kwargs
-    ) -> str:
+    def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
         return self.markdown_text_node.get_text(
-            with_fold_info=with_fold_info, full_text=full_text, **kwargs
+            with_fold_info=with_fold_info, full_text=full_text
         )
 
     @override
     def recursive_find_title_node_by_name(
-        self, title_name: str, within_shown: bool = False, **kwargs
+        self, title_name: str, within_shown: bool = False
     ) -> FoldableMarkdownTitleNode | None:
         return self.markdown_text_node.recursive_find_title_node_by_name(
-            title_name, within_shown=within_shown, **kwargs
+            title_name, within_shown=within_shown
         )

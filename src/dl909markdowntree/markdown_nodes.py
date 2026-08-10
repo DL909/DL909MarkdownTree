@@ -48,36 +48,36 @@ class MarkdownTitleNode(TextNode, _MarkdownParserCore):
         if text is not None:
             self.set_text(text)
 
-    def set_text(self, text: str, **kwargs) -> None:
-        _MarkdownParserCore.set_text(self, text, **kwargs)
+    def set_text(self, text: str) -> None:
+        _MarkdownParserCore.set_text(self, text)
 
-    def _get_root_level(self, **kwargs) -> int:
+    def _get_root_level(self) -> int:
         return self.level
 
-    def _get_root_title(self, **kwargs) -> str | None:
+    def _get_root_title(self) -> str | None:
         return self.title
 
-    def _should_consume_first_line(self, **kwargs) -> bool:
+    def _should_consume_first_line(self) -> bool:
         return True
 
-    def _process_first_line_if_needed(self, first_line: str, **kwargs) -> None:
+    def _process_first_line_if_needed(self, first_line: str) -> None:
         if first_line.startswith("#" * self.level + " "):
             self.title = first_line[self.level + 1 :]
 
-    def _validate_title_level(self, title_level: int, **kwargs) -> None:
+    def _validate_title_level(self, title_level: int) -> None:
         if title_level <= self.level:
             raise Exception(f"过低等级的标题：{title_level} <= {self.level}")
 
     def _create_title_node(
-        self, level: int, number: list[int] | None, title: str, **kwargs
+        self, level: int, number: list[int] | None, title: str
     ) -> "MarkdownTitleNode":
         return MarkdownTitleNode(title=title, level=level)  # type: ignore[reportAbstractUsage]
 
     @override
-    def get_text(self, **kwargs) -> str:
+    def get_text(self) -> str:
         text = self.get_title() + "\n" * 2
         for child in self.children:
-            text += child.get_text(**kwargs) + "\n" * 2
+            text += child.get_text() + "\n" * 2
         text = text[:-2]
         return text
 
@@ -105,8 +105,8 @@ class MarkdownTitleNode(TextNode, _MarkdownParserCore):
                         return result
         return None
 
-    def add_text(self, text: str, **kwargs) -> None:
-        self.set_text(self.get_text(**kwargs) + "\n" + text, **kwargs)
+    def add_text(self, text: str) -> None:
+        self.set_text(self.get_text() + "\n" + text)
 
 
 class MarkdownTextNode(TextNode, _MarkdownParserCore):
@@ -121,7 +121,7 @@ class MarkdownTextNode(TextNode, _MarkdownParserCore):
         return True
 
     def recursive_find_title_node_by_name(
-        self, title_name: str, **kwargs
+        self, title_name: str
     ) -> MarkdownTitleNode | None:
         """
         recursively find title by name in this title and its children
@@ -135,86 +135,82 @@ class MarkdownTextNode(TextNode, _MarkdownParserCore):
         for child in self.children:
             if isinstance(child, MarkdownTitleNode):
                 if (
-                    result := child.recursive_find_title_node_by_name(
-                        title_name, **kwargs
-                    )
+                    result := child.recursive_find_title_node_by_name(title_name)
                 ) is not None:
                     return result
         return None
 
     @override
-    def get_text(self, **kwargs) -> str:
+    def get_text(self) -> str:
         text = ""
         for child in self.children:
-            text += child.get_text(**kwargs) + "\n" * 2
+            text += child.get_text() + "\n" * 2
         if text != "":
             text = text[:-2]
         return text
 
     @override
-    def set_text(self, text, **kwargs) -> None:
-        _MarkdownParserCore.set_text(self, text, **kwargs)
+    def set_text(self, text) -> None:
+        _MarkdownParserCore.set_text(self, text)
 
     def __init__(self, text: str, **kargs):
         super().__init__(**kargs)
         self.parse_markdown(text)
 
-    def _get_root_level(self, **kwargs) -> int:
+    def _get_root_level(self) -> int:
         return 0
 
-    def _should_consume_first_line(self, **kwargs) -> bool:
+    def _should_consume_first_line(self) -> bool:
         return False
 
-    def _validate_title_level(self, title_level: int, **kwargs) -> None:
+    def _validate_title_level(self, title_level: int) -> None:
         if title_level < 1:
             raise Exception(f"无效的标题级别：{title_level}")
 
     def _create_title_node(
-        self, level: int, number: list[int] | None, title: str, **kwargs
+        self, level: int, number: list[int] | None, title: str
     ) -> MarkdownTitleNode:
         return MarkdownTitleNode(title=title, level=level)
 
-    def parse_markdown(self, text: str, **kwargs) -> None:
-        self._parse_markdown_core(text, **kwargs)
+    def parse_markdown(self, text: str) -> None:
+        self._parse_markdown_core(text)
 
 
 class MarkdownTextFileNode(FileNode, TextNode):
     markdown_text_node: MarkdownTextNode
 
-    def recursive_find_title_node_by_name(
-        self, title_name, **kwargs
-    ) -> MarkdownTitleNode | None:
+    def recursive_find_title_node_by_name(self, title_name) -> MarkdownTitleNode | None:
         return self.markdown_text_node.recursive_find_title_node_by_name(
-            title_name=title_name, **kwargs
+            title_name=title_name
         )
 
     @override
-    def get_text(self, **kwargs) -> str:
-        return self.markdown_text_node.get_text(**kwargs)
+    def get_text(self) -> str:
+        return self.markdown_text_node.get_text()
 
     @override
-    def set_text(self, text: str, **kwargs) -> None:
-        self.markdown_text_node.set_text(text, **kwargs)
+    def set_text(self, text: str) -> None:
+        self.markdown_text_node.set_text(text)
 
     def get_markdown_text_node(self) -> MarkdownTextNode:
         return self.markdown_text_node
 
-    def save_to_file(self, file_path: Path, **kwargs) -> None:
+    def save_to_file(self, file_path: Path) -> None:
         with open(file_path, "w", encoding="utf-8") as f:
-            f.write(self.get_text(**kwargs))
+            f.write(self.get_text())
 
     @override
-    def save(self, **kwargs):
-        self.save_to_file(file_path=self.file_path, **kwargs)
+    def save(self):
+        self.save_to_file(file_path=self.file_path)
 
     @staticmethod
-    def create_file(file_path: Path, **kwargs) -> None:
+    def create_file(file_path: Path) -> None:
         file_path = Path(file_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text("", encoding="utf-8")
 
     @override
-    def reload(self, **kwargs):
+    def reload(self):
         with open(self.file_path, "r", encoding="utf-8") as f:
             self.markdown_text_node = MarkdownTextNode(f.read())
 

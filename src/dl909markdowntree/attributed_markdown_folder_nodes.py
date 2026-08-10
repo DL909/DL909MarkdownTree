@@ -20,7 +20,7 @@ class AttributedMarkdownFolderNode(FoldableMarkdownFolderNode, Generic[T]):
 
     @staticmethod
     def create_file(
-        file_path: Path, attribute_type: type[T], attribute: T | None = None, **kwargs
+        file_path: Path, attribute_type: type[T], attribute: T | None = None
     ) -> None:
         file_path = Path(file_path)
         file_path.mkdir(parents=True, exist_ok=True)
@@ -64,15 +64,15 @@ class AttributedMarkdownFolderNode(FoldableMarkdownFolderNode, Generic[T]):
         )
 
     @override
-    def reload(self, **kwargs):
+    def reload(self):
         yaml_path = Path(self.file_path) / "FrontMatter.yaml"
         if yaml_path.exists():
             yaml_data = yaml_path.read_text(encoding="utf-8")
             self.attribute = parse_yaml_raw_as(type(self.attribute), yaml_data)
-        super().reload(**kwargs)
+        super().reload()
 
     @override
-    def save(self, **kwargs):
-        super().save(**kwargs)
+    def save(self):
+        super().save()
         yaml_path = Path(self.file_path) / "FrontMatter.yaml"
         yaml_path.write_text(to_yaml_str(self.attribute), encoding="utf-8")
