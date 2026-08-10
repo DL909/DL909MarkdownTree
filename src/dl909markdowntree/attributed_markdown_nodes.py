@@ -62,15 +62,22 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
         content = f"---\n{to_yaml_str(attribute)}\n---\n"
         file_path.write_text(content, encoding="utf-8")
 
+    @staticmethod
+    def _split_frontmatter(content: str) -> tuple[str, str]:
+        """将 ``---\n<yaml>\n---\n<markdown>`` 拆分为 (yaml_data, markdown_content)"""
+        if not content.startswith("---\n"):
+            raise ValueError("文件缺少 FrontMatter 起始标记 '---'")
+        i = content.find("\n---\n", 4)
+        if i == -1:
+            raise ValueError("文件缺少 FrontMatter 结束标记 '---'")
+        i += 1
+        return content[4 : i - 1], content[i + 4 :]
+
     @override
     def reload(self, **kwargs):
         with open(self.file_path, "r", encoding="utf-8") as f:
             content = f.read()
-        assert content.startswith("---\n")
-        i = content.find("---", 4)
-        assert content[i : i + 4] == "---\n"
-        yaml_data = content[4 : i - 1]
-        markdown_content = content[i + 4 :]
+        yaml_data, markdown_content = self._split_frontmatter(content)
         self.markdown_text_node = FoldableMarkdownTextNode(
             text=markdown_content, **kwargs
         )
@@ -83,11 +90,7 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
             self.create_file(file_path, attribute_type, explicit_attribute)
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
-        assert content.startswith("---\n")
-        i = content.find("\n---\n", 4) + 1
-        assert content[i : i + 4] == "---\n"
-        yaml_data = content[4 : i - 1]
-        markdown_content = content[i + 4 :]
+        yaml_data, markdown_content = self._split_frontmatter(content)
         auto_correct = kargs.pop("auto_correct", True)
         markdown_text_node = FoldableMarkdownTextNode(
             text=markdown_content, auto_correct=auto_correct
