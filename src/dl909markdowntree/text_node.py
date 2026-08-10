@@ -5,6 +5,10 @@ from .node import Node
 
 
 class TextNode(Node, ABC):
+    """
+    一个文本节点是可以被转化为字符串和设置其存储的字符串的节点。
+    """
+
     @abstractmethod
     def get_text(self, **kwargs) -> str:
         pass
