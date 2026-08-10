@@ -318,17 +318,17 @@ class NumberedMarkdownTextFileNode(MarkdownTextFileNode):
     def get_markdown_text_node(self) -> NumberedMarkdownTextNode:
         return self.markdown_text_node
 
-    def __init__(self, file_path: Path, **kargs):
+    def __init__(self, file_path: Path, **kwargs):
         file_path = Path(file_path)
-        auto_correct = kargs.pop("auto_correct", True)
+        auto_correct = kwargs.pop("auto_correct", True)
         if not file_path.exists():
             self.create_file(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
             markdown_text_node = NumberedMarkdownTextNode(
                 f.read(), auto_correct=auto_correct
             )
-        if kargs.get("markdown_text_node"):
-            markdown_text_node = kargs.pop("markdown_text_node")
+        if kwargs.get("markdown_text_node"):
+            markdown_text_node = kwargs.pop("markdown_text_node")
         super().__init__(
-            file_path=file_path, markdown_text_node=markdown_text_node, **kargs
+            file_path=file_path, markdown_text_node=markdown_text_node, **kwargs
         )

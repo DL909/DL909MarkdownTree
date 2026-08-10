@@ -43,8 +43,8 @@ class MarkdownTitleNode(TextNode, _MarkdownParserCore):
                 number += 1
         return number
 
-    def __init__(self, title: str, level: int, text: str | None = None, **kargs):
-        super().__init__(level=level, title=title, **kargs)
+    def __init__(self, title: str, level: int, text: str | None = None, **kwargs):
+        super().__init__(level=level, title=title, **kwargs)
         if text is not None:
             self.set_text(text)
 
@@ -153,8 +153,8 @@ class MarkdownTextNode(TextNode, _MarkdownParserCore):
     def set_text(self, text) -> None:
         _MarkdownParserCore.set_text(self, text)
 
-    def __init__(self, text: str, **kargs):
-        super().__init__(**kargs)
+    def __init__(self, text: str, **kwargs):
+        super().__init__(**kwargs)
         self.parse_markdown(text)
 
     def _get_root_level(self) -> int:
@@ -214,16 +214,16 @@ class MarkdownTextFileNode(FileNode, TextNode):
         with open(self.file_path, "r", encoding="utf-8") as f:
             self.markdown_text_node = MarkdownTextNode(f.read())
 
-    def __init__(self, file_path: Path, **kargs):
+    def __init__(self, file_path: Path, **kwargs):
         file_path = Path(file_path)
         if not file_path.exists():
             self.create_file(file_path)
         with open(file_path, "r", encoding="utf-8") as f:
             markdown_text_node = MarkdownTextNode(f.read())
-        if kargs.get("markdown_text_node"):
-            markdown_text_node = kargs.pop("markdown_text_node")
+        if kwargs.get("markdown_text_node"):
+            markdown_text_node = kwargs.pop("markdown_text_node")
         super().__init__(
-            file_path=file_path, markdown_text_node=markdown_text_node, **kargs
+            file_path=file_path, markdown_text_node=markdown_text_node, **kwargs
         )
 
 

@@ -32,9 +32,9 @@ class AttributedMarkdownFolderNode(FoldableMarkdownFolderNode, Generic[T]):
     def get_markdown_text_node(self) -> FoldableMarkdownTextNode:
         return self.markdown_text_node
 
-    def __init__(self, file_path: Path, attribute_type: type[T], **kargs):
+    def __init__(self, file_path: Path, attribute_type: type[T], **kwargs):
         file_path = Path(file_path)
-        explicit_attribute = kargs.pop("attribute", None)
+        explicit_attribute = kwargs.pop("attribute", None)
         if not file_path.exists():
             self.create_file(file_path, attribute_type, explicit_attribute)
             if explicit_attribute is None:
@@ -44,7 +44,7 @@ class AttributedMarkdownFolderNode(FoldableMarkdownFolderNode, Generic[T]):
             super().__init__(
                 file_path=file_path,
                 attribute=explicit_attribute,
-                **kargs,
+                **kwargs,
             )
             return
 
@@ -60,7 +60,7 @@ class AttributedMarkdownFolderNode(FoldableMarkdownFolderNode, Generic[T]):
         super().__init__(
             file_path=file_path,
             attribute=attribute,
-            **kargs,
+            **kwargs,
         )
 
     @override

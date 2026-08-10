@@ -79,15 +79,15 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
         self.markdown_text_node = FoldableMarkdownTextNode(text=markdown_content)
         self.attribute = parse_yaml_raw_as(type(self.attribute), yaml_data)
 
-    def __init__(self, file_path: Path, attribute_type: type[T], **kargs):
+    def __init__(self, file_path: Path, attribute_type: type[T], **kwargs):
         file_path = Path(file_path)
-        explicit_attribute = kargs.pop("attribute", None)
+        explicit_attribute = kwargs.pop("attribute", None)
         if not file_path.exists():
             self.create_file(file_path, attribute_type, explicit_attribute)
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
         yaml_data, markdown_content = self._split_frontmatter(content)
-        auto_correct = kargs.pop("auto_correct", True)
+        auto_correct = kwargs.pop("auto_correct", True)
         markdown_text_node = FoldableMarkdownTextNode(
             text=markdown_content, auto_correct=auto_correct
         )
@@ -96,12 +96,12 @@ class AttributedMarkdownTextFileNode(FileNode, TextNode, Generic[T]):
             if explicit_attribute is not None
             else parse_yaml_raw_as(attribute_type, yaml_data)
         )
-        if kargs.get("markdown_text_node"):
-            markdown_text_node = kargs.pop("markdown_text_node")
+        if kwargs.get("markdown_text_node"):
+            markdown_text_node = kwargs.pop("markdown_text_node")
 
         super().__init__(
             file_path=file_path,
             markdown_text_node=markdown_text_node,
             attribute=attribute,
-            **kargs,
+            **kwargs,
         )

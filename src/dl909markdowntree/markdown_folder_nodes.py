@@ -29,13 +29,13 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
     def get_markdown_text_node(self) -> NumberedMarkdownTextNode:
         return self.markdown_text_node
 
-    def __init__(self, file_path: Path, **kargs):
+    def __init__(self, file_path: Path, **kwargs):
         file_path = Path(file_path)
-        auto_correct = kargs.pop("auto_correct", True)
+        auto_correct = kwargs.pop("auto_correct", True)
         if not file_path.exists():
             self.create_file(file_path)
-        if kargs.get("markdown_text_node"):
-            markdown_text_node = kargs.pop("markdown_text_node")
+        if kwargs.get("markdown_text_node"):
+            markdown_text_node = kwargs.pop("markdown_text_node")
         else:
             mdf_dir = Path(file_path)
             if mdf_dir.is_dir():
@@ -47,7 +47,7 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
             file_path=file_path,
             markdown_text_node=markdown_text_node,
             auto_correct=auto_correct,
-            **kargs,
+            **kwargs,
         )
 
     @staticmethod
