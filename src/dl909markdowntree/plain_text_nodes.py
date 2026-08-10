@@ -1,6 +1,5 @@
-from typing import override
-
 import pathlib
+from typing import override
 
 from pydantic import Field
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from abc import ABC
 from typing import Self
+
 from pydantic import BaseModel, Field
 
 

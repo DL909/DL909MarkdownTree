@@ -62,7 +62,6 @@ class _MarkdownParserCore:
         MarkdownTitleNode: 提取标题文本
         MarkdownTextNode: 无操作
         """
-        pass
 
     def _is_code_block_boundary(self, line: str) -> bool:
         """检测行是否为代码块边界（```）"""
@@ -205,9 +204,7 @@ class _MarkdownParserCore:
         """
         if cached_text != "":
             if clear_cache:
-                cached_text = (
-                    cached_text[:-1] if cached_text.endswith("\n") else cached_text
-                )
+                cached_text = cached_text.removesuffix("\n")
             last_title.addchild(PlainTextNode(cached_text))
             return ""
         return cached_text

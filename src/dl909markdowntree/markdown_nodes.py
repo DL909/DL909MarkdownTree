@@ -4,9 +4,9 @@ from typing import Self, override
 from pydantic import Field
 
 from .file_node import FileNode
+from .markdown_parser_core import _MarkdownParserCore
 from .plain_text_nodes import PlainTextNode
 from .text_node import TextNode
-from .markdown_parser_core import _MarkdownParserCore
 
 
 class MarkdownTitleNode(TextNode, _MarkdownParserCore):

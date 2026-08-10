@@ -1,13 +1,12 @@
+from pathlib import Path
 from typing import Self
 
 from pydantic import Field
 
-from pathlib import Path
-
 from .markdown_nodes import (
+    MarkdownTextFileNode,
     MarkdownTextNode,
     MarkdownTitleNode,
-    MarkdownTextFileNode,
 )
 from .plain_text_nodes import PlainTextNode
 
@@ -190,11 +189,12 @@ class NumberedMarkdownTextNode(MarkdownTextNode):
         if title_name and title_name[-1] == "\n":
             title_name = title_name[:-1]
         for child in self.children:
-            if isinstance(child, NumberedMarkdownTitleNode):
-                if (
-                    result := child.recursive_find_title_node_by_name(title_name)
-                ) is not None:
-                    return result
+            if (
+                isinstance(child, NumberedMarkdownTitleNode)
+                and (result := child.recursive_find_title_node_by_name(title_name))
+                is not None
+            ):
+                return result
         return None
 
     def add_text(self, text: str) -> None:

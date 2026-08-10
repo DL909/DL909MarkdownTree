@@ -1,20 +1,18 @@
 """attributed_markdown_folder_nodes.py - 属性化 Markdown 文件夹节点"""
 
 from pathlib import Path
-from typing import override, TypeVar, Generic
+from typing import override
 
 from pydantic import BaseModel
 from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
 
+from .foldable_markdown_folder_nodes import FoldableMarkdownFolderNode
 from .foldable_markdown_nodes import (
     FoldableMarkdownTextNode,
 )
-from .foldable_markdown_folder_nodes import FoldableMarkdownFolderNode
-
-T = TypeVar("T", bound=BaseModel)
 
 
-class AttributedMarkdownFolderNode(FoldableMarkdownFolderNode, Generic[T]):
+class AttributedMarkdownFolderNode[T: BaseModel](FoldableMarkdownFolderNode):
     markdown_text_node: FoldableMarkdownTextNode  # type: ignore
     attribute: T
 

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 permissions.py - 权限管理核心
 
@@ -8,8 +6,8 @@ permissions.py - 权限管理核心
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from enum import Enum
-from typing import Sequence
 
 from .node import Node
 
@@ -76,8 +74,10 @@ class PermissionChecker:
             node_desc = self._get_node_description(node)
             return (
                 False,
-                f"权限不足：节点{node_desc}需要{required.name}权限，"
-                f"但当前对该节点的权限为{effective.name}",
+                (
+                    f"权限不足：节点{node_desc}需要{required.name}权限，"
+                    f"但当前对该节点的权限为{effective.name}"
+                ),
             )
 
     def _find_effective_permission(self, node: Node | None) -> Permission:

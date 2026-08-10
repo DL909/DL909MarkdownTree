@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from langchain_core.tools import ArgsSchema, BaseTool
 from pydantic import BaseModel, Field
 
 from dl909markdowntree import (
-    Node,
     AttributedMarkdownTextFileProtocol,
+    Node,
     Permission,
     PermissionChecker,
 )

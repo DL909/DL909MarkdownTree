@@ -1,17 +1,17 @@
 """markdown_folder_nodes.py - Markdown 文件夹节点，管理 .mdp 文件目录"""
 
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import override
 
 from pydantic import Field
 
 from .file_node import FileNode
-from .text_node import TextNode
 from .numbered_markdown_nodes import (
     NumberedMarkdownTextNode,
     NumberedMarkdownTitleNode,
 )
+from .text_node import TextNode
 
 MDP_FILE_PATTERN = re.compile(r"^(\d+)_(.+)\.mdp$")
 

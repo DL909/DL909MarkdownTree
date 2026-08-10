@@ -1,13 +1,13 @@
 from enum import Enum
 from pathlib import Path
-from typing import override, Self
+from typing import Self, override
 
 from pydantic import Field
 
 from .numbered_markdown_nodes import (
+    NumberedMarkdownTextFileNode,
     NumberedMarkdownTextNode,
     NumberedMarkdownTitleNode,
-    NumberedMarkdownTextFileNode,
 )
 from .plain_text_nodes import PlainTextNode
 

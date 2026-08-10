@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol, runtime_checkable, TypeVar
+from typing import Protocol, TypeVar, runtime_checkable
+
+from pydantic import BaseModel
 
 from .foldable_markdown_nodes import FoldableMarkdownTextNode, FoldableMarkdownTitleNode
 from .markdown_nodes import MarkdownTextNode, MarkdownTitleNode
 from .numbered_markdown_nodes import NumberedMarkdownTextNode, NumberedMarkdownTitleNode
-
-from pydantic import BaseModel
 
 
 @runtime_checkable

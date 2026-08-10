@@ -1,13 +1,13 @@
 """foldable_markdown_folder_nodes.py - 可折叠 Markdown 文件夹节点"""
 
-from pathlib import Path
 import json
+from pathlib import Path
 from typing import override
 
 from .foldable_markdown_nodes import (
-    FoldMode,
     FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
+    FoldMode,
 )
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .numbered_markdown_nodes import NumberedMarkdownTitleNode
