@@ -25,12 +25,12 @@ class Node(BaseModel, metaclass=_MyMeta):
                 del self.children[i]
         return self
 
-    def addchild(self, child: Node):  # 只能加入孤儿节点
+    def addchild(self, child: Node) -> None:  # 只能加入孤儿节点
         assert child.parent is None
         self.children.append(child)
         child.parent = self
 
-    def dispatch(self):  # 脱离父节点变为孤儿节点
+    def dispatch(self) -> None:  # 脱离父节点变为孤儿节点
         if self.parent is not None:
             for i, child in enumerate(self.parent.children):
                 if child is self:
