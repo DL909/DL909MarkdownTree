@@ -98,11 +98,10 @@ class MarkdownTitleNode(TextNode, _MarkdownParserCore):
             return self
         else:
             for child in self.children:
-                if isinstance(child, MarkdownTitleNode):
-                    if (
-                        result := child.recursive_find_title_node_by_name(title_name)
-                    ) is not None:
-                        return result
+                if isinstance(child, MarkdownTitleNode) and (
+                    result := child.recursive_find_title_node_by_name(title_name)
+                ) is not None:
+                    return result
         return None
 
     def add_text(self, text: str) -> None:
@@ -133,11 +132,10 @@ class MarkdownTextNode(TextNode, _MarkdownParserCore):
         if title_name and title_name[-1] == "\n":
             title_name = title_name[:-1]
         for child in self.children:
-            if isinstance(child, MarkdownTitleNode):
-                if (
-                    result := child.recursive_find_title_node_by_name(title_name)
-                ) is not None:
-                    return result
+            if isinstance(child, MarkdownTitleNode) and (
+                result := child.recursive_find_title_node_by_name(title_name)
+            ) is not None:
+                return result
         return None
 
     @override
