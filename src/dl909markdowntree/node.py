@@ -3,18 +3,16 @@ from __future__ import annotations
 from abc import ABC
 from typing import Self
 
-from pydantic import BaseModel, Field
-
-
-class _MyMeta(type(BaseModel), type(ABC)):
-    pass
-
 
 # 确保 Node 使用正确的元类
-class Node(BaseModel, metaclass=_MyMeta):
+class Node(ABC):
     parent: Node | None = None
-    children: list[Node] = Field(default_factory=list)
+    children: list[Node]
     deprecated: bool = False  # 使用较消极的更新策略。一个节点被注销时，只需要将deprecated属性设为真，之后父节点更新时将移除该节点。
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.children = []
 
     def update(self) -> Self:
         for child in self.children:

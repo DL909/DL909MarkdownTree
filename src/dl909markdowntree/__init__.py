@@ -4,16 +4,14 @@ from .file_node import FileNode
 from .foldable_markdown_folder_nodes import FoldableMarkdownFolderNode
 from .foldable_markdown_nodes import (
     FoldableMarkdownTextFileNode,
-    FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
     FoldMode,
 )
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
-from .markdown_nodes import MarkdownTextFileNode, MarkdownTextNode, MarkdownTitleNode
+from .markdown_nodes import MarkdownTextFileNode, MarkdownTitleNode
 from .node import Node
 from .numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
-    NumberedMarkdownTextNode,
     NumberedMarkdownTitleNode,
 )
 from .permissions import Permission, PermissionChecker
@@ -35,17 +33,14 @@ __all__ = [
     "FoldableMarkdownFolderNode",
     "FoldableMarkdownTextFileNode",
     "FoldableMarkdownTextFileProtocol",
-    "FoldableMarkdownTextNode",
     "FoldableMarkdownTitleNode",
     "MarkdownTextFileNode",
     "MarkdownTextFileProtocol",
-    "MarkdownTextNode",
     "MarkdownTitleNode",
     "Node",
     "NumberedMarkdownFolderNode",
     "NumberedMarkdownTextFileNode",
     "NumberedMarkdownTextFileProtocol",
-    "NumberedMarkdownTextNode",
     "NumberedMarkdownTitleNode",
     "Permission",
     "PermissionChecker",

@@ -1,85 +1,126 @@
+from __future__ import annotations
+
+import copy
+import re
 from pathlib import Path
 from typing import Self, override
 
-from pydantic import Field
-
 from .file_node import FileNode
-from .markdown_parser_core import _MarkdownParserCore
+from .node import Node
 from .plain_text_nodes import PlainTextNode
+from .protocols import MarkdownTextFileProtocol, MarkdownTitleProtocol
 from .text_node import TextNode
 
 
-class MarkdownTitleNode(TextNode, _MarkdownParserCore):
-    children: list[PlainTextNode | Self] = Field(default_factory=list)  # type: ignore - children type is intentionally narrowed from base class
-    level: int = Field(default=1, le=6, ge=1)
-    title: str = Field(default="")
+class MarkdownTitleNode(MarkdownTitleProtocol):
+    children: list[PlainTextNode | MarkdownTitleNode]  # pyright: ignore[reportIncompatibleVariableOverride] - children type is intentionally narrowed from base class
+    level: int
+    title: str
 
-    # 当所有子节点都是标题节点时返回真
-    # 注意当没有子节点时也返回真
-    def all_children_are_titles(self) -> bool:
-        for child in self.children:
-            if isinstance(child, PlainTextNode):
-                return False
-        return True
+    def __init__(self, level: int, title: str = "") -> None:
+        self.children = []  # pyright: ignore[reportIncompatibleVariableOverride] - children type is intentionally narrowed from base class
+        self.level = level
+        self.title = title
 
-    def _get_info(self) -> tuple[bool, int]:
+    @classmethod
+    def from_line(cls, line: str) -> Self:
+        match = re.match(r"^(#+) (.+)$", line.rstrip("\n"))
+        if not match:
+            raise Exception()
+        return cls(level=len(match.group(1)), title=match.group(2))
+
+    @classmethod
+    def from_text(cls, text: str) -> Self:
+        result = cls(level=0)
+        result.set_text(text)
+        return result
+
+    @override
+    def addchild(self, child: Node) -> None:
+        if isinstance(child, PlainTextNode):
+            if self.children:
+                return self.children[-1].addchild(child)
+            else:
+                self.children.append(child)
+        elif isinstance(child, MarkdownTitleNode):
+            if child.level >= self.level:  # pyright: ignore[reportAttributeAccessIssue] - a subclass of Self obviously will has level
+                raise Exception("too high title level")
+            return self.addchild(child)
+
+        return super().addchild(child)
+
+    def _add_title_child_to_children(self, child: Self) -> None:
+        self.children.append(child)
+
+    def _add_title_child(self, child: Self) -> None:
+        if self.children and isinstance(self.children[-1], MarkdownTitleNode):
+            if self.children[-1].level <= child.level:  # pyright: ignore[reportAttributeAccessIssue] - a subclass of Self obviously will has level
+                return self._add_title_child_to_children(child)
+            else:
+                return self.children[-1].addchild(child)
+
+    def _parse_markdown(self, content: str) -> tuple[Self, bool]:
         """
         return
-            have_text:bool
-            child_title_number:int
+            new title node: Self
+            if override current title: bool
         """
-        return (self._have_text(), self._child_title_number())
+        lines = [x + "\n" for x in content.split("\n")]
+        override_flag = False
+        if lines[0].startswith("#"):
+            result = self.from_line(lines[0])
+            lines = lines[1:]
+            override_flag = True
+        else:
+            result = copy.deepcopy(self)
+        cached_lines = ""
+        code_block_flag = False
+        for line in lines:
+            if code_block_flag:
+                if re.match(r"^``` *\n", line):
+                    code_block_flag = False
+                cached_lines += line
+            else:
+                if re.match(r"^```\s*\n", line):
+                    code_block_flag = True
+                    cached_lines += line
+                else:
+                    if re.match(r"^#{1,6} \s", line):
+                        result.addchild(PlainTextNode(cached_lines))
+                        result.addchild(self.from_line(line))
+                    else:
+                        cached_lines += line
+        if code_block_flag:
+            raise Exception("unclosed code block")
+        result.addchild(PlainTextNode(cached_lines))
 
-    def _have_text(self) -> bool:
-        for i in self.children:
-            if isinstance(i, PlainTextNode):
-                return True
-        return False
-
-    def _child_title_number(self) -> int:
-        number = 0
-        for i in self.children:
-            if isinstance(i, MarkdownTitleNode):
-                number += 1
-        return number
-
-    def __init__(self, title: str, level: int, text: str | None = None, **kwargs):
-        super().__init__(level=level, title=title, **kwargs)
-        if text is not None:
-            self.set_text(text)
-
-    def set_text(self, text: str) -> None:
-        _MarkdownParserCore.set_text(self, text)
-
-    def _get_root_level(self) -> int:
-        return self.level
-
-    def _get_root_title(self) -> str | None:
-        return self.title
-
-    def _should_consume_first_line(self) -> bool:
-        return True
-
-    def _process_first_line_if_needed(self, first_line: str) -> None:
-        if first_line.startswith("#" * self.level + " "):
-            self.title = first_line[self.level + 1 :]
-
-    def _validate_title_level(self, title_level: int) -> None:
-        if title_level <= self.level:
-            raise Exception(f"过低等级的标题：{title_level} <= {self.level}")
-
-    def _create_title_node(
-        self, level: int, number: list[int] | None, title: str
-    ) -> "MarkdownTitleNode":
-        return MarkdownTitleNode(title=title, level=level)  # type: ignore[reportAbstractUsage]
+        return result, override_flag
 
     @override
     def get_text(self) -> str:
-        text = self.get_title() + "\n" * 2
+        text = ""
+        if self.level > 0:
+            text = self.get_title() + "\n"
         for child in self.children:
-            text += child.get_text() + "\n" * 2
-        text = text[:-2]
+            text += child.get_text()
         return text
+
+    def _override_self(self, origin: Self) -> None:
+        """
+        update attribute according to given
+        """
+        self.title = origin.title
+        self.children.clear()
+        self.children.append(*origin.children)
+
+    @override
+    def set_text(self, text: str) -> None:
+        result, override_flag = self._parse_markdown(text)
+        if override_flag:
+            self._override_self(result)
+        else:
+            self.children.clear()
+            self.children.append(*result.children)
 
     def get_title(self, show_level_sign: bool = True) -> str:
         return (("#" * self.level + " ") if show_level_sign else "") + self.title
@@ -98,91 +139,20 @@ class MarkdownTitleNode(TextNode, _MarkdownParserCore):
             return self
         else:
             for child in self.children:
-                if isinstance(child, MarkdownTitleNode):
-                    if (
-                        result := child.recursive_find_title_node_by_name(title_name)
-                    ) is not None:
-                        return result
+                if (
+                    isinstance(child, MarkdownTitleNode)
+                    and (result := child.recursive_find_title_node_by_name(title_name))
+                    is not None
+                ):
+                    return result  # pyright: ignore[reportReturnType] - children will be override and fit Self
         return None
 
     def add_text(self, text: str) -> None:
         self.set_text(self.get_text() + "\n" + text)
 
 
-class MarkdownTextNode(TextNode, _MarkdownParserCore):
-    children: list[PlainTextNode | MarkdownTitleNode] = Field(default_factory=list)  # type: ignore - children type is intentionally narrowed from base class
-
-    # 当所有子节点都是标题节点时返回真
-    # 注意当没有子节点时也返回真
-    def all_children_are_titles(self) -> bool:
-        for child in self.children:
-            if isinstance(child, PlainTextNode):
-                return False
-        return True
-
-    def recursive_find_title_node_by_name(
-        self, title_name: str
-    ) -> MarkdownTitleNode | None:
-        """
-        recursively find title by name in this title and its children
-        params:
-            title_name: title name with level sign and no new line before.
-        return:
-            title node if found, None if failed
-        """
-        if title_name and title_name[-1] == "\n":
-            title_name = title_name[:-1]
-        for child in self.children:
-            if isinstance(child, MarkdownTitleNode):
-                if (
-                    result := child.recursive_find_title_node_by_name(title_name)
-                ) is not None:
-                    return result
-        return None
-
-    @override
-    def get_text(self) -> str:
-        text = ""
-        for child in self.children:
-            text += child.get_text() + "\n" * 2
-        if text != "":
-            text = text[:-2]
-        return text
-
-    @override
-    def set_text(self, text) -> None:
-        _MarkdownParserCore.set_text(self, text)
-
-    def __init__(self, text: str, **kwargs):
-        super().__init__(**kwargs)
-        self.parse_markdown(text)
-
-    def _get_root_level(self) -> int:
-        return 0
-
-    def _should_consume_first_line(self) -> bool:
-        return False
-
-    def _validate_title_level(self, title_level: int) -> None:
-        if title_level < 1:
-            raise Exception(f"无效的标题级别：{title_level}")
-
-    def _create_title_node(
-        self, level: int, number: list[int] | None, title: str
-    ) -> MarkdownTitleNode:
-        return MarkdownTitleNode(title=title, level=level)
-
-    def parse_markdown(self, text: str) -> None:
-        self._parse_markdown_core(text)
-
-
-class MarkdownTextFileNode(FileNode, TextNode):
-    markdown_text_node: MarkdownTextNode
-
-    def recursive_find_title_node_by_name(self, title_name) -> MarkdownTitleNode | None:
-        return self.markdown_text_node.recursive_find_title_node_by_name(
-            title_name=title_name
-        )
+class MarkdownTextFileNode(MarkdownTextFileProtocol):
+    markdown_text_node: MarkdownTitleNode
 
     @override
     def get_text(self) -> str:
@@ -192,7 +162,7 @@ class MarkdownTextFileNode(FileNode, TextNode):
     def set_text(self, text: str) -> None:
         self.markdown_text_node.set_text(text)
 
-    def get_markdown_text_node(self) -> MarkdownTextNode:
+    def get_markdown_text_node(self) -> MarkdownTitleNode:
         return self.markdown_text_node
 
     def save_to_file(self, file_path: Path) -> None:
@@ -210,22 +180,22 @@ class MarkdownTextFileNode(FileNode, TextNode):
         file_path.write_text("", encoding="utf-8")
 
     @override
+    def get_root_title(self) -> MarkdownTitleProtocol:
+        return self.markdown_text_node
+
+    @override
     def reload(self):
         with open(self.file_path, "r", encoding="utf-8") as f:
-            self.markdown_text_node = MarkdownTextNode(f.read())
+            self.markdown_text_node = MarkdownTitleNode.from_text(f.read())
 
-    def __init__(self, file_path: Path, **kwargs):
+    def __init__(
+        self, file_path: Path, markdown_text_node: MarkdownTitleNode | None = None
+    ):
         file_path = Path(file_path)
         if not file_path.exists():
             self.create_file(file_path)
-        with open(file_path, "r", encoding="utf-8") as f:
-            markdown_text_node = MarkdownTextNode(f.read())
-        if kwargs.get("markdown_text_node"):
-            markdown_text_node = kwargs.pop("markdown_text_node")
-        super().__init__(
-            file_path=file_path, markdown_text_node=markdown_text_node, **kwargs
-        )
-
-
-if __name__ == "__main__":
-    pass
+        if markdown_text_node:
+            self.markdown_text_node = markdown_text_node
+            self.save()
+        else:
+            self.reload()

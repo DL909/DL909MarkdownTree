@@ -40,7 +40,9 @@ def create_mcp_server(
             target: Markdown title including level sign (e.g. '# Hello'). Omit for full document.
         """
         if target:
-            node = markdown_node.recursive_find_title_node_by_name(target)
+            node = markdown_node.get_root_title().recursive_find_title_node_by_name(
+                target
+            )
             if node is None:
                 return f"read failed: no title matching '{target}'"
             if checker:
@@ -59,7 +61,7 @@ def create_mcp_server(
             replace_text: Replacement text. May contain one title line matching target's level,
                 or omit it to keep the original title.
         """
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"replace failed: no title matching '{target}'"
         if checker:
@@ -80,7 +82,7 @@ def create_mcp_server(
             target: Markdown title including level sign.
             append_text: Text to append. Must not contain titles at or above target's level.
         """
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"append failed: no title matching '{target}'"
         if checker:
@@ -100,7 +102,7 @@ def create_mcp_server(
         Args:
             target: Markdown title including level sign.
         """
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"unfold failed: no title matching '{target}'"
         if checker:
@@ -123,7 +125,7 @@ def create_mcp_server(
         """
         from difflib import SequenceMatcher
 
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"replace_lines failed: no title matching '{target}'"
         if checker:
@@ -181,7 +183,7 @@ def create_mcp_server(
             target: Markdown title including level sign.
             new_title_name: New title text (no level sign or number prefix).
         """
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"rename_title failed: no title matching '{target}'"
         if checker:

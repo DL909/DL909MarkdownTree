@@ -12,8 +12,8 @@ class PlainTextNode(TextNode):
     text: str = ""
 
     def __init__(self, text: str = ""):
-        super().__init__(text=text)
-        self._text = text
+        super().__init__()
+        self.text = text
 
     @override
     def get_text(self) -> str:
@@ -46,8 +46,9 @@ class PlainTextFileNode(FileNode, TextNode):
     def set_text(self, text):
         self.textNode.set_text(text)
 
-    def __init__(self, file_path: pathlib.Path, **kwargs):
-        super().__init__(file_path=file_path, **kwargs)
+    def __init__(self, file_path: pathlib.Path):
+        super().__init__()
+        self.file_path = file_path
         with open(file_path, "r", encoding="utf-8") as f:
             text_node = PlainTextNode(text=f.read())
         self.textNode = text_node

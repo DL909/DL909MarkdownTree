@@ -4,8 +4,12 @@ import json
 from pathlib import Path
 from typing import override
 
+from dl909markdowntree.protocols import (
+    FoldableMarkdownTextFileProtocol,
+    FoldableMarkdownTitleProtocol,
+)
+
 from .foldable_markdown_nodes import (
-    FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
     FoldMode,
 )
@@ -13,20 +17,19 @@ from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .numbered_markdown_nodes import NumberedMarkdownTitleNode
 
 
-class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
-    markdown_text_node: FoldableMarkdownTextNode  # type: ignore
+class FoldableMarkdownFolderNode(
+    NumberedMarkdownFolderNode, FoldableMarkdownTextFileProtocol
+):
+    markdown_text_node: FoldableMarkdownTitleNode
 
     @staticmethod
     def create_file(file_path: Path) -> None:
         NumberedMarkdownFolderNode.create_file(file_path)
 
-    def get_markdown_text_node(self) -> FoldableMarkdownTextNode:
-        return self.markdown_text_node
-
     def _create_text_node(
         self, text: str, auto_correct: bool = True
-    ) -> FoldableMarkdownTextNode:
-        return FoldableMarkdownTextNode(text=text, auto_correct=auto_correct)
+    ) -> FoldableMarkdownTitleNode:
+        return FoldableMarkdownTitleNode.from_text(text=text, auto_correct=auto_correct)
 
     def _get_mdp_content(self, title_node: NumberedMarkdownTitleNode) -> str:
         text = ""
@@ -65,8 +68,8 @@ class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
         _walk(self.markdown_text_node)
 
     @override
-    def reload(self):
-        super().reload()
+    def reload(self, auto_correct: bool | None = None):
+        super().reload(auto_correct=auto_correct)
         fold_states_path = Path(self.file_path) / "fold_state.json"
         if fold_states_path.exists():
             raw = fold_states_path.read_text(encoding="utf-8")
@@ -75,14 +78,14 @@ class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
                 self._apply_fold_states(states)
 
     @override
-    def save(self):
-        super().save()
+    def save_to_file(self, file_path: Path):
+        super().save_to_file(file_path)
         states = self._collect_fold_states()
         if states:
-            fold_states_path = Path(self.file_path) / "fold_state.json"
+            fold_states_path = Path(file_path) / "fold_state.json"
             fold_states_path.write_text(json.dumps(states, indent=2), encoding="utf-8")
         else:
-            fold_states_path = Path(self.file_path) / "fold_state.json"
+            fold_states_path = Path(file_path) / "fold_state.json"
             if fold_states_path.exists():
                 fold_states_path.unlink()
 
@@ -93,9 +96,5 @@ class FoldableMarkdownFolderNode(NumberedMarkdownFolderNode):
         )
 
     @override
-    def recursive_find_title_node_by_name(
-        self, title_name: str, within_shown: bool = False
-    ) -> FoldableMarkdownTitleNode | None:
-        return self.markdown_text_node.recursive_find_title_node_by_name(
-            title_name, within_shown=within_shown
-        )
+    def get_root_title(self) -> FoldableMarkdownTitleProtocol:
+        return self.markdown_text_node

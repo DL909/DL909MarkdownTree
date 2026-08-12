@@ -4,57 +4,39 @@ import re
 from pathlib import Path
 from typing import override
 
-from pydantic import Field
+from dl909markdowntree.protocols import (
+    NumberedMarkdownTextFileProtocol,
+    NumberedMarkdownTitleProtocol,
+)
 
-from .file_node import FileNode
 from .numbered_markdown_nodes import (
-    NumberedMarkdownTextNode,
     NumberedMarkdownTitleNode,
 )
-from .text_node import TextNode
 
 MDP_FILE_PATTERN = re.compile(r"^(\d+)_(.+)\.mdp$")
 
 
-class NumberedMarkdownFolderNode(FileNode, TextNode):
-    markdown_text_node: NumberedMarkdownTextNode = Field(
-        default_factory=lambda: NumberedMarkdownTextNode("")
-    )
-    auto_correct: bool = Field(default=True)
-
+class NumberedMarkdownFolderNode(NumberedMarkdownTextFileProtocol):
     @staticmethod
     def create_file(file_path: Path) -> None:
         Path(file_path).mkdir(parents=True, exist_ok=True)
 
-    def get_markdown_text_node(self) -> NumberedMarkdownTextNode:
-        return self.markdown_text_node
-
-    def __init__(self, file_path: Path, **kwargs):
+    def __init__(
+        self,
+        file_path: Path,
+        auto_correct: bool = True,
+        markdown_text_node: NumberedMarkdownTitleNode | None = None,
+    ):
         file_path = Path(file_path)
-        auto_correct = kwargs.pop("auto_correct", True)
         if not file_path.exists():
             self.create_file(file_path)
-        if kwargs.get("markdown_text_node"):
-            markdown_text_node = kwargs.pop("markdown_text_node")
+        if markdown_text_node:
+            self.markdown_text_node = markdown_text_node
         else:
-            mdf_dir = Path(file_path)
-            if mdf_dir.is_dir():
-                synthetic_text = self._build_synthetic_text_from_dir(mdf_dir)
-            else:
-                raise NotADirectoryError(f"Expect a Folder but got a File: {mdf_dir}")
-            markdown_text_node = self._create_text_node(synthetic_text, auto_correct)
-        super().__init__(
-            file_path=file_path,
-            markdown_text_node=markdown_text_node,
-            auto_correct=auto_correct,
-            **kwargs,
-        )
+            self.reload(auto_correct)
 
     @staticmethod
     def _build_synthetic_text_from_dir(mdf_dir: Path) -> str:
-        if not mdf_dir.is_dir():
-            return ""
-
         file_entries = []
         preamble = None
         for entry in sorted(mdf_dir.iterdir()):
@@ -71,10 +53,6 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
             content = entry.read_text(encoding="utf-8")
             file_entries.append((N, title, content))
 
-        Ns = [e[0] for e in file_entries]
-        if len(Ns) != len(set(Ns)):
-            raise Exception(f"Duplicate section numbers in {mdf_dir}")
-
         file_entries.sort(key=lambda x: x[0])
 
         parts = []
@@ -87,35 +65,30 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
 
     def _create_text_node(
         self, text: str, auto_correct: bool = True
-    ) -> NumberedMarkdownTextNode:
-        return NumberedMarkdownTextNode(text=text, auto_correct=auto_correct)
+    ) -> NumberedMarkdownTitleNode:
+        return NumberedMarkdownTitleNode.from_text(text=text, auto_correct=auto_correct)
 
     @override
-    def reload(self):
-        synthetic_text = self._build_synthetic_text_from_dir(Path(self.file_path))
+    def reload(self, auto_correct: bool | None = None):
+        synthetic_text = self._build_synthetic_text_from_dir(self.file_path)
         self.markdown_text_node = self._create_text_node(
-            synthetic_text, self.auto_correct
+            synthetic_text,
+            auto_correct if auto_correct else self.markdown_text_node.auto_correct,
         )
 
-    def _get_mdp_content(self, title_node: NumberedMarkdownTitleNode) -> str:
-        text = ""
-        for child in title_node.children:
-            text += child.get_text() + "\n" * 2
-        if text != "":
-            text = text[:-2]
-        return text
-
     @override
-    def save(self):
-        mdf_dir = Path(self.file_path)
-        if not mdf_dir.exists():
-            mdf_dir.mkdir(parents=True)
+    def save_to_file(self, file_path: Path):
+        if not file_path.exists():
+            file_path.mkdir(parents=True)
+
+        if not file_path.is_dir():
+            raise NotADirectoryError(f"{file_path} isn't a directory")
 
         preamble_parts = []
         sections = []
 
         found_first_level1 = False
-        for child in self.markdown_text_node.children:
+        for child in self.get_root_title().children:
             if (
                 isinstance(child, NumberedMarkdownTitleNode)
                 and child.level == 1
@@ -124,12 +97,12 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
                 found_first_level1 = True
                 N = child.number[0]
                 title = child.title
-                content = self._get_mdp_content(child)
+                content = sum(*child.get_text().splitlines(keepends=True)[1:])
                 sections.append((N, title, content))
             elif not found_first_level1:
                 preamble_parts.append(child)
             else:
-                preamble_parts.append(child)
+                raise RuntimeError()
 
         preamble_content = None
         if preamble_parts:
@@ -140,7 +113,7 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
                 preamble_content = preamble_content[:-2]
 
         existing_mapping = {}
-        for entry in mdf_dir.iterdir():
+        for entry in file_path.iterdir():
             if not entry.name.endswith(".mdp"):
                 continue
             if entry.name == "0.mdp":
@@ -158,18 +131,22 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
 
         for N, title, content in sections:
             target_name = f"{N}_{title}.mdp"
-            target_path = mdf_dir / target_name
+            target_path = file_path / target_name
             if N in existing_mapping:
                 _, old_path = existing_mapping[N]
                 if old_path != target_path:
                     old_path.rename(target_path)
             target_path.write_text(content, encoding="utf-8")
 
-        zero_path = mdf_dir / "0.mdp"
+        zero_path = file_path / "0.mdp"
         if preamble_content is not None:
             zero_path.write_text(preamble_content, encoding="utf-8")
         elif zero_path.exists():
             zero_path.unlink()
+
+    @override
+    def save(self):
+        self.save_to_file(self.file_path)
 
     @override
     def get_text(self) -> str:
@@ -179,7 +156,6 @@ class NumberedMarkdownFolderNode(FileNode, TextNode):
     def set_text(self, text) -> None:
         self.markdown_text_node.set_text(text)
 
-    def recursive_find_title_node_by_name(
-        self, title_name: str
-    ) -> NumberedMarkdownTitleNode | None:
-        return self.markdown_text_node.recursive_find_title_node_by_name(title_name)
+    @override
+    def get_root_title(self) -> NumberedMarkdownTitleProtocol:
+        return self.markdown_text_node

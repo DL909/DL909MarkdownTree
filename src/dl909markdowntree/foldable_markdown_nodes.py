@@ -2,11 +2,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Self, override
 
-from pydantic import Field
+from dl909markdowntree.markdown_nodes import MarkdownTitleNode
+from dl909markdowntree.protocols import FoldableMarkdownTitleProtocol
 
 from .numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
-    NumberedMarkdownTextNode,
     NumberedMarkdownTitleNode,
 )
 from .plain_text_nodes import PlainTextNode
@@ -17,45 +17,48 @@ class FoldMode(Enum):
     SHOW_CHILD = ("show_child_title",)
 
 
-class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode):
-    fold_mode: FoldMode = Field(default=FoldMode.SHOW_TITLE)
-    auto_correct: bool = Field(default=True)
+class FoldableMarkdownTitleNode(
+    NumberedMarkdownTitleNode, FoldableMarkdownTitleProtocol
+):
+    children: list[PlainTextNode | FoldableMarkdownTitleProtocol]  # pyright: ignore[reportIncompatibleVariableOverride] - children type is intentionally narrowed from base class
+    fold_mode: FoldMode
 
-    @override
-    def add_text(self, text: str) -> None:
-        self.set_text(self.get_text(full_text=True) + "\n" + text)
+    def __init__(
+        self,
+        level: int,
+        title: str = "",
+        number: list[int] | None = None,
+        auto_correct: bool = True,
+        fold_mode: FoldMode = FoldMode.SHOW_TITLE,
+    ) -> None:
+        self.fold_mode = fold_mode
+        super().__init__(level, title, number, auto_correct)
 
     @override
     def get_text(self, with_fold_info: bool = True, full_text=False) -> str:
-        if full_text:
-            text = self.get_title() + "\n" * 2
+        text = self.get_title()
+        if full_text or self.fold_mode == FoldMode.SHOW_CHILD:
             for child in self.children:
                 if isinstance(child, FoldableMarkdownTitleNode):
-                    text += child.get_text(full_text=True) + "\n" * 2
+                    text += child.get_text(
+                        with_fold_info=with_fold_info, full_text=full_text
+                    )
                 else:
-                    text += child.get_text() + "\n" * 2
+                    text += child.get_text()
         else:
-            match self.fold_mode:
-                case FoldMode.SHOW_TITLE:
-                    text = self.get_title()
-                    if with_fold_info:
-                        (have_text, child_title_number) = self._get_info()
-                        if have_text:
-                            text += " [text folded]"
-                        if child_title_number > 0:
-                            text += f" [{child_title_number if child_title_number <= 10 else '10+'} child title folded]"
-                    text += "\n" * 2
-                case FoldMode.SHOW_CHILD:
-                    text = self.get_title() + "\n" * 2
-                    for child in self.children:
-                        if isinstance(child, FoldableMarkdownTitleNode):
-                            text += (
-                                child.get_text(with_fold_info=with_fold_info) + "\n" * 2
-                            )
-                        else:
-                            text += child.get_text() + "\n" * 2
-
-        text = text[:-2]
+            if with_fold_info:
+                have_text = False
+                child_title_number = 0
+                for child in self.children:
+                    if isinstance(child, PlainTextNode):
+                        have_text = True
+                    if isinstance(child, MarkdownTitleNode):
+                        child_title_number += 1
+                if have_text:
+                    text += " [text folded]"
+                if child_title_number > 0:
+                    text += f" [{child_title_number if child_title_number <= 10 else '10+'} child title folded]"
+            text += "\n"
         return text
 
     def recursive_up_unfold(self) -> None:
@@ -82,29 +85,17 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode):
             if isinstance(child, FoldableMarkdownTitleNode):
                 child.recursive_unfold()
 
-    def set_load_depth(self, depth: int) -> None:
+    def unfold_by_depth(self, depth: int) -> None:
         if depth >= 1:
             if self.fold_mode is FoldMode.SHOW_TITLE:
                 self.fold_mode = FoldMode.SHOW_CHILD
             for child in self.children:
                 if isinstance(child, FoldableMarkdownTitleNode):
-                    child.set_load_depth(depth - 1)
+                    child.unfold_by_depth(depth - 1)
         elif depth == 0:
             pass
         else:
-            raise Exception(f"无效的加载深度：{depth}")
-
-    @override
-    def _create_title_node(
-        self, level: int, number: list[int] | None, title: str
-    ) -> "FoldableMarkdownTitleNode":
-        assert number is not None
-        return FoldableMarkdownTitleNode(
-            level=level,
-            number=number,
-            title=title,
-            auto_correct=self.auto_correct,
-        )
+            raise RuntimeError(f"invalid depth: {depth}")
 
     @override
     def recursive_find_title_node_by_name(
@@ -127,128 +118,28 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode):
                 within_shown and self.fold_mode == FoldMode.SHOW_CHILD
             ):
                 for child in self.children:
-                    if isinstance(child, FoldableMarkdownTitleNode):
-                        if (
+                    if (
+                        isinstance(child, FoldableMarkdownTitleNode)
+                        and (
                             result := child.recursive_find_title_node_by_name(
                                 title_name, within_shown=within_shown
                             )
-                        ) is not None:
-                            return result
+                        )
+                        is not None
+                    ):
+                        return result  # pyright: ignore[reportReturnType] - children will be override and fit Self
         return None
-
-
-class FoldableMarkdownTextNode(NumberedMarkdownTextNode):
-    children: list[PlainTextNode | FoldableMarkdownTitleNode] = Field(  # type: ignore - children type is intentionally narrowed from base class
-        default_factory=list
-    )
-    auto_correct: bool = Field(default=True)
-
-    @override
-    def recursive_find_title_node_by_name(
-        self, title_name: str, within_shown: bool = False
-    ) -> FoldableMarkdownTitleNode | None:
-        """
-        recursively find title by name in this text node's children
-        params:
-            title_name: title name with level sign and no new line before.
-        return:
-            title node if found, None if failed
-        """
-        if title_name and title_name[-1] == "\n":
-            title_name = title_name[:-1]
-        for child in self.children:
-            if isinstance(child, FoldableMarkdownTitleNode):
-                if (
-                    result := child.recursive_find_title_node_by_name(
-                        title_name, within_shown=within_shown
-                    )
-                ) is not None:
-                    return result
-        return None
-
-    @override
-    def add_text(self, text: str) -> None:
-        self.set_text(self.get_text(full_text=True) + "\n" + text)
-
-    @override
-    def _create_title_node(
-        self, level: int, number: list[int] | None, title: str
-    ) -> FoldableMarkdownTitleNode:
-        assert number is not None
-        return FoldableMarkdownTitleNode(
-            level=level,
-            number=number,
-            title=title,
-            auto_correct=self.auto_correct,
-        )
-
-    def set_load_depth(self, depth: int) -> None:
-        for child in self.children:
-            if isinstance(child, FoldableMarkdownTitleNode):
-                child.set_load_depth(depth)
-
-    @override
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
-        text = ""
-        for child in self.children:
-            if isinstance(child, FoldableMarkdownTitleNode):
-                text += (
-                    child.get_text(with_fold_info=with_fold_info, full_text=full_text)
-                    + "\n"
-                )
-            else:
-                text += child.get_text() + "\n"
-        if text != "":
-            text = text[:-1]
-        return text
 
 
 class FoldableMarkdownTextFileNode(NumberedMarkdownTextFileNode):
-    markdown_text_node: FoldableMarkdownTextNode = Field()
+    markdown_text_node: FoldableMarkdownTitleNode  # type: ignore - children type is intentionally narrowed from base class
 
-    def recursive_find_title_node_by_name(
-        self, title_name, within_shown: bool = False
-    ) -> FoldableMarkdownTitleNode | None:
-        return self.markdown_text_node.recursive_find_title_node_by_name(
-            title_name, within_shown=within_shown
-        )
-
-    @override
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
-        return self.markdown_text_node.get_text(
-            with_fold_info=with_fold_info, full_text=full_text
-        )
-
-    def get_markdown_text_node(self) -> FoldableMarkdownTextNode:
+    def get_markdown_text_node(self) -> FoldableMarkdownTitleNode:
         return self.markdown_text_node
 
-    @staticmethod
-    def create_file(file_path: Path) -> None:
-        file_path = Path(file_path)
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text("", encoding="utf-8")
-
-    def __init__(self, file_path: Path, **kwargs):
-        file_path = Path(file_path)
-        auto_correct = kwargs.pop("auto_correct", True)
-        if not file_path.exists():
-            self.create_file(file_path)
-        with open(file_path, "r", encoding="utf-8") as f:
-            markdown_text_node = FoldableMarkdownTextNode(
-                f.read(), auto_correct=auto_correct
-            )
-        if kwargs.get("markdown_text_node"):
-            markdown_text_node = kwargs.pop("markdown_text_node")
-        super().__init__(
-            file_path=file_path, markdown_text_node=markdown_text_node, **kwargs
-        )
-
-    @override
-    def reload(self):
-        with open(self.file_path, "r", encoding="utf-8") as f:
-            self.markdown_text_node = FoldableMarkdownTextNode(f.read())  # type:ignore[override]
-
-    @override
-    def save_to_file(self, file_path: Path) -> None:
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(self.markdown_text_node.get_text(full_text=True))
+    def __init__(
+        self,
+        file_path: Path,
+        markdown_text_node: FoldableMarkdownTitleNode | None = None,
+    ):
+        super().__init__(file_path, markdown_text_node)
