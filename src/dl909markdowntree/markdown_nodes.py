@@ -45,8 +45,8 @@ class MarkdownTitleNode(MarkdownTitleBase):
                 return self.children[-1].addchild(child)
             else:
                 self.children.append(child)
-        elif isinstance(child, MarkdownTitleNode):
-            if child.level <= self.level:  # pyright: ignore[reportAttributeAccessIssue] - a subclass of Self obviously will has level
+        elif isinstance(child, type(self)):
+            if child.level <= self.level:
                 raise InvalidTitleLevelError("too high title level")
             return self._add_title_child(child)
         else:
@@ -60,7 +60,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
         if (
             self.children
             and isinstance(self.children[-1], MarkdownTitleNode)
-            and child.level > self.children[-1].level  # pyright: ignore[reportAttributeAccessIssue] - a subclass of Self obviously will has level
+            and child.level > self.children[-1].level
         ):
             return self.children[-1]._add_title_child(child)
         self._add_title_child_to_children(child)
@@ -161,11 +161,11 @@ class MarkdownTitleNode(MarkdownTitleBase):
         else:
             for child in self.children:
                 if (
-                    isinstance(child, MarkdownTitleNode)
+                    isinstance(child, type(self))
                     and (result := child.recursive_find_title_node_by_name(title_name))
                     is not None
                 ):
-                    return result  # pyright: ignore[reportReturnType] - children will be override and fit Self
+                    return result
         return None
 
     def add_text(self, text: str) -> None:

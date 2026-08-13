@@ -19,12 +19,12 @@ class AttributedMarkdownFolderNode[T: BaseModel](
     FoldableMarkdownFolderNode,
     AttributedMarkdownTextFileBase,
 ):
-    markdown_text_node: FoldableMarkdownTitleNode  # type: ignore
+    markdown_text_node: FoldableMarkdownTitleNode  # pyright: ignore[reportIncompatibleVariableOverride] - children type is intentionally narrowed from base class
     attribute: T
 
     @override
     @staticmethod
-    def create_file(
+    def create_file(  # pyright: ignore[reportIncompatibleMethodOverride]
         file_path: Path, attribute_type: type[T], attribute: T | None = None
     ) -> None:
         file_path = Path(file_path)
