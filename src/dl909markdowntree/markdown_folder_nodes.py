@@ -15,6 +15,12 @@ from .numbered_markdown_nodes import (
 
 MDP_FILE_PATTERN = re.compile(r"^(\d+)_(.+)\.mdp$")
 
+_UNSAFE_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|\x00-\x1f]')
+
+
+def _sanitize_mdp_title(title: str) -> str:
+    return _UNSAFE_FILENAME_CHARS.sub("_", title).strip(". ") or "untitled"
+
 
 class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
     @staticmethod
@@ -147,7 +153,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
             path.unlink()
 
         for N, title, content in sections:
-            target_name = f"{N}_{title}.mdp"
+            target_name = f"{N}_{_sanitize_mdp_title(title)}.mdp"
             target_path = file_path / target_name
             if N in existing_mapping:
                 _, old_path = existing_mapping[N]

@@ -230,3 +230,28 @@ def test_numbered_markdown_folder_node_reload_auto_correct_false(tmp_path):
     node2 = NumberedMarkdownFolderNode(file_path=Path(folder), auto_correct=False)
     node2.reload()
     assert node2.markdown_text_node.auto_correct is False
+
+
+def test_numbered_markdown_folder_node_save_sanitizes_title(tmp_path):
+    """测试 save：标题含非法文件名字符时消毒后再写入文件名"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("## 1.1. Content", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=Path(folder))
+    assert isinstance(node.markdown_text_node.children[0], NumberedMarkdownTitleNode)
+    node.markdown_text_node.children[0].title = "a/b:c"
+    node.save()
+    assert Path(folder / "1_a_b_c.mdp").exists()
+    assert not (folder / "1_a").exists()
+
+
+def test_numbered_markdown_folder_node_save_sanitizes_to_untitled(tmp_path):
+    """测试 save：标题全为非法字符时回退为 untitled"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("## 1.1. Content", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=Path(folder))
+    assert isinstance(node.markdown_text_node.children[0], NumberedMarkdownTitleNode)
+    node.markdown_text_node.children[0].title = "."
+    node.save()
+    assert Path(folder / "1_untitled.mdp").exists()
