@@ -1,4 +1,4 @@
-"""protocols.py - Protocol hierarchy for markdown file/folder node types"""
+"""interface.py - Protocol hierarchy for markdown file/folder node types"""
 
 from __future__ import annotations
 

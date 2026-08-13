@@ -46,7 +46,7 @@ class FoldableMarkdownFolderNode(
         def _walk(node):
             for child in node.children:
                 if isinstance(child, FoldableMarkdownTitleNode):
-                    key = json.dumps(child.number)
+                    key = json.dumps([child.level, *child.number])
                     if child.fold_mode is not FoldMode.SHOW_TITLE:
                         states[key] = child.fold_mode.name
                     _walk(child)
@@ -58,7 +58,7 @@ class FoldableMarkdownFolderNode(
         def _walk(node):
             for child in node.children:
                 if isinstance(child, FoldableMarkdownTitleNode):
-                    key = json.dumps(child.number)
+                    key = json.dumps([child.level, *child.number])
                     if key in states:
                         child.fold_mode = FoldMode[states[key]]
                     _walk(child)

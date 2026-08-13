@@ -4,6 +4,7 @@ from typing import TypeVar, override
 from pydantic import BaseModel
 from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
 
+from .exceptions import MarkdownTreeError
 from .file_node import FileNode
 from .foldable_markdown_nodes import (
     FoldableMarkdownTitleNode,
@@ -60,10 +61,10 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
     def _split_frontmatter(content: str) -> tuple[str, str]:
         """将 ``---\n<yaml>\n---\n<markdown>`` 拆分为 (yaml_data, markdown_content)"""
         if not content.startswith("---\n"):
-            raise ValueError("文件缺少 FrontMatter 起始标记 '---'")
+            raise MarkdownTreeError("文件缺少 FrontMatter 起始标记 '---'")
         i = content.find("\n---\n", 4)
         if i == -1:
-            raise ValueError("文件缺少 FrontMatter 结束标记 '---'")
+            raise MarkdownTreeError("文件缺少 FrontMatter 结束标记 '---'")
         i += 1
         return content[4 : i - 1], content[i + 4 :]
 

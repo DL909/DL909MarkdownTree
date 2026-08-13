@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 import re
 from typing import Self, override
 
@@ -17,6 +18,8 @@ from .markdown_nodes import (
     MarkdownTitleNode,
 )
 from .plain_text_nodes import PlainTextNode
+
+logger = logging.getLogger(__name__)
 
 
 class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
@@ -76,9 +79,7 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
 
         if correct_number != child.number:
             if self.auto_correct:
-                import logging
-
-                logging.getLogger("NumberedMarkdownTitleNode").warning(
+                logger.warning(
                     f"error number in title: {child.get_title()}, expected: {correct_number}, but got: {child.number}, corrected"
                 )
                 child.number = correct_number

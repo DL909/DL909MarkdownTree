@@ -125,7 +125,9 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
             elif not found_first_level1:
                 preamble_parts.append(child)
             else:
-                raise RuntimeError()
+                raise RuntimeError(
+                    f"unexpected content after first level-1 section: {type(child).__name__}"
+                )
 
         preamble_content = None
         if preamble_parts:
