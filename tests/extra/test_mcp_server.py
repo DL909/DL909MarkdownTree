@@ -70,6 +70,21 @@ def test_mcp_read_tool_with_target(tmp_path):
     assert "Hello" in text
 
 
+def test_mcp_read_tool_full_document_permission_denied(tmp_path):
+
+    node = _make_node(tmp_path)
+    title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
+    assert title_node is not None
+
+    server = create_mcp_server(node, permissions=[(title_node, Permission.READ_WRITE)])
+
+    async def call():
+        return await server.call_tool("read", {})
+
+    with pytest.raises(ToolError, match="权限不足"):
+        asyncio.run(call())
+
+
 def test_mcp_replace_tool(tmp_path):
 
     node = _make_node(tmp_path)

@@ -69,6 +69,21 @@ def test_toolkit_tool_schemas(tmp_path):
     assert "replace_text" in schema.model_fields
 
 
+def test_toolkit_read_tool_full_document_permission_denied(tmp_path):
+    node = _make_node(tmp_path)
+    title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
+    assert title_node is not None
+
+    toolkit = MarkdownTreeToolkit(
+        node,
+        permissions=[(title_node, Permission.READ_WRITE)],
+    )
+    tools = toolkit.get_tools()
+    read_tool = next(t for t in tools if t.name == "read")
+    result = read_tool.invoke({"target": None})
+    assert "权限不足" in result
+
+
 def test_toolkit_permission_denied(tmp_path):
     node = _make_node(tmp_path)
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
