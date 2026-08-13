@@ -4,18 +4,17 @@ import copy
 import re
 from typing import Self, override
 
-from dl909markdowntree.interface import (
+from .exceptions import (
+    IncorrectNumberError,
+    InvalidNumberedTitleLineError,
+)
+from .interface import (
     NumberedMarkdownTextFileBase,
     NumberedMarkdownTitleBase,
 )
-
 from .markdown_nodes import (
     MarkdownTextFileNode,
     MarkdownTitleNode,
-)
-from .models.exceptions import (
-    IncorrectNumberError,
-    InvalidNumberedTitleLineError,
 )
 from .plain_text_nodes import PlainTextNode
 

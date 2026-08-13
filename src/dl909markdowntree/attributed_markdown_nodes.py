@@ -4,12 +4,11 @@ from typing import TypeVar, override
 from pydantic import BaseModel
 from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
 
-from dl909markdowntree.interface import AttributedMarkdownTextFileBase
-
 from .file_node import FileNode
 from .foldable_markdown_nodes import (
     FoldableMarkdownTitleNode,
 )
+from .interface import AttributedMarkdownTextFileBase
 from .text_node import TextNode
 
 T = TypeVar("T", bound=BaseModel)

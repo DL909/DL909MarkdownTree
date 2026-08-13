@@ -1,4 +1,4 @@
-from dl909markdowntree.node import Node
+from dl909markdowntree import Node
 
 
 def _tree(n: int) -> tuple[Node, list[Node]]:

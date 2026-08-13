@@ -5,13 +5,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from dl909markdowntree import (
-    AttributedMarkdownTextFileBase,
-    Permission,
-    PermissionChecker,
-)
-from dl909markdowntree.models.exceptions import MarkdownTreeError
-from dl909markdowntree.node import Node
+from ...exceptions import MarkdownTreeError
+from ...interface import AttributedMarkdownTextFileBase
+from ...node import Node
+from ...permissions import Permission, PermissionChecker
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP

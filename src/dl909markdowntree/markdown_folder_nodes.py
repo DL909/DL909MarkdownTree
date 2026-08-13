@@ -4,12 +4,11 @@ import re
 from pathlib import Path
 from typing import override
 
-from dl909markdowntree.interface import (
+from .exceptions import InvalidMdpFilenameError
+from .interface import (
     NumberedMarkdownTextFileBase,
     NumberedMarkdownTitleBase,
 )
-
-from .models.exceptions import InvalidMdpFilenameError
 from .numbered_markdown_nodes import (
     NumberedMarkdownTitleNode,
 )

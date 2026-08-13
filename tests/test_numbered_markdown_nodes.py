@@ -2,15 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from dl909markdowntree.models.exceptions import (
+from dl909markdowntree import (
     IncorrectNumberError,
     InvalidTitleLevelError,
-)
-from dl909markdowntree.numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
     NumberedMarkdownTitleNode,
+    PlainTextNode,
 )
-from dl909markdowntree.plain_text_nodes import PlainTextNode
 
 
 def test_numbered_markdown_title_node():

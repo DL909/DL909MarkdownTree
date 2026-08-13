@@ -1,12 +1,11 @@
 from enum import Enum
 from typing import Self, override
 
-from dl909markdowntree.interface import (
+from .interface import (
     FoldableMarkdownTextFileBase,
     FoldableMarkdownTitleBase,
 )
-from dl909markdowntree.markdown_nodes import MarkdownTitleNode
-
+from .markdown_nodes import MarkdownTitleNode
 from .numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
     NumberedMarkdownTitleNode,
@@ -121,7 +120,7 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitle
             ):
                 for child in self.children:
                     if (
-                        isinstance(child, FoldableMarkdownTitleNode)
+                        isinstance(child, type(self))
                         and (
                             result := child.recursive_find_title_node_by_name(
                                 title_name, within_shown=within_shown
@@ -129,7 +128,7 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitle
                         )
                         is not None
                     ):
-                        return result  # pyright: ignore[reportReturnType] - children will be override and fit Self
+                        return result
         return None
 
 

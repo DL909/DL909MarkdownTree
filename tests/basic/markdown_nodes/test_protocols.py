@@ -4,27 +4,17 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from dl909markdowntree.attributed_markdown_folder_nodes import (
+from dl909markdowntree import (
     AttributedMarkdownFolderNode,
-)
-from dl909markdowntree.attributed_markdown_nodes import (
-    AttributedMarkdownTextFileNode,
-)
-from dl909markdowntree.foldable_markdown_folder_nodes import (
-    FoldableMarkdownFolderNode,
-)
-from dl909markdowntree.foldable_markdown_nodes import (
-    FoldableMarkdownTextFileNode,
-)
-from dl909markdowntree.interface import (
     AttributedMarkdownTextFileBase,
+    AttributedMarkdownTextFileNode,
+    FoldableMarkdownFolderNode,
     FoldableMarkdownTextFileBase,
+    FoldableMarkdownTextFileNode,
     MarkdownTextFileBase,
+    MarkdownTextFileNode,
+    NumberedMarkdownFolderNode,
     NumberedMarkdownTextFileBase,
-)
-from dl909markdowntree.markdown_folder_nodes import NumberedMarkdownFolderNode
-from dl909markdowntree.markdown_nodes import MarkdownTextFileNode
-from dl909markdowntree.numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
 )
 

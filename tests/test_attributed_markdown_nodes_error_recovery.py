@@ -4,13 +4,9 @@
 import pytest
 from pydantic import BaseModel
 
-from dl909markdowntree.attributed_markdown_nodes import (
+from dl909markdowntree import (
     AttributedMarkdownTextFileNode,
-)
-from dl909markdowntree.foldable_markdown_nodes import (
     FoldableMarkdownTitleNode,
-)
-from dl909markdowntree.models.exceptions import (
     IncorrectNumberError,
     InvalidNumberedTitleLineError,
 )

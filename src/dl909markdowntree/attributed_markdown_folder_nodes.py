@@ -6,13 +6,12 @@ from typing import override
 from pydantic import BaseModel
 from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
 
-from dl909markdowntree.interface import (
-    AttributedMarkdownTextFileBase,
-    FoldableMarkdownTitleBase,
-)
-
 from .foldable_markdown_folder_nodes import FoldableMarkdownFolderNode
-from .foldable_markdown_nodes import FoldableMarkdownTitleNode
+from .foldable_markdown_nodes import (
+    FoldableMarkdownTitleBase,
+    FoldableMarkdownTitleNode,
+)
+from .interface import AttributedMarkdownTextFileBase
 
 
 class AttributedMarkdownFolderNode[T: BaseModel](

@@ -2,12 +2,10 @@
 
 import pytest
 
-from dl909markdowntree.models.exceptions import (
+from dl909markdowntree import (
     IncorrectNumberError,
     InvalidNumberedTitleLineError,
     InvalidTitleLevelError,
-)
-from dl909markdowntree.numbered_markdown_nodes import (
     NumberedMarkdownTitleNode,
 )
 

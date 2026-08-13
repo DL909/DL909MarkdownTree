@@ -2,11 +2,11 @@
 
 import pytest
 
-from dl909markdowntree.models.exceptions import IncorrectNumberError
-from dl909markdowntree.numbered_markdown_nodes import (
+from dl909markdowntree import (
+    IncorrectNumberError,
     NumberedMarkdownTitleNode,
+    PlainTextNode,
 )
-from dl909markdowntree.plain_text_nodes import PlainTextNode
 
 
 class TestNumberedMarkdownTitleNodeAutoCorrect:

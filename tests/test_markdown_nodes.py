@@ -2,15 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from dl909markdowntree.markdown_nodes import (
-    MarkdownTextFileNode,
-    MarkdownTitleNode,
-)
-from dl909markdowntree.models.exceptions import (
+from dl909markdowntree import (
     InvalidMarkdownLineError,
     InvalidTitleLevelError,
+    MarkdownTextFileNode,
+    MarkdownTitleNode,
+    PlainTextNode,
 )
-from dl909markdowntree.plain_text_nodes import PlainTextNode
 
 
 def test_markdown_title_node_init():

@@ -5,14 +5,14 @@ import re
 from pathlib import Path
 from typing import Self, override
 
-from dl909markdowntree.interface import MarkdownTextFileBase, MarkdownTitleBase
-from dl909markdowntree.models.exceptions import (
+from .exceptions import (
     InvalidMarkdownLineError,
     InvalidTitleLevelError,
     UnclosedCodeBlockError,
 )
-from dl909markdowntree.node import Node
-from dl909markdowntree.plain_text_nodes import PlainTextNode
+from .interface import MarkdownTextFileBase, MarkdownTitleBase
+from .node import Node
+from .plain_text_nodes import PlainTextNode
 
 
 class MarkdownTitleNode(MarkdownTitleBase):

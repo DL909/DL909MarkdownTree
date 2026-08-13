@@ -1,5 +1,14 @@
 from .attributed_markdown_folder_nodes import AttributedMarkdownFolderNode
 from .attributed_markdown_nodes import AttributedMarkdownTextFileNode
+from .exceptions import (
+    IncorrectNumberError,
+    InvalidMarkdownLineError,
+    InvalidMdpFilenameError,
+    InvalidNumberedTitleLineError,
+    InvalidTitleLevelError,
+    MarkdownTreeError,
+    UnclosedCodeBlockError,
+)
 from .file_node import FileNode
 from .foldable_markdown_folder_nodes import FoldableMarkdownFolderNode
 from .foldable_markdown_nodes import (
@@ -10,20 +19,14 @@ from .foldable_markdown_nodes import (
 from .interface import (
     AttributedMarkdownTextFileBase,
     FoldableMarkdownTextFileBase,
+    FoldableMarkdownTitleBase,
     MarkdownTextFileBase,
+    MarkdownTitleBase,
     NumberedMarkdownTextFileBase,
+    NumberedMarkdownTitleBase,
 )
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .markdown_nodes import MarkdownTextFileNode, MarkdownTitleNode
-from .models.exceptions import (
-    IncorrectNumberError,
-    InvalidMarkdownLineError,
-    InvalidMdpFilenameError,
-    InvalidNumberedTitleLineError,
-    InvalidTitleLevelError,
-    MarkdownTreeError,
-    UnclosedCodeBlockError,
-)
 from .node import Node
 from .numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
@@ -42,6 +45,7 @@ __all__ = [
     "FoldableMarkdownFolderNode",
     "FoldableMarkdownTextFileBase",
     "FoldableMarkdownTextFileNode",
+    "FoldableMarkdownTitleBase",
     "FoldableMarkdownTitleNode",
     "IncorrectNumberError",
     "InvalidMarkdownLineError",
@@ -50,12 +54,14 @@ __all__ = [
     "InvalidTitleLevelError",
     "MarkdownTextFileBase",
     "MarkdownTextFileNode",
+    "MarkdownTitleBase",
     "MarkdownTitleNode",
     "MarkdownTreeError",
     "Node",
     "NumberedMarkdownFolderNode",
     "NumberedMarkdownTextFileBase",
     "NumberedMarkdownTextFileNode",
+    "NumberedMarkdownTitleBase",
     "NumberedMarkdownTitleNode",
     "Permission",
     "PermissionChecker",

@@ -2,11 +2,9 @@
 
 import pytest
 
-from dl909markdowntree.foldable_markdown_nodes import (
+from dl909markdowntree import (
     FoldableMarkdownTitleNode,
     FoldMode,
-)
-from dl909markdowntree.models.exceptions import (
     IncorrectNumberError,
     InvalidNumberedTitleLineError,
     InvalidTitleLevelError,

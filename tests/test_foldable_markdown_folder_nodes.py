@@ -2,10 +2,8 @@
 
 from pathlib import Path
 
-from dl909markdowntree.foldable_markdown_folder_nodes import (
+from dl909markdowntree import (
     FoldableMarkdownFolderNode,
-)
-from dl909markdowntree.foldable_markdown_nodes import (
     FoldableMarkdownTitleNode,
     FoldMode,
 )

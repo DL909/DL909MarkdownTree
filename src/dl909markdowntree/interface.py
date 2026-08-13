@@ -8,8 +8,8 @@ from typing import Self, override
 
 from pydantic import BaseModel
 
-from dl909markdowntree.file_node import FileNode
-from dl909markdowntree.text_node import TextNode
+from .file_node import FileNode
+from .text_node import TextNode
 
 
 class MarkdownTitleBase(TextNode):

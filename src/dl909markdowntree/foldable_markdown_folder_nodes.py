@@ -4,14 +4,13 @@ import json
 from pathlib import Path
 from typing import override
 
-from dl909markdowntree.interface import (
-    FoldableMarkdownTextFileBase,
-    FoldableMarkdownTitleBase,
-)
-
 from .foldable_markdown_nodes import (
     FoldableMarkdownTitleNode,
     FoldMode,
+)
+from .interface import (
+    FoldableMarkdownTextFileBase,
+    FoldableMarkdownTitleBase,
 )
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .numbered_markdown_nodes import NumberedMarkdownTitleNode
