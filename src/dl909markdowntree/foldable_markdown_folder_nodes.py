@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 from typing import override
 
-from dl909markdowntree.protocols import (
-    FoldableMarkdownTextFileProtocol,
-    FoldableMarkdownTitleProtocol,
+from dl909markdowntree.interface import (
+    FoldableMarkdownTextFileBase,
+    FoldableMarkdownTitleBase,
 )
 
 from .foldable_markdown_nodes import (
@@ -18,13 +18,9 @@ from .numbered_markdown_nodes import NumberedMarkdownTitleNode
 
 
 class FoldableMarkdownFolderNode(
-    NumberedMarkdownFolderNode, FoldableMarkdownTextFileProtocol
+    NumberedMarkdownFolderNode, FoldableMarkdownTextFileBase
 ):
     markdown_text_node: FoldableMarkdownTitleNode
-
-    @staticmethod
-    def create_file(file_path: Path) -> None:
-        NumberedMarkdownFolderNode.create_file(file_path)
 
     def _create_text_node(
         self, text: str, auto_correct: bool = True
@@ -39,8 +35,11 @@ class FoldableMarkdownFolderNode(
             else:
                 text += child.get_text() + "\n" * 2
         if text != "":
-            text = text[:-2]
+            text = text[:-2].rstrip("\n")
         return text
+
+    def _get_section_content(self, child: NumberedMarkdownTitleNode) -> str:
+        return self._get_mdp_content(child)
 
     def _collect_fold_states(self) -> dict[str, str]:
         states = {}
@@ -96,5 +95,5 @@ class FoldableMarkdownFolderNode(
         )
 
     @override
-    def get_root_title(self) -> FoldableMarkdownTitleProtocol:
+    def get_root_title(self) -> FoldableMarkdownTitleBase:
         return self.markdown_text_node

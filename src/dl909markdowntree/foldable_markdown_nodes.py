@@ -1,9 +1,11 @@
 from enum import Enum
-from pathlib import Path
 from typing import Self, override
 
+from dl909markdowntree.interface import (
+    FoldableMarkdownTextFileBase,
+    FoldableMarkdownTitleBase,
+)
 from dl909markdowntree.markdown_nodes import MarkdownTitleNode
-from dl909markdowntree.protocols import FoldableMarkdownTitleProtocol
 
 from .numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
@@ -17,10 +19,8 @@ class FoldMode(Enum):
     SHOW_CHILD = ("show_child_title",)
 
 
-class FoldableMarkdownTitleNode(
-    NumberedMarkdownTitleNode, FoldableMarkdownTitleProtocol
-):
-    children: list[PlainTextNode | FoldableMarkdownTitleProtocol]  # pyright: ignore[reportIncompatibleVariableOverride] - children type is intentionally narrowed from base class
+class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitleBase):
+    children: list[PlainTextNode | FoldableMarkdownTitleBase]  # pyright: ignore[reportIncompatibleVariableOverride] - children type is intentionally narrowed from base class
     fold_mode: FoldMode
 
     def __init__(
@@ -31,13 +31,15 @@ class FoldableMarkdownTitleNode(
         auto_correct: bool = True,
         fold_mode: FoldMode = FoldMode.SHOW_TITLE,
     ) -> None:
-        self.fold_mode = fold_mode
+        self.fold_mode = fold_mode if level > 0 else FoldMode.SHOW_CHILD
         super().__init__(level, title, number, auto_correct)
 
     @override
-    def get_text(self, with_fold_info: bool = True, full_text=False) -> str:
-        text = self.get_title()
+    def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
+        text = self.get_title() if self.level > 0 else ""
         if full_text or self.fold_mode == FoldMode.SHOW_CHILD:
+            if self.level > 0:
+                text += "\n"
             for child in self.children:
                 if isinstance(child, FoldableMarkdownTitleNode):
                     text += child.get_text(
@@ -131,15 +133,16 @@ class FoldableMarkdownTitleNode(
         return None
 
 
-class FoldableMarkdownTextFileNode(NumberedMarkdownTextFileNode):
+class FoldableMarkdownTextFileNode(
+    NumberedMarkdownTextFileNode, FoldableMarkdownTextFileBase
+):
     markdown_text_node: FoldableMarkdownTitleNode  # type: ignore - children type is intentionally narrowed from base class
+    markdown_text_node_type = FoldableMarkdownTitleNode
 
-    def get_markdown_text_node(self) -> FoldableMarkdownTitleNode:
+    @override
+    def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
+        return self.get_root_title().get_text(with_fold_info, full_text)
+
+    @override
+    def get_root_title(self) -> FoldableMarkdownTitleBase:
         return self.markdown_text_node
-
-    def __init__(
-        self,
-        file_path: Path,
-        markdown_text_node: FoldableMarkdownTitleNode | None = None,
-    ):
-        super().__init__(file_path, markdown_text_node)

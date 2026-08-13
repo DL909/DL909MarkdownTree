@@ -47,7 +47,7 @@ class PlainTextFileNode(FileNode, TextNode):
         self.textNode.set_text(text)
 
     def __init__(self, file_path: pathlib.Path):
-        super().__init__()
+        super().__init__(file_path=file_path)
         self.file_path = file_path
         with open(file_path, "r", encoding="utf-8") as f:
             text_node = PlainTextNode(text=f.read())

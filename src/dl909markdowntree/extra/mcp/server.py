@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from dl909markdowntree import (
-    AttributedMarkdownTextFileProtocol,
+    AttributedMarkdownTextFileBase,
     Permission,
     PermissionChecker,
 )
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 def create_mcp_server(
-    markdown_node: AttributedMarkdownTextFileProtocol,
+    markdown_node: AttributedMarkdownTextFileBase,
     permissions: Sequence[tuple[Node, Permission]] | None = None,
 ) -> FastMCP:
     """Create an MCP server exposing 6 markdown editing tools.

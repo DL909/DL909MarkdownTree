@@ -4,7 +4,7 @@ from typing import TypeVar, override
 from pydantic import BaseModel
 from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
 
-from dl909markdowntree.protocols import AttributedMarkdownTextFileProtocol
+from dl909markdowntree.interface import AttributedMarkdownTextFileBase
 
 from .file_node import FileNode
 from .foldable_markdown_nodes import (
@@ -16,7 +16,7 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class AttributedMarkdownTextFileNode[T: BaseModel](
-    AttributedMarkdownTextFileProtocol, FileNode, TextNode
+    AttributedMarkdownTextFileBase, FileNode, TextNode
 ):
     markdown_text_node: FoldableMarkdownTitleNode
     attribute: T
@@ -87,18 +87,19 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
         markdown_text_node: FoldableMarkdownTitleNode | None = None,
     ):
         file_path = Path(file_path)
+        super().__init__(file_path=file_path)
         if not file_path.exists():
             self.create_file(file_path, attribute_type, attribute)
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
         yaml_data, markdown_content = self._split_frontmatter(content)
-        markdown_text_node = (
+        self.markdown_text_node = (
             markdown_text_node
             if markdown_text_node
             else FoldableMarkdownTitleNode.from_text(
                 text=markdown_content, auto_correct=auto_correct
             )
         )
-        attribute = (
+        self.attribute = (
             attribute if attribute else parse_yaml_raw_as(attribute_type, yaml_data)
         )

@@ -12,7 +12,7 @@ from dl909markdowntree.file_node import FileNode
 from dl909markdowntree.text_node import TextNode
 
 
-class MarkdownTitleProtocol(TextNode):
+class MarkdownTitleBase(TextNode):
     level: int
     title: str
 
@@ -40,7 +40,7 @@ class MarkdownTitleProtocol(TextNode):
     def recursive_find_title_node_by_name(self, title_name: str) -> Self | None: ...
 
 
-class MarkdownTextFileProtocol(FileNode, TextNode):
+class MarkdownTextFileBase(FileNode, TextNode):
     """基础 Markdown 文件协议"""
 
     @staticmethod
@@ -63,22 +63,22 @@ class MarkdownTextFileProtocol(FileNode, TextNode):
     def reload(self) -> None: ...
 
     @abstractmethod
-    def get_root_title(self) -> MarkdownTitleProtocol: ...
+    def get_root_title(self) -> MarkdownTitleBase: ...
 
 
-class NumberedMarkdownTitleProtocol(MarkdownTitleProtocol):
+class NumberedMarkdownTitleBase(MarkdownTitleBase):
     number: list[int]
     auto_correct: bool
 
 
-class NumberedMarkdownTextFileProtocol(MarkdownTextFileProtocol):
+class NumberedMarkdownTextFileBase(MarkdownTextFileBase):
     """带编号的 Markdown 文件协议"""
 
     @abstractmethod
-    def get_root_title(self) -> NumberedMarkdownTitleProtocol: ...
+    def get_root_title(self) -> NumberedMarkdownTitleBase: ...
 
 
-class FoldableMarkdownTitleProtocol(NumberedMarkdownTitleProtocol):
+class FoldableMarkdownTitleBase(NumberedMarkdownTitleBase):
     @abstractmethod
     @override
     def get_text(self, with_fold_info: bool = True, full_text=False) -> str: ...
@@ -102,19 +102,17 @@ class FoldableMarkdownTitleProtocol(NumberedMarkdownTitleProtocol):
     ) -> Self | None: ...
 
 
-class FoldableMarkdownTextFileProtocol(NumberedMarkdownTextFileProtocol):
+class FoldableMarkdownTextFileBase(NumberedMarkdownTextFileBase):
     """可折叠的 Markdown 文件协议"""
 
     @abstractmethod
-    def get_root_title(self) -> FoldableMarkdownTitleProtocol: ...
+    def get_root_title(self) -> FoldableMarkdownTitleBase: ...
 
     @abstractmethod
     def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str: ...
 
 
-class AttributedMarkdownTextFileProtocol[T: BaseModel](
-    FoldableMarkdownTextFileProtocol
-):
+class AttributedMarkdownTextFileBase[T: BaseModel](FoldableMarkdownTextFileBase):
     """带属性的 Markdown 文件协议"""
 
     attribute: T

@@ -4,9 +4,9 @@ import re
 from pathlib import Path
 from typing import override
 
-from dl909markdowntree.protocols import (
-    NumberedMarkdownTextFileProtocol,
-    NumberedMarkdownTitleProtocol,
+from dl909markdowntree.interface import (
+    NumberedMarkdownTextFileBase,
+    NumberedMarkdownTitleBase,
 )
 
 from .numbered_markdown_nodes import (
@@ -16,7 +16,7 @@ from .numbered_markdown_nodes import (
 MDP_FILE_PATTERN = re.compile(r"^(\d+)_(.+)\.mdp$")
 
 
-class NumberedMarkdownFolderNode(NumberedMarkdownTextFileProtocol):
+class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
     @staticmethod
     def create_file(file_path: Path) -> None:
         Path(file_path).mkdir(parents=True, exist_ok=True)
@@ -27,13 +27,25 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileProtocol):
         auto_correct: bool = True,
         markdown_text_node: NumberedMarkdownTitleNode | None = None,
     ):
-        file_path = Path(file_path)
+        self.file_path = file_path
+        self.auto_correct = auto_correct
+        self.markdown_text_node = (
+            markdown_text_node
+            if markdown_text_node
+            else (
+                self._create_text_node(
+                    self._build_synthetic_text_from_dir(file_path),
+                    auto_correct=auto_correct,
+                )
+                if file_path.exists()
+                else NumberedMarkdownTitleNode(level=0)
+            )
+        )
+        if markdown_text_node:
+            self.save()
         if not file_path.exists():
             self.create_file(file_path)
-        if markdown_text_node:
-            self.markdown_text_node = markdown_text_node
-        else:
-            self.reload(auto_correct)
+        self.reload(auto_correct)
 
     @staticmethod
     def _build_synthetic_text_from_dir(mdf_dir: Path) -> str:
@@ -68,6 +80,9 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileProtocol):
     ) -> NumberedMarkdownTitleNode:
         return NumberedMarkdownTitleNode.from_text(text=text, auto_correct=auto_correct)
 
+    def _get_section_content(self, child: NumberedMarkdownTitleNode) -> str:
+        return "".join(child.get_text().splitlines(keepends=True)[1:]).rstrip("\n")
+
     @override
     def reload(self, auto_correct: bool | None = None):
         synthetic_text = self._build_synthetic_text_from_dir(self.file_path)
@@ -97,7 +112,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileProtocol):
                 found_first_level1 = True
                 N = child.number[0]
                 title = child.title
-                content = sum(*child.get_text().splitlines(keepends=True)[1:])
+                content = self._get_section_content(child)
                 sections.append((N, title, content))
             elif not found_first_level1:
                 preamble_parts.append(child)
@@ -110,7 +125,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileProtocol):
             for part in preamble_parts:
                 preamble_content += part.get_text() + "\n" * 2
             if preamble_content != "":
-                preamble_content = preamble_content[:-2]
+                preamble_content = preamble_content[:-2].rstrip("\n")
 
         existing_mapping = {}
         for entry in file_path.iterdir():
@@ -157,5 +172,5 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileProtocol):
         self.markdown_text_node.set_text(text)
 
     @override
-    def get_root_title(self) -> NumberedMarkdownTitleProtocol:
+    def get_root_title(self) -> NumberedMarkdownTitleBase:
         return self.markdown_text_node

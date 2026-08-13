@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import copy
 import re
-from pathlib import Path
 from typing import Self, override
 
-from dl909markdowntree.protocols import (
-    NumberedMarkdownTextFileProtocol,
-    NumberedMarkdownTitleProtocol,
+from dl909markdowntree.interface import (
+    NumberedMarkdownTextFileBase,
+    NumberedMarkdownTitleBase,
 )
 
 from .markdown_nodes import (
@@ -17,7 +16,7 @@ from .markdown_nodes import (
 from .plain_text_nodes import PlainTextNode
 
 
-class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleProtocol):
+class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
     children: list[PlainTextNode | NumberedMarkdownTitleNode]  # pyright: ignore[reportIncompatibleVariableOverride] - children type is intentionally narrowed from base class
     number: list[int]
     auto_correct: bool  # correct incorrect number and warn (otherwise will raise)
@@ -25,7 +24,7 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleProtocol
     @override
     @classmethod
     def from_line(cls, line: str, auto_correct: bool = True) -> Self:
-        match = re.match(r"^(#+) ((\d\.)+) (.+)$", line.rstrip("\n"))
+        match = re.match(r"^(#+) ((?:\d+\.)+) (.+)$", line.rstrip("\n"))
         if not match:
             raise Exception()
         return cls(
@@ -38,8 +37,8 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleProtocol
     @override
     @classmethod
     def from_text(cls, text: str, auto_correct: bool = True) -> Self:
-        result = super().from_text(text)
-        result.auto_correct = auto_correct
+        result = cls(level=0, auto_correct=auto_correct)
+        result.set_text(text)
         return result
 
     @override
@@ -56,18 +55,19 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleProtocol
 
     @override
     def _add_title_child_to_children(self, child: Self) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
-        if isinstance(self.children[-1], NumberedMarkdownTitleNode):
+        if self.children and isinstance(self.children[-1], NumberedMarkdownTitleNode):
             correct_number = copy.deepcopy(self.children[-1].number)
         else:
             if self.level == 0:
                 correct_number = []
             else:
                 correct_number = copy.deepcopy(self.number)
-        while len(correct_number) > child.level:
-            correct_number.append(1)
-        while len(correct_number) < child.level:
-            correct_number = correct_number[:-1]
-        correct_number[-1] += 1
+        if len(correct_number) < child.level:
+            correct_number.extend([1] * (child.level - len(correct_number)))
+        else:
+            while len(correct_number) > child.level:
+                correct_number.pop()
+            correct_number[-1] += 1
 
         if correct_number != child.number:
             if self.auto_correct:
@@ -81,6 +81,7 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleProtocol
                 raise Exception("error number")
         child.auto_correct = self.auto_correct
         self.children.append(child)
+        child.parent = self
 
     @override
     def get_title(self, show_level_sign: bool = True) -> str:
@@ -95,17 +96,9 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleProtocol
         )
 
 
-class NumberedMarkdownTextFileNode(
-    MarkdownTextFileNode, NumberedMarkdownTextFileProtocol
-):
+class NumberedMarkdownTextFileNode(MarkdownTextFileNode, NumberedMarkdownTextFileBase):
     markdown_text_node: NumberedMarkdownTitleNode  # type: ignore - children type is intentionally narrowed from base class
+    markdown_text_node_type = NumberedMarkdownTitleNode
 
-    def get_markdown_text_node(self) -> NumberedMarkdownTitleNode:
+    def get_root_title(self) -> NumberedMarkdownTitleBase:
         return self.markdown_text_node
-
-    def __init__(
-        self,
-        file_path: Path,
-        markdown_text_node: NumberedMarkdownTitleNode | None = None,
-    ):
-        super().__init__(file_path, markdown_text_node)

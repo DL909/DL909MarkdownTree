@@ -6,9 +6,9 @@ from typing import override
 from pydantic import BaseModel
 from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
 
-from dl909markdowntree.protocols import (
-    AttributedMarkdownTextFileProtocol,
-    FoldableMarkdownTitleProtocol,
+from dl909markdowntree.interface import (
+    AttributedMarkdownTextFileBase,
+    FoldableMarkdownTitleBase,
 )
 
 from .foldable_markdown_folder_nodes import FoldableMarkdownFolderNode
@@ -17,7 +17,7 @@ from .foldable_markdown_nodes import FoldableMarkdownTitleNode
 
 class AttributedMarkdownFolderNode[T: BaseModel](
     FoldableMarkdownFolderNode,
-    AttributedMarkdownTextFileProtocol,
+    AttributedMarkdownTextFileBase,
 ):
     markdown_text_node: FoldableMarkdownTitleNode  # type: ignore
     attribute: T
@@ -45,13 +45,16 @@ class AttributedMarkdownFolderNode[T: BaseModel](
         file_path = Path(file_path)
         if not file_path.exists():
             self.create_file(file_path, attribute_type, attribute)
-        yaml_path = Path(file_path) / "FrontMatter.yaml"
-        if attribute is None:
-            if yaml_path.exists():
-                yaml_data = yaml_path.read_text(encoding="utf-8")
-                attribute = parse_yaml_raw_as(attribute_type, yaml_data)
-            else:
-                attribute = attribute_type()
+        yaml_path = file_path / "FrontMatter.yaml"
+        self.attribute = (
+            attribute
+            if attribute
+            else (
+                parse_yaml_raw_as(attribute_type, yaml_path.read_text(encoding="utf-8"))
+                if yaml_path.exists()
+                else attribute_type()
+            )
+        )
         super().__init__(
             file_path=file_path,
             auto_correct=auto_correct,
@@ -66,12 +69,12 @@ class AttributedMarkdownFolderNode[T: BaseModel](
 
     @override
     def reload(self, auto_correct: bool | None = None):
-        super().reload(auto_correct=auto_correct)
         yaml_path = Path(self.file_path) / "FrontMatter.yaml"
         if yaml_path.exists():
             yaml_data = yaml_path.read_text(encoding="utf-8")
             self.attribute = parse_yaml_raw_as(type(self.attribute), yaml_data)
+        super().reload(auto_correct=auto_correct)
 
     @override
-    def get_root_title(self) -> FoldableMarkdownTitleProtocol:
+    def get_root_title(self) -> FoldableMarkdownTitleBase:
         return super().get_root_title()

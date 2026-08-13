@@ -7,6 +7,12 @@ from .foldable_markdown_nodes import (
     FoldableMarkdownTitleNode,
     FoldMode,
 )
+from .interface import (
+    AttributedMarkdownTextFileBase,
+    FoldableMarkdownTextFileBase,
+    MarkdownTextFileBase,
+    NumberedMarkdownTextFileBase,
+)
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .markdown_nodes import MarkdownTextFileNode, MarkdownTitleNode
 from .node import Node
@@ -16,31 +22,25 @@ from .numbered_markdown_nodes import (
 )
 from .permissions import Permission, PermissionChecker
 from .plain_text_nodes import PlainTextFileNode, PlainTextNode
-from .protocols import (
-    AttributedMarkdownTextFileProtocol,
-    FoldableMarkdownTextFileProtocol,
-    MarkdownTextFileProtocol,
-    NumberedMarkdownTextFileProtocol,
-)
 from .text_node import TextNode
 
 __all__ = [
     "AttributedMarkdownFolderNode",
+    "AttributedMarkdownTextFileBase",
     "AttributedMarkdownTextFileNode",
-    "AttributedMarkdownTextFileProtocol",
     "FileNode",
     "FoldMode",
     "FoldableMarkdownFolderNode",
+    "FoldableMarkdownTextFileBase",
     "FoldableMarkdownTextFileNode",
-    "FoldableMarkdownTextFileProtocol",
     "FoldableMarkdownTitleNode",
+    "MarkdownTextFileBase",
     "MarkdownTextFileNode",
-    "MarkdownTextFileProtocol",
     "MarkdownTitleNode",
     "Node",
     "NumberedMarkdownFolderNode",
+    "NumberedMarkdownTextFileBase",
     "NumberedMarkdownTextFileNode",
-    "NumberedMarkdownTextFileProtocol",
     "NumberedMarkdownTitleNode",
     "Permission",
     "PermissionChecker",

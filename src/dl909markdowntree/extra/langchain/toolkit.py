@@ -8,7 +8,7 @@ from langchain_core.tools import ArgsSchema, BaseTool
 from pydantic import BaseModel, Field
 
 from dl909markdowntree import (
-    AttributedMarkdownTextFileProtocol,
+    AttributedMarkdownTextFileBase,
     Node,
     Permission,
     PermissionChecker,
@@ -54,7 +54,7 @@ class _MarkdownReadTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -85,7 +85,7 @@ class _MarkdownReplaceTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -118,7 +118,7 @@ class _MarkdownAppendTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -151,7 +151,7 @@ class _MarkdownUnfoldTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -185,7 +185,7 @@ class _MarkdownReplaceLinesTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -257,7 +257,7 @@ class _MarkdownRenameTitleTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -288,7 +288,7 @@ class MarkdownTreeToolkit:
 
     def __init__(
         self,
-        markdown_node: AttributedMarkdownTextFileProtocol,
+        markdown_node: AttributedMarkdownTextFileBase,
         permissions: Sequence[tuple[Node | None, Permission]] | None = None,
     ):
         self._node = markdown_node
