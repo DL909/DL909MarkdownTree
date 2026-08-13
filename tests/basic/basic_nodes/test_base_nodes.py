@@ -4,7 +4,14 @@ from pathlib import Path
 
 import pytest
 
-from dl909markdowntree import FileNode, Node, PlainTextFileNode, PlainTextNode, TextNode
+from dl909markdowntree import (
+    FileNode,
+    InvalidNodeOperationError,
+    Node,
+    PlainTextFileNode,
+    PlainTextNode,
+    TextNode,
+)
 
 # ─── Node：树结构操作 ──────────────────────────────────────────────────
 
@@ -22,7 +29,7 @@ def test_addchild_rejects_non_orphan():
     other = Node()
     child = Node()
     root.addchild(child)
-    with pytest.raises(AssertionError):
+    with pytest.raises(InvalidNodeOperationError):
         other.addchild(child)
 
 

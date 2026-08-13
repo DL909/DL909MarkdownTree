@@ -3,6 +3,8 @@ from __future__ import annotations
 from abc import ABC
 from typing import Self
 
+from .exceptions import InvalidNodeOperationError
+
 
 # 确保 Node 使用正确的元类
 class Node(ABC):
@@ -24,7 +26,8 @@ class Node(ABC):
         return self
 
     def addchild(self, child: Node) -> None:  # 只能加入孤儿节点
-        assert child.parent is None
+        if child.parent is not None:
+            raise InvalidNodeOperationError("child already has a parent")
         self.children.append(child)
         child.parent = self
 

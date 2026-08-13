@@ -2,10 +2,11 @@
 import pytest
 
 from dl909markdowntree import (
-    IncorrectNumberError,
     FoldableMarkdownTextFileNode,
     FoldableMarkdownTitleNode,
     FoldMode,
+    IncorrectNumberError,
+    InvalidNodeOperationError,
     InvalidNumberedTitleLineError,
     InvalidTitleLevelError,
     PlainTextNode,
@@ -76,6 +77,15 @@ def test_foldable_markdown_title_node_unfold():
     title_node.fold_mode = FoldMode.SHOW_CHILD
     unfolded = child.unfold()
     assert unfolded == "## 1.1. Child\nGrandchild content"
+
+
+def test_foldable_markdown_title_node_unfold_folded_parent_raises():
+    title_node = FoldableMarkdownTitleNode(level=1, title="Parent", number=[1])
+    child = FoldableMarkdownTitleNode(level=2, title="Child", number=[1, 1])
+    title_node.addchild(child)
+    title_node.fold_mode = FoldMode.SHOW_TITLE
+    with pytest.raises(InvalidNodeOperationError):
+        child.unfold()
 
 
 def test_foldable_markdown_title_node_recursive_up_unfold():

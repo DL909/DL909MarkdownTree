@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Self, override
 
+from .exceptions import InvalidNodeOperationError
 from .interface import (
     FoldableMarkdownTextFileBase,
     FoldableMarkdownTitleBase,
@@ -72,10 +73,8 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitle
     def unfold(self) -> str:
         if self.parent is not None and isinstance(
             self.parent, FoldableMarkdownTitleNode
-        ):
-            assert self.parent.fold_mode in [
-                FoldMode.SHOW_CHILD,
-            ]
+        ) and self.parent.fold_mode not in [FoldMode.SHOW_CHILD]:
+            raise InvalidNodeOperationError("parent must be unfolded before unfold")
         self.fold_mode = FoldMode.SHOW_CHILD
         return self.get_text()
 

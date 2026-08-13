@@ -24,3 +24,7 @@ class IncorrectNumberError(MarkdownTreeError):
 
 class InvalidMdpFilenameError(MarkdownTreeError):
     """.mdp 文件名不符合 N_Title.mdp 命名格式"""
+
+
+class InvalidNodeOperationError(MarkdownTreeError):
+    """节点操作不合法，如向树中添加已有父节点的节点"""
