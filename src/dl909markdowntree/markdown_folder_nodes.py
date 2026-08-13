@@ -90,7 +90,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         synthetic_text = self._build_synthetic_text_from_dir(self.file_path)
         self.markdown_text_node = self._create_text_node(
             synthetic_text,
-            auto_correct if auto_correct else self.markdown_text_node.auto_correct,
+            auto_correct if auto_correct is not None else self.markdown_text_node.auto_correct,
         )
 
     @override

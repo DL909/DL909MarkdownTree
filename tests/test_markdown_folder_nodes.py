@@ -217,3 +217,16 @@ def test_numbered_markdown_folder_node_round_trip(tmp_path):
     node.save()
     node.reload()
     assert node.get_text() == original
+
+
+def test_numbered_markdown_folder_node_reload_auto_correct_false(tmp_path):
+    """测试 reload(auto_correct=False) 时显式传入的 False 不被旧值覆盖"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("Content", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=Path(folder), auto_correct=True)
+    node.reload(auto_correct=False)
+    assert node.markdown_text_node.auto_correct is False
+    node2 = NumberedMarkdownFolderNode(file_path=Path(folder), auto_correct=False)
+    node2.reload()
+    assert node2.markdown_text_node.auto_correct is False
