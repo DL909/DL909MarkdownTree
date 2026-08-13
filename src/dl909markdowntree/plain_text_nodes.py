@@ -30,8 +30,7 @@ class PlainTextFileNode(FileNode, TextNode):
     @override
     def save(self):
         with open(self.file_path, "w", encoding="utf-8") as f:
-            if isinstance(self.textNode, PlainTextNode):
-                f.write(self.textNode.text)
+            f.write(self.textNode.get_text())
 
     @override
     def reload(self):
