@@ -2,9 +2,13 @@ from pathlib import Path
 
 import pytest
 
+from dl909markdowntree.models.exceptions import (
+    IncorrectNumberError,
+    InvalidTitleLevelError,
+)
 from dl909markdowntree.numbered_markdown_nodes import (
-    NumberedMarkdownTitleNode,
     NumberedMarkdownTextFileNode,
+    NumberedMarkdownTitleNode,
 )
 from dl909markdowntree.plain_text_nodes import PlainTextNode
 
@@ -14,9 +18,9 @@ def test_numbered_markdown_title_node():
         title="test", level=2, number=[1, 2], auto_correct=False
     )
     assert test_title_node.get_title() == "## 1.2. test"
-    with pytest.raises(Exception, match="error number"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         test_title_node.set_text("test text\n### 1.2.2. test2\ntest text2")
-    with pytest.raises(Exception, match="too high title level"):
+    with pytest.raises(InvalidTitleLevelError, match="too high title level"):
         test_title_node.set_text("test text\n## 1.3. test2")
     test_title_node.set_text("test text\n### 1.2.1. test2\ntest text2")
     assert isinstance(test_title_node.children[0], PlainTextNode)
@@ -32,7 +36,7 @@ def test_numbered_markdown_text_node():
     )
     assert isinstance(test_text_node.children[0], PlainTextNode)
     assert isinstance(test_text_node.children[1], NumberedMarkdownTitleNode)
-    with pytest.raises(Exception, match="error number"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         test_text_node.add_text("# 2. test5")
 
 

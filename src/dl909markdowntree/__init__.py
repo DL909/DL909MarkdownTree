@@ -15,6 +15,15 @@ from .interface import (
 )
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .markdown_nodes import MarkdownTextFileNode, MarkdownTitleNode
+from .models.exceptions import (
+    IncorrectNumberError,
+    InvalidMarkdownLineError,
+    InvalidMdpFilenameError,
+    InvalidNumberedTitleLineError,
+    InvalidTitleLevelError,
+    MarkdownTreeError,
+    UnclosedCodeBlockError,
+)
 from .node import Node
 from .numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
@@ -34,9 +43,15 @@ __all__ = [
     "FoldableMarkdownTextFileBase",
     "FoldableMarkdownTextFileNode",
     "FoldableMarkdownTitleNode",
+    "IncorrectNumberError",
+    "InvalidMarkdownLineError",
+    "InvalidMdpFilenameError",
+    "InvalidNumberedTitleLineError",
+    "InvalidTitleLevelError",
     "MarkdownTextFileBase",
     "MarkdownTextFileNode",
     "MarkdownTitleNode",
+    "MarkdownTreeError",
     "Node",
     "NumberedMarkdownFolderNode",
     "NumberedMarkdownTextFileBase",
@@ -47,4 +62,5 @@ __all__ = [
     "PlainTextFileNode",
     "PlainTextNode",
     "TextNode",
+    "UnclosedCodeBlockError",
 ]

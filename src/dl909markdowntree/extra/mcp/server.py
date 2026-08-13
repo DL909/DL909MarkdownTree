@@ -10,6 +10,7 @@ from dl909markdowntree import (
     Permission,
     PermissionChecker,
 )
+from dl909markdowntree.models.exceptions import MarkdownTreeError
 from dl909markdowntree.node import Node
 
 if TYPE_CHECKING:
@@ -71,7 +72,7 @@ def create_mcp_server(
         try:
             node.set_text(replace_text)
             return "replace succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"replace failed: {e}"
 
     @mcp.tool()
@@ -92,7 +93,7 @@ def create_mcp_server(
         try:
             node.add_text(append_text)
             return "append succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"append failed: {e}"
 
     @mcp.tool()
@@ -111,7 +112,7 @@ def create_mcp_server(
                 raise PermissionError(msg)
         try:
             return node.unfold()
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"unfold failed: {e}"
 
     @mcp.tool()
@@ -160,7 +161,7 @@ def create_mcp_server(
                 try:
                     node.set_text(current_text.replace(matched, new_lines, 1))
                     return "replace_lines succeeded (fuzzy match)"
-                except Exception as e:
+                except MarkdownTreeError as e:
                     return f"replace_lines failed: {e}"
             else:
                 return (
@@ -172,7 +173,7 @@ def create_mcp_server(
         try:
             node.set_text(current_text.replace(old_lines, new_lines, 1))
             return "replace_lines succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"replace_lines failed: {e}"
 
     @mcp.tool()
@@ -193,7 +194,7 @@ def create_mcp_server(
         try:
             node.title = new_title_name
             return "rename_title succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"rename_title failed: {e}"
 
     return mcp

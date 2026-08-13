@@ -1,4 +1,3 @@
-from pathlib import Path
 
 import pytest
 from pydantic import BaseModel
@@ -9,6 +8,7 @@ from dl909markdowntree.attributed_markdown_nodes import (
 from dl909markdowntree.foldable_markdown_nodes import (
     FoldableMarkdownTitleNode,
 )
+from dl909markdowntree.models.exceptions import InvalidNumberedTitleLineError
 
 
 class _TestAttribute(BaseModel):
@@ -382,7 +382,7 @@ author: test
             file_path=file_path, attribute_type=_TestAttribute
         )
         test_file_node.markdown_text_node.auto_correct = False
-        with pytest.raises(Exception):
+        with pytest.raises(InvalidNumberedTitleLineError):
             test_file_node.set_text("# Wrong Number")
 
     def test_attributed_auto_correct_default_enabled(self, tmp_path):

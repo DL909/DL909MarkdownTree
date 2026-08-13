@@ -3,8 +3,13 @@
 import pytest
 
 from dl909markdowntree.foldable_markdown_nodes import (
-    FoldMode,
     FoldableMarkdownTitleNode,
+    FoldMode,
+)
+from dl909markdowntree.models.exceptions import (
+    IncorrectNumberError,
+    InvalidNumberedTitleLineError,
+    InvalidTitleLevelError,
 )
 
 
@@ -16,7 +21,7 @@ def test_foldable_title_node_set_text_invalid_level_recovers_content():
     original_children_count = len(title_node.children)
 
     # 尝试设置包含低级别标题的文本（应该失败）
-    with pytest.raises(Exception, match="too high title level"):
+    with pytest.raises(InvalidTitleLevelError, match="too high title level"):
         title_node.set_text("# 1. Lower level title")
 
     # 验证内容已恢复
@@ -37,7 +42,7 @@ def test_foldable_title_node_set_text_invalid_number_recovers_content():
 Content
 ## 999.2. Wrong Number"""
 
-    with pytest.raises(Exception, match="error number"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         title_node.set_text(invalid_text)
 
     # 验证内容已恢复
@@ -56,7 +61,7 @@ def test_foldable_text_node_set_text_invalid_number_recovers_content():
 Content
 ## 999.1. Wrong Number"""
 
-    with pytest.raises(Exception, match="error number"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         text_node.set_text(invalid_text)
 
     # 验证内容已恢复
@@ -70,7 +75,7 @@ def test_foldable_title_node_set_text_empty_title_recovers_content():
     original_text = title_node.get_text()
 
     # 尝试设置空标题（应该失败）
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidNumberedTitleLineError):
         title_node.set_text("#")
 
     # 验证内容已恢复
@@ -89,7 +94,7 @@ def test_foldable_text_node_set_text_mid_parse_failure_recovers_content():
 Some content
 ## 999.2. Invalid Number"""
 
-    with pytest.raises(Exception, match="error number"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         text_node.set_text(invalid_text)
 
     # 验证内容已恢复
@@ -121,7 +126,7 @@ def test_foldable_title_node_set_text_failure_preserves_fold_state():
     original_text = title_node.get_text()
 
     # 尝试设置非法文本
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidNumberedTitleLineError):
         title_node.set_text("#")
 
     # 验证内容与折叠状态均已恢复/保持

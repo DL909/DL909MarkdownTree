@@ -6,6 +6,11 @@ from pathlib import Path
 from typing import Self, override
 
 from dl909markdowntree.interface import MarkdownTextFileBase, MarkdownTitleBase
+from dl909markdowntree.models.exceptions import (
+    InvalidMarkdownLineError,
+    InvalidTitleLevelError,
+    UnclosedCodeBlockError,
+)
 from dl909markdowntree.node import Node
 from dl909markdowntree.plain_text_nodes import PlainTextNode
 
@@ -24,7 +29,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
     def from_line(cls, line: str) -> Self:
         match = re.match(r"^(#+) (.+)$", line.rstrip("\n"))
         if not match:
-            raise Exception()
+            raise InvalidMarkdownLineError(f"invalid Markdown title line: {line}")
         return cls(level=len(match.group(1)), title=match.group(2))
 
     @classmethod
@@ -42,7 +47,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
                 self.children.append(child)
         elif isinstance(child, MarkdownTitleNode):
             if child.level <= self.level:  # pyright: ignore[reportAttributeAccessIssue] - a subclass of Self obviously will has level
-                raise Exception("too high title level")
+                raise InvalidTitleLevelError("too high title level")
             return self._add_title_child(child)
         else:
             return super().addchild(child)
@@ -100,7 +105,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
                     else:
                         cached_lines += line
         if code_block_flag:
-            raise Exception("unclosed code block")
+            raise UnclosedCodeBlockError("unclosed code block")
         if cached_lines:
             result.addchild(PlainTextNode(cached_lines))
 

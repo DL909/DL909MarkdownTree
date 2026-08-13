@@ -6,8 +6,8 @@ from dl909markdowntree.foldable_markdown_folder_nodes import (
     FoldableMarkdownFolderNode,
 )
 from dl909markdowntree.foldable_markdown_nodes import (
-    FoldMode,
     FoldableMarkdownTitleNode,
+    FoldMode,
 )
 
 

@@ -5,6 +5,10 @@ import pytest
 from dl909markdowntree.markdown_nodes import (
     MarkdownTitleNode,
 )
+from dl909markdowntree.models.exceptions import (
+    InvalidMarkdownLineError,
+    InvalidTitleLevelError,
+)
 
 
 def test_title_node_set_text_invalid_level_recovers_content():
@@ -15,7 +19,7 @@ def test_title_node_set_text_invalid_level_recovers_content():
     original_children_count = len(title_node.children)
 
     # 尝试设置包含低级别标题的文本（应该失败）
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(InvalidTitleLevelError) as exc_info:
         title_node.set_text("# Lower level title")
 
     assert "too high title level" in str(exc_info.value)
@@ -34,7 +38,7 @@ def test_title_node_set_text_empty_title_recovers_content():
     original_children_count = len(title_node.children)
 
     # 尝试设置空标题的文本（应该失败）
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidMarkdownLineError):
         title_node.set_text("#")
 
     # 验证内容已恢复
@@ -49,7 +53,7 @@ def test_text_node_set_text_invalid_title_recovers_content():
     original_children_count = len(text_node.children)
 
     # 尝试设置包含空标题的文本（应该失败）
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidMarkdownLineError):
         text_node.set_text("# ")
 
     # 验证内容已恢复
@@ -67,7 +71,7 @@ def test_text_node_set_text_mid_parse_failure_recovers_content():
 Content
 # """
 
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidMarkdownLineError):
         text_node.set_text(invalid_text)
 
     # 验证内容已恢复
@@ -103,7 +107,7 @@ Content
 ## Valid Subtitle
 # """
 
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidMarkdownLineError):
         text_node.set_text(invalid_text)
 
     # 验证内容已恢复

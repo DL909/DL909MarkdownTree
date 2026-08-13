@@ -1,6 +1,5 @@
 """test_attributed_markdown_nodes_error_recovery.py - 测试属性化 Markdown 文件节点解析失败时的内容恢复功能"""
 
-from pathlib import Path
 
 import pytest
 from pydantic import BaseModel
@@ -10,6 +9,10 @@ from dl909markdowntree.attributed_markdown_nodes import (
 )
 from dl909markdowntree.foldable_markdown_nodes import (
     FoldableMarkdownTitleNode,
+)
+from dl909markdowntree.models.exceptions import (
+    IncorrectNumberError,
+    InvalidNumberedTitleLineError,
 )
 
 
@@ -46,7 +49,7 @@ Content""",
 Content
 ## 999.2. Wrong Number"""
 
-    with pytest.raises(Exception, match="error number"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         file_node.set_text(invalid_text)
 
     # 验证内容已恢复
@@ -77,7 +80,7 @@ Content""",
 Content
 ## 999.1. Wrong Number"""
 
-    with pytest.raises(Exception, match="error number"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         file_node.set_text(invalid_text)
 
     # 验证内容已恢复
@@ -102,7 +105,7 @@ Content""",
     original_text = file_node.get_text()
 
     # 尝试设置空标题（应该失败）
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidNumberedTitleLineError):
         file_node.set_text("# ")
 
     # 验证内容已恢复
@@ -137,7 +140,7 @@ Content
 Subcontent
 ## 999.2. Invalid Number"""
 
-    with pytest.raises(Exception, match="error number"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         file_node.set_text(invalid_text)
 
     # 验证内容已恢复
@@ -189,7 +192,7 @@ Content""",
     original_text = file_node.markdown_text_node.get_text()
 
     # 直接调用 markdown_text_node 的 set_text
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidNumberedTitleLineError):
         file_node.markdown_text_node.set_text("# ")
 
     # 验证内容已恢复

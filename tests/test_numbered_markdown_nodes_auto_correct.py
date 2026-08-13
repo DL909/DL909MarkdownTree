@@ -2,6 +2,7 @@
 
 import pytest
 
+from dl909markdowntree.models.exceptions import IncorrectNumberError
 from dl909markdowntree.numbered_markdown_nodes import (
     NumberedMarkdownTitleNode,
 )
@@ -80,7 +81,7 @@ class TestNumberedMarkdownTitleNodeAutoCorrect:
         title_node = NumberedMarkdownTitleNode(
             title="Test", level=1, number=[1], auto_correct=False
         )
-        with pytest.raises(Exception, match="error number"):
+        with pytest.raises(IncorrectNumberError, match="error number"):
             title_node.set_text("## 9.9. Title without number")
 
     def test_auto_correct_disabled_throws_error_wrong_number(self):
@@ -88,7 +89,7 @@ class TestNumberedMarkdownTitleNodeAutoCorrect:
         title_node = NumberedMarkdownTitleNode(
             title="Chapter 1", level=1, number=[1], auto_correct=False
         )
-        with pytest.raises(Exception, match="error number"):
+        with pytest.raises(IncorrectNumberError, match="error number"):
             title_node.set_text("## 1.5. Wrong Number")
 
     def test_auto_correct_default_enabled(self):
@@ -145,7 +146,7 @@ class TestNumberedMarkdownTitleNodeFromTextAutoCorrect:
 
     def test_auto_correct_text_node_disabled(self):
         """测试 from_text 关闭自纠正时抛出异常"""
-        with pytest.raises(Exception, match="error number"):
+        with pytest.raises(IncorrectNumberError, match="error number"):
             NumberedMarkdownTitleNode.from_text(
                 text="# 5. Wrong Number", auto_correct=False
             )

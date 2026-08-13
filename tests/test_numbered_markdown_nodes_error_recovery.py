@@ -2,6 +2,11 @@
 
 import pytest
 
+from dl909markdowntree.models.exceptions import (
+    IncorrectNumberError,
+    InvalidNumberedTitleLineError,
+    InvalidTitleLevelError,
+)
 from dl909markdowntree.numbered_markdown_nodes import (
     NumberedMarkdownTitleNode,
 )
@@ -17,7 +22,7 @@ def test_numbered_title_node_set_text_invalid_level_recovers_content():
     original_children_count = len(title_node.children)
 
     # 尝试设置包含低级别标题的文本（应该失败）
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(InvalidTitleLevelError) as exc_info:
         title_node.set_text("# 1. Lower level title")
 
     assert "too high title level" in str(exc_info.value)
@@ -40,7 +45,7 @@ def test_numbered_title_node_set_text_invalid_number_recovers_content():
 Content
 ## 999.2. Wrong Number"""
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(IncorrectNumberError) as exc_info:
         title_node.set_text(invalid_text)
 
     assert "error number" in str(exc_info.value)
@@ -61,7 +66,7 @@ def test_numbered_text_node_set_text_invalid_number_recovers_content():
 Content
 ## 999.1. Wrong Number"""
 
-    with pytest.raises(Exception):
+    with pytest.raises(IncorrectNumberError):
         text_node.set_text(invalid_text)
 
     # 验证内容已恢复
@@ -77,7 +82,7 @@ def test_numbered_title_node_set_text_empty_title_recovers_content():
     original_text = title_node.get_text()
 
     # 尝试设置空标题（应该失败）
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidNumberedTitleLineError):
         title_node.set_text("#")
 
     # 验证内容已恢复
@@ -96,7 +101,7 @@ def test_numbered_text_node_set_text_mid_parse_failure_recovers_content():
 Some content
 ## 999.2. Invalid Number"""
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(IncorrectNumberError) as exc_info:
         text_node.set_text(invalid_text)
 
     assert "error number" in str(exc_info.value)

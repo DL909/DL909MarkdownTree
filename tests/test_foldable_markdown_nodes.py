@@ -1,11 +1,15 @@
-from pathlib import Path
 
 import pytest
 
 from dl909markdowntree.foldable_markdown_nodes import (
-    FoldMode,
-    FoldableMarkdownTitleNode,
     FoldableMarkdownTextFileNode,
+    FoldableMarkdownTitleNode,
+    FoldMode,
+)
+from dl909markdowntree.models.exceptions import (
+    IncorrectNumberError,
+    InvalidNumberedTitleLineError,
+    InvalidTitleLevelError,
 )
 from dl909markdowntree.plain_text_nodes import PlainTextNode
 
@@ -15,9 +19,9 @@ def test_foldable_markdown_title_node():
         level=2, title="test", number=[1, 2], auto_correct=False
     )
     assert test_title_node.get_title() == "## 1.2. test"
-    with pytest.raises(Exception, match="error number"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         test_title_node.set_text("test text\n### 1.2.2. test2\ntest text2")
-    with pytest.raises(Exception, match="too high title level"):
+    with pytest.raises(InvalidTitleLevelError, match="too high title level"):
         test_title_node.set_text("test text\n## 1.3. test2")
     test_title_node.set_text("test text\n### 1.2.1. test2\ntest text2")
     assert isinstance(test_title_node.children[0], PlainTextNode)
@@ -280,7 +284,7 @@ class TestFoldableMarkdownAutoCorrect:
         title_node = FoldableMarkdownTitleNode(
             level=1, title="Test", number=[1], auto_correct=False
         )
-        with pytest.raises(Exception):
+        with pytest.raises(InvalidNumberedTitleLineError):
             title_node.set_text("## Wrong Number")
 
     def test_foldable_auto_correct_default_enabled(self):

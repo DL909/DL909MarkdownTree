@@ -3,8 +3,12 @@ from pathlib import Path
 import pytest
 
 from dl909markdowntree.markdown_nodes import (
-    MarkdownTitleNode,
     MarkdownTextFileNode,
+    MarkdownTitleNode,
+)
+from dl909markdowntree.models.exceptions import (
+    InvalidMarkdownLineError,
+    InvalidTitleLevelError,
 )
 from dl909markdowntree.plain_text_nodes import PlainTextNode
 
@@ -116,13 +120,13 @@ Content
 
 def test_markdown_title_node_set_text_invalid_empty_title():
     title_node = MarkdownTitleNode(title="Root", level=1)
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidMarkdownLineError):
         title_node.set_text("#")
 
 
 def test_markdown_title_node_set_text_invalid_lower_level():
     title_node = MarkdownTitleNode(title="Root", level=2)
-    with pytest.raises(Exception):
+    with pytest.raises(InvalidTitleLevelError):
         title_node.set_text("# Lower level")
 
 

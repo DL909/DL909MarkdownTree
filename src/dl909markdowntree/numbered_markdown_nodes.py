@@ -13,6 +13,10 @@ from .markdown_nodes import (
     MarkdownTextFileNode,
     MarkdownTitleNode,
 )
+from .models.exceptions import (
+    IncorrectNumberError,
+    InvalidNumberedTitleLineError,
+)
 from .plain_text_nodes import PlainTextNode
 
 
@@ -26,7 +30,9 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
     def from_line(cls, line: str, auto_correct: bool = True) -> Self:
         match = re.match(r"^(#+) ((?:\d+\.)+) (.+)$", line.rstrip("\n"))
         if not match:
-            raise Exception()
+            raise InvalidNumberedTitleLineError(
+                f"invalid numbered title line: {line}"
+            )
         return cls(
             level=len(match.group(1)),
             number=[int(x) for x in match.group(2).rstrip(".").split(".")],
@@ -78,7 +84,7 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
                 )
                 child.number = correct_number
             else:
-                raise Exception("error number")
+                raise IncorrectNumberError("error number")
         child.auto_correct = self.auto_correct
         self.children.append(child)
         child.parent = self

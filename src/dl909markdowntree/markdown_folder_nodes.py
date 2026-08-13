@@ -9,6 +9,7 @@ from dl909markdowntree.interface import (
     NumberedMarkdownTitleBase,
 )
 
+from .models.exceptions import InvalidMdpFilenameError
 from .numbered_markdown_nodes import (
     NumberedMarkdownTitleNode,
 )
@@ -59,7 +60,9 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
                 continue
             match = MDP_FILE_PATTERN.match(entry.name)
             if not match:
-                raise Exception(f"Invalid .mdp filename format: {entry.name}")
+                raise InvalidMdpFilenameError(
+                    f"Invalid .mdp filename format: {entry.name}"
+                )
             N = int(match.group(1))
             title = match.group(2)
             content = entry.read_text(encoding="utf-8")

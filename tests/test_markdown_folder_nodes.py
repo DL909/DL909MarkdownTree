@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from dl909markdowntree.markdown_folder_nodes import NumberedMarkdownFolderNode
+from dl909markdowntree.models.exceptions import InvalidMdpFilenameError
 from dl909markdowntree.numbered_markdown_nodes import NumberedMarkdownTitleNode
 from dl909markdowntree.plain_text_nodes import PlainTextNode
 
@@ -54,7 +55,7 @@ def test_numbered_markdown_folder_node_reload_invalid_filename_raises(tmp_path):
     folder.mkdir()
     (folder / "1_Valid.mdp").write_text("## Content", encoding="utf-8")
     (folder / "invalid_name.mdp").write_text("## Content", encoding="utf-8")
-    with pytest.raises(Exception, match="Invalid .mdp filename format"):
+    with pytest.raises(InvalidMdpFilenameError, match="Invalid .mdp filename format"):
         NumberedMarkdownFolderNode(file_path=Path(folder))
 
 
