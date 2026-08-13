@@ -82,6 +82,34 @@ More text"""
     assert "def hello():" in full_text
 
 
+def test_markdown_title_node_set_text_with_long_fence():
+    title_node = MarkdownTitleNode(title="Test", level=1)
+    text = """Some text
+````python
+```
+Still inside the block
+````
+More text"""
+    title_node.set_text(text)
+    full_text = title_node.get_text()
+    assert "````python" in full_text
+    assert "```\nStill inside the block" in full_text
+    assert full_text.endswith("More text")
+
+
+def test_markdown_title_node_set_text_closing_fence_trailing_spaces():
+    title_node = MarkdownTitleNode(title="Test", level=1)
+    text = """Some text
+```
+code
+```   
+More text"""
+    title_node.set_text(text)
+    full_text = title_node.get_text()
+    assert "code" in full_text
+    assert full_text.endswith("More text")
+
+
 def test_markdown_title_node_set_text_with_nested_titles():
     title_node = MarkdownTitleNode(title="Root", level=1)
     text = """Introduction

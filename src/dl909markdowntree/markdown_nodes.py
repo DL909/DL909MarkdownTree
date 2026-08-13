@@ -87,14 +87,16 @@ class MarkdownTitleNode(MarkdownTitleBase):
             result.children = []
         cached_lines = ""
         code_block_flag = False
+        fence_run = ""
         for line in lines:
             if code_block_flag:
-                if re.match(r"^``` *\n", line):
+                if re.match(rf"^({re.escape(fence_run)}) *\n", line):
                     code_block_flag = False
                 cached_lines += line
             else:
-                if re.match(r"^```\S*\s*\n", line):
+                if (fence_match := re.match(r"^(`{3,})([^`\n]*)\n", line)) is not None:
                     code_block_flag = True
+                    fence_run = fence_match.group(1)
                     cached_lines += line
                 else:
                     if re.match(r"^#{1,6} ", line):
