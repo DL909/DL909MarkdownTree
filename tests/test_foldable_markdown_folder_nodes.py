@@ -46,11 +46,11 @@ def test_foldable_markdown_folder_node_unfold(tmp_path):
     folder.mkdir()
     (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
     node = FoldableMarkdownFolderNode(file_path=Path(folder))
-    assert (t := node.get_root_title().recursive_find_title_node_by_name("# 1. Intro"))
+    t = node.get_root_title().recursive_find_title_node_by_name("# 1. Intro")
+    assert t is not None
     t.unfold()
-    assert (
-        t := node.get_root_title().recursive_find_title_node_by_name("## 1.1. Opening")
-    )
+    t = node.get_root_title().recursive_find_title_node_by_name("## 1.1. Opening")
+    assert t is not None
     text = t.unfold()
     assert "Opening" in node.get_text()
     assert "Content" in text

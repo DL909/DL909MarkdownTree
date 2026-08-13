@@ -173,9 +173,8 @@ def test_foldable_markdown_text_node_recursive_find_within_shown():
         test_text_node.recursive_find_title_node_by_name("## 1.1. Subtitle1", True)
         is None
     )
-    assert (
-        found := test_text_node.recursive_find_title_node_by_name("# 1. Title1")
-    ) is not None
+    found = test_text_node.recursive_find_title_node_by_name("# 1. Title1")
+    assert found is not None
     found.unfold()
     assert (
         test_text_node.recursive_find_title_node_by_name("## 1.1. Subtitle1", True)
