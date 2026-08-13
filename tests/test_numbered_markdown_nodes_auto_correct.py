@@ -2,33 +2,33 @@
 
 import pytest
 
-from dl909markdowntree.numbered_markdown_nodes import (
-    NumberedMarkdownTextNode,
+from dl909markdowntree import (
+    IncorrectNumberError,
     NumberedMarkdownTitleNode,
+    PlainTextNode,
 )
-from dl909markdowntree.plain_text_nodes import PlainTextNode
 
 
 class TestNumberedMarkdownTitleNodeAutoCorrect:
     """NumberedMarkdownTitleNode 自纠正模式测试"""
 
     def test_auto_correct_missing_number_single_level(self):
-        """测试单级标题无编号时自动添加"""
+        """测试单级标题错误编号时自动纠正"""
         title_node = NumberedMarkdownTitleNode(
             title="Test", level=1, number=[1], auto_correct=True
         )
-        title_node.set_text("## Title without number")
+        title_node.set_text("## 9.9. Title without number")
         assert len(title_node.children) == 1
         assert title_node.children[0].title == "Title without number"
         assert title_node.children[0].number == [1, 1]
 
     def test_auto_correct_missing_number_nested(self):
-        """测试嵌套标题无编号时自动添加"""
+        """测试嵌套标题错误编号时自动纠正"""
         title_node = NumberedMarkdownTitleNode(
             title="Chapter 1", level=1, number=[1], auto_correct=True
         )
         title_node.set_text(
-            "## Section 1\n### Subsection 1\n## Section 2\n### Subsection 2"
+            "## 9.9. Section 1\n### 9.9.9. Subsection 1\n## 9.8. Section 2\n### 9.8.9. Subsection 2"
         )
         assert len(title_node.children) == 2
         assert title_node.children[0].number == [1, 1]
@@ -59,11 +59,11 @@ class TestNumberedMarkdownTitleNodeAutoCorrect:
         assert title_node.children[2].number == [1, 3]
 
     def test_auto_correct_plain_title_format(self):
-        """测试普通标题格式（无编号）自动纠正"""
+        """测试普通标题格式（错误编号）自动纠正"""
         title_node = NumberedMarkdownTitleNode(
             title="Root", level=1, number=[1], auto_correct=True
         )
-        title_node.set_text("## Plain Title\n### Another Plain")
+        title_node.set_text("## 9.9. Plain Title\n### 9.9.9. Another Plain")
         assert len(title_node.children) == 1
         assert title_node.children[0].number == [1, 1]
         assert title_node.children[0].title == "Plain Title"
@@ -73,47 +73,47 @@ class TestNumberedMarkdownTitleNodeAutoCorrect:
         title_node = NumberedMarkdownTitleNode(
             title="Chapter", level=1, number=[1], auto_correct=True
         )
-        title_node.set_text("## Section")
+        title_node.set_text("## 9.9. Section")
         assert title_node.children[0].get_title() == "## 1.1. Section"
 
     def test_auto_correct_disabled_throws_error_missing_number(self):
-        """测试关闭自纠正时，无编号标题抛出异常"""
+        """测试关闭自纠正时，错误编号标题抛出异常"""
         title_node = NumberedMarkdownTitleNode(
             title="Test", level=1, number=[1], auto_correct=False
         )
-        with pytest.raises(Exception, match="编号标题解析失败"):
-            title_node.set_text("## Title without number")
+        with pytest.raises(IncorrectNumberError, match="error number"):
+            title_node.set_text("## 9.9. Title without number")
 
     def test_auto_correct_disabled_throws_error_wrong_number(self):
         """测试关闭自纠正时，错误编号抛出异常"""
         title_node = NumberedMarkdownTitleNode(
             title="Chapter 1", level=1, number=[1], auto_correct=False
         )
-        with pytest.raises(Exception, match=r"isn't"):
+        with pytest.raises(IncorrectNumberError, match="error number"):
             title_node.set_text("## 1.5. Wrong Number")
 
     def test_auto_correct_default_enabled(self):
         """测试默认自纠正功能是开启的"""
         title_node = NumberedMarkdownTitleNode(title="Test", level=1, number=[1])
         assert title_node.auto_correct is True
-        title_node.set_text("## Wrong Number")
+        title_node.set_text("## 9.9. Wrong Number")
 
 
-class TestNumberedMarkdownTextNodeAutoCorrect:
-    """NumberedMarkdownTextNode 自纠正模式测试"""
+class TestNumberedMarkdownTitleNodeFromTextAutoCorrect:
+    """NumberedMarkdownTitleNode.from_text 自纠正模式测试"""
 
     def test_auto_correct_text_node_missing_number(self):
-        """测试 TextNode 级别无编号自动纠正"""
-        text_node = NumberedMarkdownTextNode(
-            text="# Title without number", auto_correct=True
+        """测试 from_text 级别错误编号自动纠正"""
+        text_node = NumberedMarkdownTitleNode.from_text(
+            text="# 5. Title without number", auto_correct=True
         )
         assert len(text_node.children) == 1
         assert text_node.children[0].number == [1]
         assert text_node.children[0].title == "Title without number"
 
     def test_auto_correct_text_node_wrong_number(self):
-        """测试 TextNode 级别错误编号自动纠正"""
-        text_node = NumberedMarkdownTextNode(
+        """测试 from_text 级别错误编号自动纠正"""
+        text_node = NumberedMarkdownTitleNode.from_text(
             text="# 5. Wrong\n# 3. Also Wrong", auto_correct=True
         )
         assert len(text_node.children) == 2
@@ -121,9 +121,9 @@ class TestNumberedMarkdownTextNodeAutoCorrect:
         assert text_node.children[1].number == [2]
 
     def test_auto_correct_text_node_nested(self):
-        """测试 TextNode 嵌套标题自动纠正"""
-        text_node = NumberedMarkdownTextNode(
-            text="# Title\n## Subtitle\n# Another Title\n## Another Subtitle",
+        """测试 from_text 嵌套标题自动纠正"""
+        text_node = NumberedMarkdownTitleNode.from_text(
+            text="# 5. Title\n## 5.5. Subtitle\n# 3. Another Title\n## 3.3. Another Subtitle",
             auto_correct=True,
         )
         assert len(text_node.children) == 2
@@ -133,27 +133,29 @@ class TestNumberedMarkdownTextNodeAutoCorrect:
         assert text_node.children[1].children[0].number == [2, 1]
 
     def test_auto_correct_text_node_mixed_with_text(self):
-        """测试 TextNode 混合文本和标题的自动纠正"""
-        text_node = NumberedMarkdownTextNode(
-            text="Some intro text\n# Title\nContent\n## Subtitle\nMore content",
+        """测试 from_text 混合文本和标题的自动纠正"""
+        text_node = NumberedMarkdownTitleNode.from_text(
+            text="Some intro text\n# 5. Title\nContent\n## 5.5. Subtitle\nMore content",
             auto_correct=True,
         )
         assert isinstance(text_node.children[0], PlainTextNode)
-        assert text_node.children[0].get_text() == "Some intro text"
+        assert text_node.children[0].get_text() == "Some intro text\n"
         assert text_node.children[1].number == [1]
-        assert text_node.children[1].children[0].get_text() == "Content"
+        assert text_node.children[1].children[0].get_text() == "Content\n"
         assert text_node.children[1].children[1].number == [1, 1]
 
     def test_auto_correct_text_node_disabled(self):
-        """测试 TextNode 关闭自纠正时抛出异常"""
-        with pytest.raises(Exception, match="编号标题解析失败"):
-            NumberedMarkdownTextNode(text="# Wrong Number", auto_correct=False)
+        """测试 from_text 关闭自纠正时抛出异常"""
+        with pytest.raises(IncorrectNumberError, match="error number"):
+            NumberedMarkdownTitleNode.from_text(
+                text="# 5. Wrong Number", auto_correct=False
+            )
 
     def test_auto_correct_text_node_default_enabled(self):
-        """测试 TextNode 默认自纠正是开启的"""
-        text_node = NumberedMarkdownTextNode(text="# 1. Correct")
+        """测试 from_text 默认自纠正是开启的"""
+        text_node = NumberedMarkdownTitleNode.from_text(text="# 1. Correct")
         assert text_node.auto_correct is True
-        text_node.add_text("# Wrong Number")
+        text_node.add_text("# 9.9. Wrong Number")
 
 
 class TestAutoCorrectEdgeCases:
@@ -164,7 +166,9 @@ class TestAutoCorrectEdgeCases:
         title_node = NumberedMarkdownTitleNode(
             title="Root", level=1, number=[1], auto_correct=True
         )
-        title_node.set_text("## L2\n### L3\n#### L4\n##### L5\n###### L6")
+        title_node.set_text(
+            "## 9.9. L2\n### 9.9.9. L3\n#### 9.9.9.9. L4\n##### 9.9.9.9.9. L5\n###### 9.9.9.9.9.9. L6"
+        )
         assert title_node.children[0].number == [1, 1]
         assert title_node.children[0].children[0].number == [1, 1, 1]
         assert title_node.children[0].children[0].children[0].number == [
@@ -196,7 +200,7 @@ class TestAutoCorrectEdgeCases:
         title_node = NumberedMarkdownTitleNode(
             title="Root", level=1, number=[1], auto_correct=True
         )
-        title_node.set_text("#### Skip to L4")
+        title_node.set_text("#### 9.9.9.9. Skip to L4")
         assert len(title_node.children) == 1
         assert title_node.children[0].number == [1, 1, 1, 1]
         assert title_node.children[0].level == 4
@@ -206,7 +210,9 @@ class TestAutoCorrectEdgeCases:
         title_node = NumberedMarkdownTitleNode(
             title="Chapter", level=1, number=[1], auto_correct=True
         )
-        title_node.set_text("## Section 1\n```\n# This is code\n```\n## Section 2")
+        title_node.set_text(
+            "## 9.9. Section 1\n```\n# This is code\n```\n## 9.8. Section 2"
+        )
         assert len(title_node.children) == 2
         assert title_node.children[0].number == [1, 1]
         assert title_node.children[1].number == [1, 2]
@@ -224,8 +230,9 @@ class TestAutoCorrectEdgeCases:
 
     def test_auto_correct_get_text_after_correction(self):
         """测试纠正后 get_text() 输出正确的编号"""
-        text_node = NumberedMarkdownTextNode(
-            text="# Title\n## Sub\n# Wrong\n## Sub2", auto_correct=True
+        text_node = NumberedMarkdownTitleNode.from_text(
+            text="# 5. Title\n## 5.5. Sub\n# 3. Wrong\n## 3.3. Sub2",
+            auto_correct=True,
         )
         output = text_node.get_text()
         assert "# 1. Title" in output

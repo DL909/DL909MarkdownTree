@@ -1,55 +1,72 @@
 from .attributed_markdown_folder_nodes import AttributedMarkdownFolderNode
 from .attributed_markdown_nodes import AttributedMarkdownTextFileNode
+from .exceptions import (
+    IncorrectNumberError,
+    InvalidMarkdownLineError,
+    InvalidMdpFilenameError,
+    InvalidNumberedTitleLineError,
+    InvalidTitleLevelError,
+    MarkdownTreeError,
+    UnclosedCodeBlockError,
+)
 from .file_node import FileNode
 from .foldable_markdown_folder_nodes import FoldableMarkdownFolderNode
 from .foldable_markdown_nodes import (
     FoldableMarkdownTextFileNode,
-    FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
     FoldMode,
 )
+from .interface import (
+    AttributedMarkdownTextFileBase,
+    FoldableMarkdownTextFileBase,
+    FoldableMarkdownTitleBase,
+    MarkdownTextFileBase,
+    MarkdownTitleBase,
+    NumberedMarkdownTextFileBase,
+    NumberedMarkdownTitleBase,
+)
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
-from .markdown_nodes import MarkdownTextFileNode, MarkdownTextNode, MarkdownTitleNode
+from .markdown_nodes import MarkdownTextFileNode, MarkdownTitleNode
 from .node import Node
 from .numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
-    NumberedMarkdownTextNode,
     NumberedMarkdownTitleNode,
 )
 from .permissions import Permission, PermissionChecker
 from .plain_text_nodes import PlainTextFileNode, PlainTextNode
-from .protocols import (
-    AttributedMarkdownTextFileProtocol,
-    FoldableMarkdownTextFileProtocol,
-    MarkdownTextFileProtocol,
-    NumberedMarkdownTextFileProtocol,
-)
 from .text_node import TextNode
 
 __all__ = [
     "AttributedMarkdownFolderNode",
+    "AttributedMarkdownTextFileBase",
     "AttributedMarkdownTextFileNode",
-    "AttributedMarkdownTextFileProtocol",
     "FileNode",
     "FoldMode",
     "FoldableMarkdownFolderNode",
+    "FoldableMarkdownTextFileBase",
     "FoldableMarkdownTextFileNode",
-    "FoldableMarkdownTextFileProtocol",
-    "FoldableMarkdownTextNode",
+    "FoldableMarkdownTitleBase",
     "FoldableMarkdownTitleNode",
+    "IncorrectNumberError",
+    "InvalidMarkdownLineError",
+    "InvalidMdpFilenameError",
+    "InvalidNumberedTitleLineError",
+    "InvalidTitleLevelError",
+    "MarkdownTextFileBase",
     "MarkdownTextFileNode",
-    "MarkdownTextFileProtocol",
-    "MarkdownTextNode",
+    "MarkdownTitleBase",
     "MarkdownTitleNode",
+    "MarkdownTreeError",
     "Node",
     "NumberedMarkdownFolderNode",
+    "NumberedMarkdownTextFileBase",
     "NumberedMarkdownTextFileNode",
-    "NumberedMarkdownTextFileProtocol",
-    "NumberedMarkdownTextNode",
+    "NumberedMarkdownTitleBase",
     "NumberedMarkdownTitleNode",
     "Permission",
     "PermissionChecker",
     "PlainTextFileNode",
     "PlainTextNode",
     "TextNode",
+    "UnclosedCodeBlockError",
 ]

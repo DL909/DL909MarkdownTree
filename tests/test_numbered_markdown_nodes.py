@@ -2,20 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from dl909markdowntree.numbered_markdown_nodes import (
-    NumberedMarkdownTextNode,
-    NumberedMarkdownTitleNode,
+from dl909markdowntree import (
+    IncorrectNumberError,
+    InvalidTitleLevelError,
     NumberedMarkdownTextFileNode,
+    NumberedMarkdownTitleNode,
+    PlainTextNode,
 )
-from dl909markdowntree.plain_text_nodes import PlainTextNode
-
-
-def test_parse_title():
-    assert NumberedMarkdownTitleNode._parse_title("### 1.1. test") == (
-        3,
-        [1, 1],
-        "test",
-    )
 
 
 def test_numbered_markdown_title_node():
@@ -23,25 +16,25 @@ def test_numbered_markdown_title_node():
         title="test", level=2, number=[1, 2], auto_correct=False
     )
     assert test_title_node.get_title() == "## 1.2. test"
-    with pytest.raises(Exception, match=r"isn't"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         test_title_node.set_text("test text\n### 1.2.2. test2\ntest text2")
-    with pytest.raises(Exception, match="过低等级的标题"):
+    with pytest.raises(InvalidTitleLevelError, match="too high title level"):
         test_title_node.set_text("test text\n## 1.3. test2")
     test_title_node.set_text("test text\n### 1.2.1. test2\ntest text2")
     assert isinstance(test_title_node.children[0], PlainTextNode)
-    assert test_title_node.children[0].get_text() == "test text"
+    assert test_title_node.children[0].get_text() == "test text\n"
     assert isinstance(test_title_node.children[1], NumberedMarkdownTitleNode)
     assert test_title_node.children[1].get_title() == "### 1.2.1. test2"
 
 
 def test_numbered_markdown_text_node():
-    test_text_node = NumberedMarkdownTextNode(
-        text="test text 0\n# 1. test1\n## 1.1. test2\ntest text\n# 2. test2\n## 2.1. test3\ntest text",
+    test_text_node = NumberedMarkdownTitleNode.from_text(
+        "test text 0\n# 1. test1\n## 1.1. test2\ntest text\n# 2. test2\n## 2.1. test3\ntest text",
         auto_correct=False,
     )
     assert isinstance(test_text_node.children[0], PlainTextNode)
     assert isinstance(test_text_node.children[1], NumberedMarkdownTitleNode)
-    with pytest.raises(Exception, match=r"isn't"):
+    with pytest.raises(IncorrectNumberError, match="error number"):
         test_text_node.add_text("# 2. test5")
 
 
@@ -57,8 +50,8 @@ def test_numbered_markdown_title_node_hierarchy():
 
 
 def test_numbered_markdown_text_node_get_text():
-    test_text_node = NumberedMarkdownTextNode(
-        text="# 1. Title\nSome text\n## 1.1. Subtitle\nMore text"
+    test_text_node = NumberedMarkdownTitleNode.from_text(
+        "# 1. Title\nSome text\n## 1.1. Subtitle\nMore text"
     )
     output = test_text_node.get_text()
     assert "# 1. Title" in output
@@ -68,8 +61,8 @@ def test_numbered_markdown_text_node_get_text():
 
 
 def test_numbered_markdown_text_node_recursive_find():
-    test_text_node = NumberedMarkdownTextNode(
-        text="# 1. Title1\n## 1.1. Subtitle1\n# 2. Title2\n## 2.1. Subtitle2"
+    test_text_node = NumberedMarkdownTitleNode.from_text(
+        "# 1. Title1\n## 1.1. Subtitle1\n# 2. Title2\n## 2.1. Subtitle2"
     )
     found = test_text_node.recursive_find_title_node_by_name("## 1.1. Subtitle1")
     assert found is not None
@@ -78,56 +71,39 @@ def test_numbered_markdown_text_node_recursive_find():
     assert not_found is None
 
 
-def test_numbered_markdown_text_file_node(fs):
-    fs.create_file(
-        "/var/data/test.md",
-        contents="# 1. Title\nContent here\n## 1.1. Sub\nMore content",
-    )
-    test_file_node = NumberedMarkdownTextFileNode(file_path=Path("/var/data/test.md"))
-    assert test_file_node.file_path == Path("/var/data/test.md")
-    assert isinstance(test_file_node.markdown_text_node, NumberedMarkdownTextNode)
+def test_numbered_markdown_text_file_node(tmp_path: Path):
+    path = tmp_path / "test.md"
+    path.write_text("# 1. Title\nContent here\n## 1.1. Sub\nMore content")
+    test_file_node = NumberedMarkdownTextFileNode(file_path=path)
+    assert test_file_node.file_path == path
+    assert isinstance(test_file_node.markdown_text_node, NumberedMarkdownTitleNode)
     assert "# 1. Title" in test_file_node.get_text()
 
 
-def test_numbered_markdown_text_file_node_save(fs):
-    fs.create_file("/var/data/test.md", contents="# 1. Title\nInitial content")
-    test_file_node = NumberedMarkdownTextFileNode(file_path=Path("/var/data/test.md"))
+def test_numbered_markdown_text_file_node_save(tmp_path: Path):
+    path = tmp_path / "test.md"
+    path.write_text("# 1. Title\nInitial content")
+    test_file_node = NumberedMarkdownTextFileNode(file_path=path)
     test_file_node.set_text("# 1. Title\nModified content\n## 1.1. New section")
     test_file_node.save()
-    with open("/var/data/test.md", "r", encoding="utf-8") as f:
-        content = f.read()
+    content = path.read_text(encoding="utf-8")
     assert "# 1. Title" in content
     assert "Modified content" in content
     assert "## 1.1. New section" in content
 
 
-def test_numbered_markdown_text_file_node_reload(fs):
-    fs.create_file("/var/data/test.md", contents="# 1. Title\nOriginal content")
-    test_file_node = NumberedMarkdownTextFileNode(file_path=Path("/var/data/test.md"))
-    fs.remove("/var/data/test.md")
-    fs.create_file(
-        "/var/data/test.md",
-        contents="# 1. Title\nReloaded content\n## 1.1. New",
-    )
+def test_numbered_markdown_text_file_node_reload(tmp_path: Path):
+    path = tmp_path / "test.md"
+    path.write_text("# 1. Title\nOriginal content")
+    test_file_node = NumberedMarkdownTextFileNode(file_path=path)
+    path.write_text("# 1. Title\nReloaded content\n## 1.1. New")
     test_file_node.reload()
-    assert test_file_node.get_text() == "# 1. Title\n\nReloaded content\n\n## 1.1. New"
-
-
-def test_numbered_markdown_title_node_all_children_are_titles():
-    title_node = NumberedMarkdownTitleNode(title="Test", level=1, number=[1])
-    assert title_node.all_children_are_titles()
-    title_node.addchild(PlainTextNode("some text"))
-    assert not title_node.all_children_are_titles()
-    title_node.children.clear()
-    title_node.addchild(
-        NumberedMarkdownTitleNode(title="Child", level=2, number=[1, 1])
-    )
-    assert title_node.all_children_are_titles()
+    assert test_file_node.get_text() == "# 1. Title\nReloaded content\n## 1.1. New\n"
 
 
 def test_numbered_markdown_text_node_recursive_find_trailing_newline():
-    test_text_node = NumberedMarkdownTextNode(
-        text="# 1. Title\n## 1.1. Subtitle\nContent"
+    test_text_node = NumberedMarkdownTitleNode.from_text(
+        "# 1. Title\n## 1.1. Subtitle\nContent"
     )
     found = test_text_node.recursive_find_title_node_by_name("## 1.1. Subtitle\n")
     assert found is not None

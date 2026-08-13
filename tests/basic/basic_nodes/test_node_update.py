@@ -1,6 +1,4 @@
-"""Node.update 的删除逻辑测试（覆盖历史上「连续 deprecated 漏删」的 bug）。"""
-
-from dl909markdowntree.node import Node
+from dl909markdowntree import Node
 
 
 def _tree(n: int) -> tuple[Node, list[Node]]:

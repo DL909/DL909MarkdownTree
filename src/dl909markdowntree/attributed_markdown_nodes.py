@@ -6,24 +6,19 @@ from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
 
 from .file_node import FileNode
 from .foldable_markdown_nodes import (
-    FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
 )
+from .interface import AttributedMarkdownTextFileBase
 from .text_node import TextNode
 
 T = TypeVar("T", bound=BaseModel)
 
 
-class AttributedMarkdownTextFileNode[T: BaseModel](FileNode, TextNode):
-    markdown_text_node: FoldableMarkdownTextNode
+class AttributedMarkdownTextFileNode[T: BaseModel](
+    AttributedMarkdownTextFileBase, FileNode, TextNode
+):
+    markdown_text_node: FoldableMarkdownTitleNode
     attribute: T
-
-    def recursive_find_title_node_by_name(
-        self, title_name: str, within_shown: bool = False
-    ) -> FoldableMarkdownTitleNode | None:
-        return self.markdown_text_node.recursive_find_title_node_by_name(
-            title_name=title_name, within_shown=within_shown
-        )
 
     @override
     def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
@@ -31,7 +26,7 @@ class AttributedMarkdownTextFileNode[T: BaseModel](FileNode, TextNode):
             with_fold_info=with_fold_info, full_text=full_text
         )
 
-    def get_markdown_text_node(self) -> FoldableMarkdownTextNode:
+    def get_root_title(self) -> FoldableMarkdownTitleNode:
         return self.markdown_text_node
 
     @override
@@ -50,7 +45,9 @@ class AttributedMarkdownTextFileNode[T: BaseModel](FileNode, TextNode):
 
     @staticmethod
     def create_file(
-        file_path: Path, attribute_type: type[T], attribute: T | None = None
+        file_path: Path,
+        attribute_type: type[T],
+        attribute: T | None = None,
     ) -> None:
         file_path = Path(file_path)
         file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -75,32 +72,33 @@ class AttributedMarkdownTextFileNode[T: BaseModel](FileNode, TextNode):
         with open(self.file_path, "r", encoding="utf-8") as f:
             content = f.read()
         yaml_data, markdown_content = self._split_frontmatter(content)
-        self.markdown_text_node = FoldableMarkdownTextNode(text=markdown_content)
+        self.markdown_text_node = FoldableMarkdownTitleNode.from_text(
+            text=markdown_content
+        )
         self.attribute = parse_yaml_raw_as(type(self.attribute), yaml_data)
 
-    def __init__(self, file_path: Path, attribute_type: type[T], **kwargs):
+    def __init__(
+        self,
+        file_path: Path,
+        attribute_type: type[T],
+        attribute: T | None = None,
+        auto_correct: bool = True,
+        markdown_text_node: FoldableMarkdownTitleNode | None = None,
+    ):
         file_path = Path(file_path)
-        explicit_attribute = kwargs.pop("attribute", None)
+        super().__init__(file_path=file_path)
         if not file_path.exists():
-            self.create_file(file_path, attribute_type, explicit_attribute)
+            self.create_file(file_path, attribute_type, attribute)
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
         yaml_data, markdown_content = self._split_frontmatter(content)
-        auto_correct = kwargs.pop("auto_correct", True)
-        markdown_text_node = FoldableMarkdownTextNode(
-            text=markdown_content, auto_correct=auto_correct
+        self.markdown_text_node = (
+            markdown_text_node
+            if markdown_text_node
+            else FoldableMarkdownTitleNode.from_text(
+                text=markdown_content, auto_correct=auto_correct
+            )
         )
-        attribute = (
-            explicit_attribute
-            if explicit_attribute is not None
-            else parse_yaml_raw_as(attribute_type, yaml_data)
-        )
-        if kwargs.get("markdown_text_node"):
-            markdown_text_node = kwargs.pop("markdown_text_node")
-
-        super().__init__(
-            file_path=file_path,
-            markdown_text_node=markdown_text_node,
-            attribute=attribute,
-            **kwargs,
+        self.attribute = (
+            attribute if attribute else parse_yaml_raw_as(attribute_type, yaml_data)
         )

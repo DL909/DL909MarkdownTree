@@ -1,11 +1,10 @@
 """test_base_nodes.py - 基类节点（Node/TextNode/FileNode/PlainTextNode/TextFileNode）测试"""
 
-import pathlib
+from pathlib import Path
 
 import pytest
 
-from dl909markdowntree import FileNode, Node, PlainTextNode, PlainTextFileNode, TextNode
-
+from dl909markdowntree import FileNode, Node, PlainTextFileNode, PlainTextNode, TextNode
 
 # ─── Node：树结构操作 ──────────────────────────────────────────────────
 
@@ -85,29 +84,32 @@ def test_plain_text_node_str_returns_text():
 # ─── TextFileNode ──────────────────────────────────────────────────────
 
 
-def test_text_file_node_init_reads_file(fs):
-    fs.create_file("/tmp/plain.txt", contents="initial content")
-    node = PlainTextFileNode(file_path=pathlib.Path("/tmp/plain.txt"))
+def test_text_file_node_init_reads_file(tmp_path: Path):
+    path = tmp_path / "plain.txt"
+    path.write_text("initial content")
+    node = PlainTextFileNode(file_path=path)
     assert node.get_text() == "initial content"
     assert isinstance(node.textNode, PlainTextNode)
 
 
-def test_text_file_node_save_writes_disk(fs):
-    fs.create_file("/tmp/plain.txt", contents="old")
-    node = PlainTextFileNode(file_path=pathlib.Path("/tmp/plain.txt"))
+def test_text_file_node_save_writes_disk(tmp_path: Path):
+    plain_file = tmp_path / "plain.txt"
+    plain_file.write_text("old")
+    node = PlainTextFileNode(file_path=plain_file)
     node.set_text("new content")
     node.save()
-    assert pathlib.Path("/tmp/plain.txt").read_text(encoding="utf-8") == "new content"
+    assert plain_file.read_text(encoding="utf-8") == "new content"
 
 
-def test_text_file_node_reload_rerereads_disk(fs):
-    fs.create_file("/tmp/plain.txt", contents="first")
-    node = PlainTextFileNode(file_path=pathlib.Path("/tmp/plain.txt"))
-    pathlib.Path("/tmp/plain.txt").write_text("second", encoding="utf-8")
+def test_text_file_node_reload_rerereads_disk(tmp_path: Path):
+    plain_file = tmp_path / "plain.txt"
+    plain_file.write_text("first")
+    node = PlainTextFileNode(file_path=plain_file)
+    plain_file.write_text("second", encoding="utf-8")
     node.reload()
     assert node.get_text() == "second"
 
 
-def test_text_file_node_init_missing_file_raises(fs):
+def test_text_file_node_init_missing_file_raises(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
-        PlainTextFileNode(file_path=pathlib.Path("/tmp/not_there.txt"))
+        PlainTextFileNode(file_path=tmp_path / "not_there.txt")

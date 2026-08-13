@@ -7,12 +7,10 @@ from collections.abc import Sequence
 from langchain_core.tools import ArgsSchema, BaseTool
 from pydantic import BaseModel, Field
 
-from dl909markdowntree import (
-    AttributedMarkdownTextFileProtocol,
-    Node,
-    Permission,
-    PermissionChecker,
-)
+from ...exceptions import MarkdownTreeError
+from ...interface import AttributedMarkdownTextFileBase
+from ...node import Node
+from ...permissions import Permission, PermissionChecker
 
 
 class _ReadArgs(BaseModel):
@@ -54,7 +52,7 @@ class _MarkdownReadTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -63,7 +61,7 @@ class _MarkdownReadTool(BaseTool):
 
     def _run(self, target: str | None = None) -> str:
         if self._checker and target:
-            t = self._node.recursive_find_title_node_by_name(target)
+            t = self._node.get_root_title().recursive_find_title_node_by_name(target)
             if t is None:
                 return f"read failed: no title matching '{target}'"
             ok, msg = self._checker.check_permission(t, Permission.READ)
@@ -71,7 +69,7 @@ class _MarkdownReadTool(BaseTool):
                 return msg
 
         if target:
-            node = self._node.recursive_find_title_node_by_name(target)
+            node = self._node.get_root_title().recursive_find_title_node_by_name(target)
             if node is None:
                 return f"read failed: no title matching '{target}'"
             return node.get_text()
@@ -85,7 +83,7 @@ class _MarkdownReplaceTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -94,20 +92,20 @@ class _MarkdownReplaceTool(BaseTool):
 
     def _run(self, target: str, replace_text: str) -> str:
         if self._checker:
-            t = self._node.recursive_find_title_node_by_name(target)
+            t = self._node.get_root_title().recursive_find_title_node_by_name(target)
             if t is None:
                 return f"replace failed: no title matching '{target}'"
             ok, msg = self._checker.check_permission(t, Permission.READ_WRITE)
             if not ok:
                 return msg
 
-        node = self._node.recursive_find_title_node_by_name(target)
+        node = self._node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"replace failed: no title matching '{target}'"
         try:
             node.set_text(replace_text)
             return "replace succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"replace failed: {e}"
 
 
@@ -118,7 +116,7 @@ class _MarkdownAppendTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -127,20 +125,20 @@ class _MarkdownAppendTool(BaseTool):
 
     def _run(self, target: str, append_text: str) -> str:
         if self._checker:
-            t = self._node.recursive_find_title_node_by_name(target)
+            t = self._node.get_root_title().recursive_find_title_node_by_name(target)
             if t is None:
                 return f"append failed: no title matching '{target}'"
             ok, msg = self._checker.check_permission(t, Permission.READ_WRITE)
             if not ok:
                 return msg
 
-        node = self._node.recursive_find_title_node_by_name(target)
+        node = self._node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"append failed: no title matching '{target}'"
         try:
             node.add_text(append_text)
             return "append succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"append failed: {e}"
 
 
@@ -151,7 +149,7 @@ class _MarkdownUnfoldTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -160,19 +158,19 @@ class _MarkdownUnfoldTool(BaseTool):
 
     def _run(self, target: str) -> str:
         if self._checker:
-            t = self._node.recursive_find_title_node_by_name(target)
+            t = self._node.get_root_title().recursive_find_title_node_by_name(target)
             if t is None:
                 return f"unfold failed: no title matching '{target}'"
             ok, msg = self._checker.check_permission(t, Permission.READ)
             if not ok:
                 return msg
 
-        node = self._node.recursive_find_title_node_by_name(target)
+        node = self._node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"unfold failed: no title matching '{target}'"
         try:
             return node.unfold()
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"unfold failed: {e}"
 
 
@@ -185,7 +183,7 @@ class _MarkdownReplaceLinesTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -194,7 +192,7 @@ class _MarkdownReplaceLinesTool(BaseTool):
 
     def _run(self, target: str, old_lines: str, new_lines: str) -> str:
         if self._checker:
-            t = self._node.recursive_find_title_node_by_name(target)
+            t = self._node.get_root_title().recursive_find_title_node_by_name(target)
             if t is None:
                 return f"replace_lines failed: no title matching '{target}'"
             ok, msg = self._checker.check_permission(t, Permission.READ_WRITE)
@@ -203,7 +201,7 @@ class _MarkdownReplaceLinesTool(BaseTool):
 
         from difflib import SequenceMatcher
 
-        node = self._node.recursive_find_title_node_by_name(target)
+        node = self._node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"replace_lines failed: no title matching '{target}'"
 
@@ -234,7 +232,7 @@ class _MarkdownReplaceLinesTool(BaseTool):
                 try:
                     node.set_text(current_text.replace(matched, new_lines, 1))
                     return "replace_lines succeeded (fuzzy match)"
-                except Exception as e:
+                except MarkdownTreeError as e:
                     return f"replace_lines failed: {e}"
             else:
                 return (
@@ -246,7 +244,7 @@ class _MarkdownReplaceLinesTool(BaseTool):
         try:
             node.set_text(current_text.replace(old_lines, new_lines, 1))
             return "replace_lines succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"replace_lines failed: {e}"
 
 
@@ -257,7 +255,7 @@ class _MarkdownRenameTitleTool(BaseTool):
 
     def __init__(
         self,
-        node: AttributedMarkdownTextFileProtocol,
+        node: AttributedMarkdownTextFileBase,
         checker: PermissionChecker | None = None,
     ):
         super().__init__()
@@ -266,20 +264,20 @@ class _MarkdownRenameTitleTool(BaseTool):
 
     def _run(self, target: str, new_title_name: str) -> str:
         if self._checker:
-            t = self._node.recursive_find_title_node_by_name(target)
+            t = self._node.get_root_title().recursive_find_title_node_by_name(target)
             if t is None:
                 return f"rename_title failed: no title matching '{target}'"
             ok, msg = self._checker.check_permission(t, Permission.READ_WRITE)
             if not ok:
                 return msg
 
-        node = self._node.recursive_find_title_node_by_name(target)
+        node = self._node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"rename_title failed: no title matching '{target}'"
         try:
             node.title = new_title_name
             return "rename_title succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"rename_title failed: {e}"
 
 
@@ -288,7 +286,7 @@ class MarkdownTreeToolkit:
 
     def __init__(
         self,
-        markdown_node: AttributedMarkdownTextFileProtocol,
+        markdown_node: AttributedMarkdownTextFileBase,
         permissions: Sequence[tuple[Node | None, Permission]] | None = None,
     ):
         self._node = markdown_node

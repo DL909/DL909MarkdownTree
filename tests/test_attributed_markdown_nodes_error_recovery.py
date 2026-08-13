@@ -1,15 +1,14 @@
 """test_attributed_markdown_nodes_error_recovery.py - 测试属性化 Markdown 文件节点解析失败时的内容恢复功能"""
 
-from pathlib import Path
 
 import pytest
 from pydantic import BaseModel
 
-from dl909markdowntree.attributed_markdown_nodes import (
+from dl909markdowntree import (
     AttributedMarkdownTextFileNode,
-)
-from dl909markdowntree.foldable_markdown_nodes import (
     FoldableMarkdownTitleNode,
+    IncorrectNumberError,
+    InvalidNumberedTitleLineError,
 )
 
 
@@ -20,53 +19,53 @@ class ExampleAttribute(BaseModel):
     tags: list[str] = []
 
 
-def test_attributed_file_node_set_text_invalid_level_recovers_content(fs):
+def test_attributed_file_node_set_text_invalid_level_recovers_content(tmp_path):
     """测试属性化文件节点设置文本因编号错误失败时，恢复原有内容"""
-    fs.create_file(
-        "/tmp/test.md",
-        contents="""---
+    file_path = tmp_path / "test.md"
+    file_path.write_text(
+        """---
 title: Test
 tags: []
 ---
 # 1. Title
 Content""",
+        encoding="utf-8",
     )
     file_node = AttributedMarkdownTextFileNode(
-        file_path=Path("/tmp/test.md"),
+        file_path=file_path,
         attribute_type=ExampleAttribute,
         auto_correct=False,
     )
     # 设置一个合法的子标题
-    file_node.set_text("## 1.1 Child Title\nChild content")
+    file_node.set_text("## 1.1. Child Title\nChild content")
     original_text = file_node.get_text()
 
     # 尝试设置包含错误编号的文本
-    invalid_text = """## 1.1 Valid Child
+    invalid_text = """## 1.1. Valid Child
 Content
-## 999.2 Wrong Number"""
+## 999.2. Wrong Number"""
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(IncorrectNumberError, match="error number"):
         file_node.set_text(invalid_text)
-
-    assert "isn't" in str(exc_info.value)
 
     # 验证内容已恢复
     assert file_node.get_text() == original_text
 
 
-def test_attributed_file_node_set_text_invalid_number_recovers_content(fs):
+def test_attributed_file_node_set_text_invalid_number_recovers_content(tmp_path):
     """测试属性化文件节点设置文本因编号错误失败时，恢复原有内容"""
-    fs.create_file(
-        "/tmp/test.md",
-        contents="""---
+    file_path = tmp_path / "test.md"
+    file_path.write_text(
+        """---
 title: Test
 tags: []
 ---
 # 1. Title
 Content""",
+        encoding="utf-8",
     )
     file_node = AttributedMarkdownTextFileNode(
-        file_path=Path("/tmp/test.md"),
+        file_path=file_path,
         attribute_type=ExampleAttribute,
         auto_correct=False,
     )
@@ -75,58 +74,56 @@ Content""",
     # 尝试设置包含错误编号的文本
     invalid_text = """# 1. Valid Title
 Content
-## 999.1 Wrong Number"""
+## 999.1. Wrong Number"""
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(IncorrectNumberError, match="error number"):
         file_node.set_text(invalid_text)
-
-    assert "isn't" in str(exc_info.value)
 
     # 验证内容已恢复
     assert file_node.get_text() == original_text
 
 
-def test_attributed_file_node_set_text_empty_title_recovers_content(fs):
+def test_attributed_file_node_set_text_empty_title_recovers_content(tmp_path):
     """测试属性化文件节点设置空标题失败时恢复原有内容"""
-    fs.create_file(
-        "/tmp/test.md",
-        contents="""---
+    file_path = tmp_path / "test.md"
+    file_path.write_text(
+        """---
 title: Test
 tags: []
 ---
 # 1. Title
 Content""",
+        encoding="utf-8",
     )
     file_node = AttributedMarkdownTextFileNode(
-        file_path=Path("/tmp/test.md"), attribute_type=ExampleAttribute
+        file_path=file_path, attribute_type=ExampleAttribute
     )
     original_text = file_node.get_text()
 
     # 尝试设置空标题（应该失败）
-    with pytest.raises(Exception) as exc_info:
-        file_node.set_text("#")
-
-    assert "无内容的标题" in str(exc_info.value)
+    with pytest.raises(InvalidNumberedTitleLineError):
+        file_node.set_text("# ")
 
     # 验证内容已恢复
     assert file_node.get_text() == original_text
 
 
-def test_attributed_file_node_set_text_mid_parse_failure_recovers_content(fs):
+def test_attributed_file_node_set_text_mid_parse_failure_recovers_content(tmp_path):
     """测试属性化文件节点解析中途失败时恢复原有内容"""
-    fs.create_file(
-        "/tmp/test.md",
-        contents="""---
+    file_path = tmp_path / "test.md"
+    file_path.write_text(
+        """---
 title: Test
 tags: []
 ---
 # 1. Title
 Content
-## 1.1 Subtitle
+## 1.1. Subtitle
 Subcontent""",
+        encoding="utf-8",
     )
     file_node = AttributedMarkdownTextFileNode(
-        file_path=Path("/tmp/test.md"),
+        file_path=file_path,
         attribute_type=ExampleAttribute,
         auto_correct=False,
     )
@@ -135,38 +132,37 @@ Subcontent""",
     # 尝试设置包含错误编号的复杂文本
     invalid_text = """# 1. Valid Title
 Content
-## 1.1 Valid Subtitle
+## 1.1. Valid Subtitle
 Subcontent
-## 999.2 Invalid Number"""
+## 999.2. Invalid Number"""
 
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(IncorrectNumberError, match="error number"):
         file_node.set_text(invalid_text)
-
-    assert "isn't" in str(exc_info.value)
 
     # 验证内容已恢复
     assert file_node.get_text() == original_text
 
 
-def test_attributed_file_node_set_text_success_no_recovery_needed(fs):
+def test_attributed_file_node_set_text_success_no_recovery_needed(tmp_path):
     """测试成功设置文本时不触发恢复逻辑"""
-    fs.create_file(
-        "/tmp/test.md",
-        contents="""---
+    file_path = tmp_path / "test.md"
+    file_path.write_text(
+        """---
 title: Test
 tags: []
 ---
 # 1. Title
 Content""",
+        encoding="utf-8",
     )
     file_node = AttributedMarkdownTextFileNode(
-        file_path=Path("/tmp/test.md"),
+        file_path=file_path,
         attribute_type=ExampleAttribute,
         auto_correct=True,
     )
 
     # 设置合法文本应该成功
-    file_node.set_text("## 1.1 Child Title\nChild content")
+    file_node.set_text("## 1.1. Child Title\nChild content")
 
     assert len(file_node.markdown_text_node.children) == 1
     child = file_node.markdown_text_node.children[0]
@@ -174,27 +170,26 @@ Content""",
     assert child.title == "Child Title"
 
 
-def test_attributed_file_node_markdown_text_node_direct_error_recovery(fs):
+def test_attributed_file_node_markdown_text_node_direct_error_recovery(tmp_path):
     """测试属性化文件节点的 markdown_text_node 直接调用 set_text 时的错误恢复"""
-    fs.create_file(
-        "/tmp/test.md",
-        contents="""---
+    file_path = tmp_path / "test.md"
+    file_path.write_text(
+        """---
 title: Test
 tags: []
 ---
 # 1. Title
 Content""",
+        encoding="utf-8",
     )
     file_node = AttributedMarkdownTextFileNode(
-        file_path=Path("/tmp/test.md"), attribute_type=ExampleAttribute
+        file_path=file_path, attribute_type=ExampleAttribute
     )
     original_text = file_node.markdown_text_node.get_text()
 
     # 直接调用 markdown_text_node 的 set_text
-    with pytest.raises(Exception) as exc_info:
-        file_node.markdown_text_node.set_text("#")
-
-    assert "无内容的标题" in str(exc_info.value)
+    with pytest.raises(InvalidNumberedTitleLineError):
+        file_node.markdown_text_node.set_text("# ")
 
     # 验证内容已恢复
     assert file_node.markdown_text_node.get_text() == original_text

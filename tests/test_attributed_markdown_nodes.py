@@ -1,14 +1,11 @@
-from pathlib import Path
 
 import pytest
 from pydantic import BaseModel
 
-from dl909markdowntree.attributed_markdown_nodes import (
+from dl909markdowntree import (
     AttributedMarkdownTextFileNode,
-)
-from dl909markdowntree.foldable_markdown_nodes import (
-    FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
+    InvalidNumberedTitleLineError,
 )
 
 
@@ -20,7 +17,7 @@ class _TestAttribute(BaseModel):
     tags: list[str] = []
 
 
-def test_attributed_markdown_text_file_node_init(fs):
+def test_attributed_markdown_text_file_node_init(tmp_path):
     """测试基本初始化"""
     content = """---
 author: test_author
@@ -31,35 +28,37 @@ tags:
 ---
 # 1. Title
 Some content here"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
-    assert test_file_node.file_path == Path("/tmp/attributed.md")
+    assert test_file_node.file_path == file_path
     assert isinstance(test_file_node.attribute, _TestAttribute)
     assert test_file_node.attribute.author == "test_author"
     assert test_file_node.attribute.version == "2.0.0"
     assert test_file_node.attribute.tags == ["test", "example"]
-    assert isinstance(test_file_node.markdown_text_node, FoldableMarkdownTextNode)
+    assert isinstance(test_file_node.markdown_text_node, FoldableMarkdownTitleNode)
     assert "# 1. Title" in test_file_node.get_text()
 
 
-def test_attributed_markdown_text_file_node_default_attributes(fs):
+def test_attributed_markdown_text_file_node_default_attributes(tmp_path):
     """测试默认属性值"""
     content = """---
 author: default_user
 ---
 # 1. Title"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     assert test_file_node.attribute.author == "default_user"
     assert test_file_node.attribute.version == "1.0.0"
     assert test_file_node.attribute.tags == []
 
 
-def test_attributed_markdown_text_file_node_save_to_file(fs):
+def test_attributed_markdown_text_file_node_save_to_file(tmp_path):
     """测试保存到文件"""
     content = """---
 author: original
@@ -67,42 +66,42 @@ version: 1.0.0
 ---
 # 1. Title
 Original content"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     test_file_node.attribute.author = "modified"
     test_file_node.set_text("# 1. Title\nModified content")
-    output_path = Path("/tmp/output.md")
+    output_path = tmp_path / "output.md"
     test_file_node.save_to_file(output_path)
-    with open(output_path, "r", encoding="utf-8") as f:
-        saved_content = f.read()
+    saved_content = output_path.read_text(encoding="utf-8")
     assert saved_content.startswith("---\n")
     assert "author: modified" in saved_content
-    assert "---\n# 1. Title\n\nModified content" in saved_content
+    assert "---\n# 1. Title\nModified content" in saved_content
 
 
-def test_attributed_markdown_text_file_node_save(fs):
+def test_attributed_markdown_text_file_node_save(tmp_path):
     """测试保存方法"""
     content = """---
 author: original
 ---
 # 1. Title
 Original content"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     test_file_node.attribute.author = "saved_author"
     test_file_node.set_text("# 1. Title\nSaved content")
     test_file_node.save()
-    with open("/tmp/attributed.md", "r", encoding="utf-8") as f:
-        saved_content = f.read()
+    saved_content = file_path.read_text(encoding="utf-8")
     assert "author: saved_author" in saved_content
     assert "Saved content" in saved_content
 
 
-def test_attributed_markdown_text_file_node_reload(fs):
+def test_attributed_markdown_text_file_node_reload(tmp_path):
     """测试重新加载"""
     content = """---
 author: first
@@ -110,15 +109,14 @@ version: 1.0.0
 ---
 # 1. Title
 First content"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     assert test_file_node.attribute.author == "first"
-    fs.remove("/tmp/attributed.md")
-    fs.create_file(
-        "/tmp/attributed.md",
-        contents="""---
+    file_path.write_text(
+        """---
 author: second
 version: 2.0.0
 tags:
@@ -126,6 +124,7 @@ tags:
 ---
 # 1. Reloaded Title
 Reloaded content""",
+        encoding="utf-8",
     )
     test_file_node.reload()
     assert test_file_node.attribute.author == "second"
@@ -134,7 +133,7 @@ Reloaded content""",
     assert "# 1. Reloaded Title" in test_file_node.get_text()
 
 
-def test_attributed_markdown_text_file_node_get_text(fs):
+def test_attributed_markdown_text_file_node_get_text(tmp_path):
     """测试获取文本"""
     content = """---
 author: test
@@ -143,9 +142,10 @@ author: test
 Some text here
 ## 1.1. Subtitle
 More text"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     text = test_file_node.get_text(full_text=True)
     assert "# 1. Title" in text
@@ -153,23 +153,25 @@ More text"""
     assert "## 1.1. Subtitle" in text
 
 
-def test_attributed_markdown_text_file_node_set_text(fs):
+def test_attributed_markdown_text_file_node_set_text(tmp_path):
     """测试设置文本"""
     content = """---
 author: test
 ---
 # 1. Old Title"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     test_file_node.set_text("# 1. New Title\nNew content\n## 1.1. New Subtitle")
-    assert "# 1. New Title" in test_file_node.get_text(full_text=True)
-    assert "New content" in test_file_node.get_text(full_text=True)
-    assert "## 1.1. New Subtitle" in test_file_node.get_text(full_text=True)
+    full_text = test_file_node.get_text(full_text=True)
+    assert "# 1. New Title" in full_text
+    assert "New content" in full_text
+    assert "## 1.1. New Subtitle" in full_text
 
 
-def test_attributed_markdown_text_file_node_recursive_find(fs):
+def test_attributed_markdown_text_file_node_recursive_find(tmp_path):
     """测试递归查找标题节点"""
     content = """---
 author: test
@@ -178,19 +180,24 @@ author: test
 ## 1.1. Subtitle1
 # 2. Title2
 ## 2.1. Subtitle2"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
-    found = test_file_node.recursive_find_title_node_by_name("## 1.1. Subtitle1")
+    found = test_file_node.get_root_title().recursive_find_title_node_by_name(
+        "## 1.1. Subtitle1"
+    )
     assert found is not None
     assert found.title == "Subtitle1"
     assert isinstance(found, FoldableMarkdownTitleNode)
-    not_found = test_file_node.recursive_find_title_node_by_name("## 3.1. NotExist")
+    not_found = test_file_node.get_root_title().recursive_find_title_node_by_name(
+        "## 3.1. NotExist"
+    )
     assert not_found is None
 
 
-def test_attributed_markdown_text_file_node_with_complex_yaml(fs):
+def test_attributed_markdown_text_file_node_with_complex_yaml(tmp_path):
     """测试复杂 YAML 属性"""
     content = """---
 author: complex_author
@@ -204,64 +211,69 @@ metadata:
   modified: 2024-01-02
 ---
 # 1. Complex Title"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     assert test_file_node.attribute.author == "complex_author"
     assert len(test_file_node.attribute.tags) == 3
     assert "sci-fi" in test_file_node.attribute.tags
 
 
-def test_attributed_markdown_text_file_node_str_method(fs):
+def test_attributed_markdown_text_file_node_str_method(tmp_path):
     """测试__str__方法继承"""
     content = """---
 author: test
 ---
 # 1. Title
 Content"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     str_repr = str(test_file_node)
     assert "# 1. Title" in str_repr
 
 
-def test_attributed_markdown_text_file_node_markdown_text_node_override(fs):
+def test_attributed_markdown_text_file_node_markdown_text_node_override(tmp_path):
     """测试 markdown_text_node 参数覆盖"""
     content = """---
 author: test
 ---
 # 1. Original Title"""
-    fs.create_file("/tmp/attributed.md", contents=content)
-    override_node = FoldableMarkdownTextNode(
-        text="# 1. Overridden Title\nOverride content"
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
+    override_node = FoldableMarkdownTitleNode.from_text(
+        "# 1. Overridden Title\nOverride content"
     )
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"),
+        file_path=file_path,
         attribute_type=_TestAttribute,
         markdown_text_node=override_node,
     )
-    assert "# 1. Overridden Title" in test_file_node.get_text(full_text=True)
-    assert "Override content" in test_file_node.get_text(full_text=True)
+    full_text = test_file_node.get_text(full_text=True)
+    assert "# 1. Overridden Title" in full_text
+    assert "Override content" in full_text
 
 
-def test_attributed_markdown_text_file_node_empty_tags(fs):
+def test_attributed_markdown_text_file_node_empty_tags(tmp_path):
     """测试空标签列表"""
     content = """---
 author: test
 tags: []
 ---
 # 1. Title"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     assert test_file_node.attribute.tags == []
 
 
-def test_attributed_markdown_text_file_node_unicode_content(fs):
+def test_attributed_markdown_text_file_node_unicode_content(tmp_path):
     """测试 Unicode 内容"""
     content = """---
 author: 测试作者
@@ -270,28 +282,30 @@ version: 1.0.0
 # 1. 测试标题
 这是一些中文内容
 🎉 Emoji 测试"""
-    fs.create_file("/tmp/attributed.md", contents=content, encoding="utf-8")
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     assert test_file_node.attribute.author == "测试作者"
-    assert "这是一些中文内容" in test_file_node.get_text(full_text=True)
-    assert "🎉" in test_file_node.get_text(full_text=True)
+    full_text = test_file_node.get_text(full_text=True)
+    assert "这是一些中文内容" in full_text
+    assert "🎉" in full_text
 
 
-def test_attributed_markdown_text_file_node_assertion_invalid_format(fs):
+def test_attributed_markdown_text_file_node_assertion_invalid_format(tmp_path):
     """测试无效格式的断言"""
     content = """This is not valid YAML frontmatter
 # 1. Title"""
-    fs.create_file("/tmp/invalid.md", contents=content)
-    with pytest.raises(Exception) as e:
+    file_path = tmp_path / "invalid.md"
+    file_path.write_text(content, encoding="utf-8")
+    with pytest.raises(Exception, match="FrontMatter"):
         AttributedMarkdownTextFileNode[_TestAttribute](
-            file_path=Path("/tmp/invalid.md"), attribute_type=_TestAttribute
+            file_path=file_path, attribute_type=_TestAttribute
         )
-    assert "FrontMatter" in str(e)
 
 
-def test_attributed_markdown_text_file_node_multiple_save_reload_cycles(fs):
+def test_attributed_markdown_text_file_node_multiple_save_reload_cycles(tmp_path):
     """测试多次保存和重新加载循环"""
     content = """---
 author: initial
@@ -299,9 +313,10 @@ version: 1.0.0
 ---
 # 1. Title
 Initial content"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
     for i in range(3):
         test_file_node.attribute.version = f"{i + 2}.0.0"
@@ -319,80 +334,65 @@ Initial content"""
 class TestAttributedMarkdownAutoCorrect:
     """AttributedMarkdown 自纠正模式测试"""
 
-    def test_attributed_auto_correct_missing_number(self, fs):
-        """测试 AttributedMarkdownTextFileNode 无编号自动纠正"""
-        content = """---
-author: test
-version: 1.0.0
----
-# 1. Title"""
-        fs.create_file("/tmp/auto_correct.md", contents=content)
-        test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-            file_path=Path("/tmp/auto_correct.md"), attribute_type=_TestAttribute
-        )
-        test_file_node.markdown_text_node.auto_correct = True
-        test_file_node.set_text("# New Title\nContent\n## Subtitle")
-        assert test_file_node.markdown_text_node.children[0].number == [1]
-        assert test_file_node.markdown_text_node.children[0].children[1].number == [
-            1,
-            1,
-        ]
-
-    def test_attributed_auto_correct_wrong_number(self, fs):
+    def test_attributed_auto_correct_wrong_number(self, tmp_path):
         """测试 AttributedMarkdownTextFileNode 错误编号自动纠正"""
         content = """---
 author: test
 ---
 # 1. Title"""
-        fs.create_file("/tmp/auto_correct.md", contents=content)
+        file_path = tmp_path / "auto_correct.md"
+        file_path.write_text(content, encoding="utf-8")
         test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-            file_path=Path("/tmp/auto_correct.md"), attribute_type=_TestAttribute
+            file_path=file_path, attribute_type=_TestAttribute
         )
         test_file_node.markdown_text_node.auto_correct = True
         test_file_node.set_text("# 5. Wrong\n# 3. Also Wrong")
         assert test_file_node.markdown_text_node.children[0].number == [1]
         assert test_file_node.markdown_text_node.children[1].number == [2]
 
-    def test_attributed_auto_correct_get_text(self, fs):
+    def test_attributed_auto_correct_get_text(self, tmp_path):
         """测试自动纠正后 get_text() 输出正确编号"""
         content = """---
 author: test
 ---
 # 1. Title"""
-        fs.create_file("/tmp/auto_correct.md", contents=content)
+        file_path = tmp_path / "auto_correct.md"
+        file_path.write_text(content, encoding="utf-8")
         test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-            file_path=Path("/tmp/auto_correct.md"), attribute_type=_TestAttribute
+            file_path=file_path, attribute_type=_TestAttribute
         )
         test_file_node.markdown_text_node.auto_correct = True
-        test_file_node.set_text("# Wrong\n## Sub\n# 5. Wrong2")
+        test_file_node.set_text("# 8. Wrong\n## 9.9. Sub\n# 5. Wrong2")
         output = test_file_node.get_text(full_text=True)
         assert "# 1. Wrong" in output
         assert "## 1.1. Sub" in output
         assert "# 2. Wrong2" in output
 
-    def test_attributed_auto_correct_disabled(self, fs):
+    def test_attributed_auto_correct_disabled(self, tmp_path):
         """测试关闭自纠正时保持原有行为"""
         content = """---
 author: test
 ---
 # 1. Title"""
-        fs.create_file("/tmp/auto_correct.md", contents=content)
+        file_path = tmp_path / "auto_correct.md"
+        file_path.write_text(content, encoding="utf-8")
         test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-            file_path=Path("/tmp/auto_correct.md"), attribute_type=_TestAttribute
+            file_path=file_path, attribute_type=_TestAttribute
         )
         test_file_node.markdown_text_node.auto_correct = False
-        with pytest.raises(Exception, match="编号标题解析失败"):
+        with pytest.raises(InvalidNumberedTitleLineError):
             test_file_node.set_text("# Wrong Number")
 
-    def test_attributed_auto_correct_default_enabled(self, fs):
+    def test_attributed_auto_correct_default_enabled(self, tmp_path):
         """测试默认自纠正是开启的"""
         content = """---
 author: test
 ---
 # 1. Title"""
-        fs.create_file("/tmp/auto_correct.md", contents=content)
+        file_path = tmp_path / "auto_correct.md"
+        file_path.write_text(content, encoding="utf-8")
         test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-            file_path=Path("/tmp/auto_correct.md"), attribute_type=_TestAttribute
+            file_path=file_path, attribute_type=_TestAttribute
         )
         assert test_file_node.markdown_text_node.auto_correct is True
         test_file_node.set_text("# 2. Wrong\n# 3. Another")
@@ -400,7 +400,7 @@ author: test
         assert test_file_node.markdown_text_node.children[1].number == [2]
 
 
-def test_attributed_markdown_text_file_node_fold(fs):
+def test_attributed_markdown_text_file_node_fold(tmp_path):
     """测试折叠"""
     content = """---
 author: test_author
@@ -411,24 +411,26 @@ tags:
 ---
 # 1. Title
 Some content here"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"), attribute_type=_TestAttribute
+        file_path=file_path, attribute_type=_TestAttribute
     )
 
     assert "Some content here" not in test_file_node.get_text()
     assert "Some content here" in test_file_node.get_text(full_text=True)
 
 
-def test_attributed_markdown_text_file_node_attribute_constructor(fs):
+def test_attributed_markdown_text_file_node_attribute_constructor(tmp_path):
     """测试通过 attribute 参数直接传入属性"""
     content = """---
 author: test_author
 ---
 # 1. Title"""
-    fs.create_file("/tmp/attributed.md", contents=content)
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
-        file_path=Path("/tmp/attributed.md"),
+        file_path=file_path,
         attribute_type=_TestAttribute,
         attribute=_TestAttribute(author="direct_author", version="9.0.0"),
     )
@@ -436,28 +438,19 @@ author: test_author
     assert test_file_node.attribute.version == "9.0.0"
 
 
-def test_attributed_markdown_folder_node_missing_frontmatter_fallback(fs):
+def test_attributed_markdown_folder_node_missing_frontmatter_fallback(tmp_path):
     """测试缺少 FrontMatter.yaml 时使用属性默认值"""
     from dl909markdowntree.attributed_markdown_folder_nodes import (
         AttributedMarkdownFolderNode,
     )
 
-    folder_path = Path("/tmp/attributed_folder")
+    folder_path = tmp_path / "attributed_folder"
     folder_path.mkdir(parents=True)
-    (folder_path / "1_Section.mdp").write_text("## 1.1. Sub\nContent", encoding="utf-8")
+    (folder_path / "1_Section.mdp").write_text(
+        "## 1.1. Sub\nContent", encoding="utf-8"
+    )
     node = AttributedMarkdownFolderNode[_TestAttribute](
         file_path=folder_path, attribute_type=_TestAttribute
     )
     assert isinstance(node.attribute, _TestAttribute)
     assert node.attribute.author == "default_author"
-
-
-def test_markdown_parser_core_parse_code_block_start_boundary():
-    """测试 _parse_code_block_start 边界：多单词视为普通文本"""
-    from dl909markdowntree.markdown_parser_core import _MarkdownParserCore
-
-    core = _MarkdownParserCore()
-    assert core._parse_code_block_start("```") is True
-    assert core._parse_code_block_start("```python") is True
-    assert core._parse_code_block_start("```python hello") is False
-    assert core._parse_code_block_start("``` ") is False

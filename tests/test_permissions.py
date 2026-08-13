@@ -87,7 +87,7 @@ def test_find_effective_permission_no_match_returns_deny(tmp_path: Path):
     doc = tmp_path / "doc.md"
     doc.write_text("# Title\nContent.\n", encoding="utf-8")
     node = MarkdownTextFileNode(doc)
-    title = node.recursive_find_title_node_by_name("# Title")
+    title = node.get_root_title().recursive_find_title_node_by_name("# Title")
     assert title is not None
 
     other_dir = tmp_path / "other"
@@ -104,8 +104,8 @@ def test_find_effective_permission_inherits_from_parent(tmp_path: Path):
     doc = tmp_path / "doc.md"
     doc.write_text("# Parent\n## Child\n\nContent.\n", encoding="utf-8")
     node = MarkdownTextFileNode(doc)
-    parent_title = node.recursive_find_title_node_by_name("# Parent")
-    child_title = node.recursive_find_title_node_by_name("## Child")
+    parent_title = node.get_root_title().recursive_find_title_node_by_name("# Parent")
+    child_title = node.get_root_title().recursive_find_title_node_by_name("## Child")
     assert parent_title is not None
     assert child_title is not None
     assert child_title.parent is parent_title
@@ -122,8 +122,8 @@ def test_find_effective_permission_deny_at_child_overrides_parent(tmp_path: Path
     doc = tmp_path / "doc.md"
     doc.write_text("# Parent\n## Child\n\nContent.\n", encoding="utf-8")
     node = MarkdownTextFileNode(doc)
-    parent_title = node.recursive_find_title_node_by_name("# Parent")
-    child_title = node.recursive_find_title_node_by_name("## Child")
+    parent_title = node.get_root_title().recursive_find_title_node_by_name("# Parent")
+    child_title = node.get_root_title().recursive_find_title_node_by_name("## Child")
     assert parent_title is not None
     assert child_title is not None
 
@@ -137,7 +137,7 @@ def test_find_effective_permission_deny_at_child_overrides_parent(tmp_path: Path
 
 def test_get_node_description_with_title(tmp_path: Path):
     node = _make_node(tmp_path)
-    title_node = node.recursive_find_title_node_by_name("# Hello")
+    title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
     checker = PermissionChecker()
     desc = checker._get_node_description(title_node)
@@ -161,8 +161,8 @@ def test_check_permission_foldable_node_inherits_parent_permission(tmp_path: Pat
     doc = tmp_path / "doc.md"
     doc.write_text("# 1. Parent\n## 1.1. Child\n\nContent.\n", encoding="utf-8")
     node = FoldableMarkdownTextFileNode(doc)
-    parent_title = node.recursive_find_title_node_by_name("# 1. Parent")
-    child_title = node.recursive_find_title_node_by_name("## 1.1. Child")
+    parent_title = node.get_root_title().recursive_find_title_node_by_name("# 1. Parent")
+    child_title = node.get_root_title().recursive_find_title_node_by_name("## 1.1. Child")
     assert parent_title is not None
     assert child_title is not None
 

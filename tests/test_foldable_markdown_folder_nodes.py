@@ -2,47 +2,37 @@
 
 from pathlib import Path
 
-
-from dl909markdowntree.foldable_markdown_folder_nodes import (
+from dl909markdowntree import (
     FoldableMarkdownFolderNode,
-)
-from dl909markdowntree.foldable_markdown_nodes import (
-    FoldMode,
-    FoldableMarkdownTextNode,
     FoldableMarkdownTitleNode,
+    FoldMode,
 )
 
 
-def test_foldable_markdown_folder_node_reload_basic(fs):
-    """测试 reload：内部树使用 FoldableMarkdownTextNode"""
-    fs.create_dir("/tmp/test.mdf")
-    fs.create_file(
-        "/tmp/test.mdf/1_Intro.mdp",
-        contents="## 1.1 Opening\nContent\n## 1.2 Thesis\nArgument",
+def test_foldable_markdown_folder_node_reload_basic(tmp_path):
+    """测试 reload：内部树使用 FoldableMarkdownTitleNode"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text(
+        "## 1.1. Opening\nContent\n## 1.2. Thesis\nArgument", encoding="utf-8"
     )
-    fs.create_file(
-        "/tmp/test.mdf/2_Body.mdp",
-        contents="## 2.1 History\nText",
-    )
-    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
-    assert isinstance(node.markdown_text_node, FoldableMarkdownTextNode)
+    (folder / "2_Body.mdp").write_text("## 2.1. History\nText", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
+    assert isinstance(node.markdown_text_node, FoldableMarkdownTitleNode)
     assert isinstance(node.markdown_text_node.children[0], FoldableMarkdownTitleNode)
     assert node.markdown_text_node.children[0].title == "Intro"
     assert node.markdown_text_node.children[0].fold_mode is FoldMode.SHOW_TITLE
 
 
-def test_foldable_markdown_folder_node_get_text_folded(fs):
+def test_foldable_markdown_folder_node_get_text_folded(tmp_path):
     """测试 get_text：折叠模式下显示折叠信息"""
-    fs.create_dir("/tmp/test.mdf")
-    fs.create_file(
-        "/tmp/test.mdf/1_Intro.mdp",
-        contents="## 1.1 Opening\nContent\n## 1.2 Thesis\nArgument",
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text(
+        "## 1.1. Opening\nContent\n## 1.2. Thesis\nArgument", encoding="utf-8"
     )
-    fs.create_file(
-        "/tmp/test.mdf/2_Body.mdp",
-        contents="## 2.1 History\nText",
-    )
-    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
+    (folder / "2_Body.mdp").write_text("## 2.1. History\nText", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
     text = node.get_text()
     assert "# 1. Intro" in text
     assert "# 2. Body" in text
@@ -50,30 +40,30 @@ def test_foldable_markdown_folder_node_get_text_folded(fs):
     assert "[1 child title folded]" in text
 
 
-def test_foldable_markdown_folder_node_unfold(fs):
+def test_foldable_markdown_folder_node_unfold(tmp_path):
     """测试 unfold：展开后显示子标题内容"""
-    fs.create_dir("/tmp/test.mdf")
-    fs.create_file(
-        "/tmp/test.mdf/1_Intro.mdp",
-        contents="## 1.1 Opening\nContent",
-    )
-    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
-    assert (t := node.recursive_find_title_node_by_name("# 1. Intro"))
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
+    assert (t := node.get_root_title().recursive_find_title_node_by_name("# 1. Intro"))
     t.unfold()
-    assert (t := node.recursive_find_title_node_by_name("## 1.1. Opening"))
+    assert (
+        t := node.get_root_title().recursive_find_title_node_by_name("## 1.1. Opening")
+    )
     text = t.unfold()
     assert "Opening" in node.get_text()
     assert "Content" in text
 
 
-def test_foldable_markdown_folder_node_recursive_unfold(fs):
+def test_foldable_markdown_folder_node_recursive_unfold(tmp_path):
     """测试 recursive_unfold：展开所有层级"""
-    fs.create_dir("/tmp/test.mdf")
-    fs.create_file(
-        "/tmp/test.mdf/1_Intro.mdp",
-        contents="## 1.1 Opening\nContent\n### 1.1.1 Detail\nDeep",
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text(
+        "## 1.1. Opening\nContent\n### 1.1.1. Detail\nDeep", encoding="utf-8"
     )
-    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
     node.markdown_text_node.children[0].recursive_unfold()
     text = node.get_text()
     assert "Opening" in text
@@ -81,57 +71,54 @@ def test_foldable_markdown_folder_node_recursive_unfold(fs):
     assert "Deep" in text
 
 
-def test_foldable_markdown_folder_node_set_load_depth(fs):
-    """测试 set_load_depth：控制展开深度"""
-    fs.create_dir("/tmp/test.mdf")
-    fs.create_file(
-        "/tmp/test.mdf/1_Intro.mdp",
-        contents="## 1.1 Opening\n### 1.1.1 Deep\nContent",
+def test_foldable_markdown_folder_node_set_load_depth(tmp_path):
+    """测试 unfold_by_depth：控制展开深度"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text(
+        "## 1.1. Opening\n### 1.1.1. Deep\nContent", encoding="utf-8"
     )
-    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
-    node.markdown_text_node.set_load_depth(1)
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
+    node.markdown_text_node.unfold_by_depth(2)
     assert "# 1. Intro" in node.get_text()
     assert "## 1.1. Opening" in node.get_text()
 
 
-def test_foldable_markdown_folder_node_save_full_text(fs):
+def test_foldable_markdown_folder_node_save_full_text(tmp_path):
     """测试 save：始终写入完整文本，无视折叠状态"""
-    fs.create_dir("/tmp/test.mdf")
-    fs.create_file(
-        "/tmp/test.mdf/1_Intro.mdp",
-        contents="## 1.1 Opening\nContent",
-    )
-    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
     node.save()
-    with open("/tmp/test.mdf/1_Intro.mdp", "r", encoding="utf-8") as f:
+    with open(folder / "1_Intro.mdp", "r", encoding="utf-8") as f:
         content = f.read()
     assert "Content" in content
 
 
-def test_foldable_markdown_folder_node_fold_and_save_round_trip(fs):
+def test_foldable_markdown_folder_node_fold_and_save_round_trip(tmp_path):
     """测试 save/reload 周期保持折叠状态"""
-    fs.create_dir("/tmp/test.mdf")
-    fs.create_file(
-        "/tmp/test.mdf/1_Intro.mdp",
-        contents="## 1.1 Opening\nContent",
-    )
-    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
     node.markdown_text_node.children[0].fold_mode = FoldMode.SHOW_CHILD
     node.markdown_text_node.children[0].children[0].fold_mode = FoldMode.SHOW_TITLE
     node.save()
     node.reload()
     assert node.markdown_text_node.children[0].fold_mode is FoldMode.SHOW_CHILD
-    assert node.get_text() == "# 1. Intro\n\n## 1.1. Opening [text folded]"
-    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
-    assert node.markdown_text_node.children[0].fold_mode is FoldMode.SHOW_TITLE
-    assert node.get_text() == "# 1. Intro [1 child title folded]"
+    assert node.get_text() == "# 1. Intro\n## 1.1. Opening [text folded]\n"
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
+    assert node.markdown_text_node.children[0].fold_mode is FoldMode.SHOW_CHILD
+    assert node.get_text() == "# 1. Intro\n## 1.1. Opening [text folded]\n"
 
 
-def test_foldable_markdown_folder_node_fold_mode_default(fs):
+def test_foldable_markdown_folder_node_fold_mode_default(tmp_path):
     """测试默认折叠模式为 SHOW_TITLE"""
-    fs.create_dir("/tmp/test.mdf")
-    fs.create_file("/tmp/test.mdf/1_Intro.mdp", contents="## 1.1 Opening\nContent")
-    node = FoldableMarkdownFolderNode(file_path=Path("/tmp/test.mdf"))
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
     for child in node.markdown_text_node.children:
         if isinstance(child, FoldableMarkdownTitleNode):
             assert child.fold_mode is FoldMode.SHOW_TITLE

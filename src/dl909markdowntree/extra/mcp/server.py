@@ -5,19 +5,17 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from dl909markdowntree import (
-    AttributedMarkdownTextFileProtocol,
-    Permission,
-    PermissionChecker,
-)
-from dl909markdowntree.node import Node
+from ...exceptions import MarkdownTreeError
+from ...interface import AttributedMarkdownTextFileBase
+from ...node import Node
+from ...permissions import Permission, PermissionChecker
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
 
 
 def create_mcp_server(
-    markdown_node: AttributedMarkdownTextFileProtocol,
+    markdown_node: AttributedMarkdownTextFileBase,
     permissions: Sequence[tuple[Node, Permission]] | None = None,
 ) -> FastMCP:
     """Create an MCP server exposing 6 markdown editing tools.
@@ -40,7 +38,9 @@ def create_mcp_server(
             target: Markdown title including level sign (e.g. '# Hello'). Omit for full document.
         """
         if target:
-            node = markdown_node.recursive_find_title_node_by_name(target)
+            node = markdown_node.get_root_title().recursive_find_title_node_by_name(
+                target
+            )
             if node is None:
                 return f"read failed: no title matching '{target}'"
             if checker:
@@ -59,7 +59,7 @@ def create_mcp_server(
             replace_text: Replacement text. May contain one title line matching target's level,
                 or omit it to keep the original title.
         """
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"replace failed: no title matching '{target}'"
         if checker:
@@ -69,7 +69,7 @@ def create_mcp_server(
         try:
             node.set_text(replace_text)
             return "replace succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"replace failed: {e}"
 
     @mcp.tool()
@@ -80,7 +80,7 @@ def create_mcp_server(
             target: Markdown title including level sign.
             append_text: Text to append. Must not contain titles at or above target's level.
         """
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"append failed: no title matching '{target}'"
         if checker:
@@ -90,7 +90,7 @@ def create_mcp_server(
         try:
             node.add_text(append_text)
             return "append succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"append failed: {e}"
 
     @mcp.tool()
@@ -100,7 +100,7 @@ def create_mcp_server(
         Args:
             target: Markdown title including level sign.
         """
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"unfold failed: no title matching '{target}'"
         if checker:
@@ -109,7 +109,7 @@ def create_mcp_server(
                 raise PermissionError(msg)
         try:
             return node.unfold()
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"unfold failed: {e}"
 
     @mcp.tool()
@@ -123,7 +123,7 @@ def create_mcp_server(
         """
         from difflib import SequenceMatcher
 
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"replace_lines failed: no title matching '{target}'"
         if checker:
@@ -158,7 +158,7 @@ def create_mcp_server(
                 try:
                     node.set_text(current_text.replace(matched, new_lines, 1))
                     return "replace_lines succeeded (fuzzy match)"
-                except Exception as e:
+                except MarkdownTreeError as e:
                     return f"replace_lines failed: {e}"
             else:
                 return (
@@ -170,7 +170,7 @@ def create_mcp_server(
         try:
             node.set_text(current_text.replace(old_lines, new_lines, 1))
             return "replace_lines succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"replace_lines failed: {e}"
 
     @mcp.tool()
@@ -181,7 +181,7 @@ def create_mcp_server(
             target: Markdown title including level sign.
             new_title_name: New title text (no level sign or number prefix).
         """
-        node = markdown_node.recursive_find_title_node_by_name(target)
+        node = markdown_node.get_root_title().recursive_find_title_node_by_name(target)
         if node is None:
             return f"rename_title failed: no title matching '{target}'"
         if checker:
@@ -191,7 +191,7 @@ def create_mcp_server(
         try:
             node.title = new_title_name
             return "rename_title succeeded"
-        except Exception as e:
+        except MarkdownTreeError as e:
             return f"rename_title failed: {e}"
 
     return mcp
