@@ -1,5 +1,7 @@
 """Tests for dl909markdowntree.extra.mcp.server"""
 
+import asyncio
+
 import pytest
 
 pytest.importorskip("fastmcp")
@@ -7,35 +9,30 @@ pytest.importorskip("fastmcp")
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 
-from pathlib import Path
-from unittest.mock import patch
-
 from dl909markdowntree import (
     MarkdownTextFileNode,
     FoldableMarkdownTextFileNode,
     FoldMode,
     Permission,
-    PermissionChecker,
 )
 from dl909markdowntree.extra.mcp import create_mcp_server
 
 
-def _make_node(fs) -> MarkdownTextFileNode:
-    fs.create_file("/tmp/doc.md", contents="# Hello\n\nWorld content.\n")
-    return MarkdownTextFileNode(Path("/tmp/doc.md"))
+def _make_node(tmp_path) -> MarkdownTextFileNode:
+    (tmp_path / "doc.md").write_text("# Hello\n\nWorld content.\n")
+    return MarkdownTextFileNode(tmp_path / "doc.md")
 
 
-def test_create_mcp_server_returns_fastmcp(fs):
+def test_create_mcp_server_returns_fastmcp(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
     assert isinstance(server, FastMCP)
 
 
-def test_mcp_server_has_six_tools(fs):
-    import asyncio
+def test_mcp_server_has_six_tools(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def list_tools():
@@ -46,10 +43,9 @@ def test_mcp_server_has_six_tools(fs):
     assert tool_names == {"read", "replace", "append", "unfold", "replace_lines", "rename_title"}
 
 
-def test_mcp_read_tool_full_document(fs):
-    import asyncio
+def test_mcp_read_tool_full_document(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -61,10 +57,9 @@ def test_mcp_read_tool_full_document(fs):
     assert "World content." in text
 
 
-def test_mcp_read_tool_with_target(fs):
-    import asyncio
+def test_mcp_read_tool_with_target(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -75,10 +70,9 @@ def test_mcp_read_tool_with_target(fs):
     assert "Hello" in text
 
 
-def test_mcp_replace_tool(fs):
-    import asyncio
+def test_mcp_replace_tool(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -93,11 +87,10 @@ def test_mcp_replace_tool(fs):
     assert "# Hello" not in text
 
 
-def test_mcp_permission_denied(fs):
-    import asyncio
+def test_mcp_permission_denied(tmp_path):
 
-    node = _make_node(fs)
-    title_node = node.recursive_find_title_node_by_name("# Hello")
+    node = _make_node(tmp_path)
+    title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
     server = create_mcp_server(node, permissions=[(title_node, Permission.DENY)])
@@ -112,10 +105,9 @@ def test_mcp_permission_denied(fs):
         asyncio.run(call())
 
 
-def test_mcp_read_tool_target_not_found(fs):
-    import asyncio
+def test_mcp_read_tool_target_not_found(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -126,11 +118,10 @@ def test_mcp_read_tool_target_not_found(fs):
     assert "read failed" in text
 
 
-def test_mcp_read_tool_permission_denied(fs):
-    import asyncio
+def test_mcp_read_tool_permission_denied(tmp_path):
 
-    node = _make_node(fs)
-    title_node = node.recursive_find_title_node_by_name("# Hello")
+    node = _make_node(tmp_path)
+    title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
     server = create_mcp_server(node, permissions=[(title_node, Permission.DENY)])
@@ -142,10 +133,9 @@ def test_mcp_read_tool_permission_denied(fs):
         asyncio.run(call())
 
 
-def test_mcp_replace_tool_target_not_found(fs):
-    import asyncio
+def test_mcp_replace_tool_target_not_found(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -159,11 +149,10 @@ def test_mcp_replace_tool_target_not_found(fs):
     assert "replace failed" in text
 
 
-def test_mcp_replace_tool_permission_denied(fs):
-    import asyncio
+def test_mcp_replace_tool_permission_denied(tmp_path):
 
-    node = _make_node(fs)
-    title_node = node.recursive_find_title_node_by_name("# Hello")
+    node = _make_node(tmp_path)
+    title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
     server = create_mcp_server(node, permissions=[(title_node, Permission.READ)])
@@ -178,10 +167,9 @@ def test_mcp_replace_tool_permission_denied(fs):
         asyncio.run(call())
 
 
-def test_mcp_append_tool(fs):
-    import asyncio
+def test_mcp_append_tool(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -195,10 +183,9 @@ def test_mcp_append_tool(fs):
     assert "Appended." in text
 
 
-def test_mcp_append_tool_target_not_found(fs):
-    import asyncio
+def test_mcp_append_tool_target_not_found(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -212,11 +199,10 @@ def test_mcp_append_tool_target_not_found(fs):
     assert "append failed" in text
 
 
-def test_mcp_append_tool_permission_denied(fs):
-    import asyncio
+def test_mcp_append_tool_permission_denied(tmp_path):
 
-    node = _make_node(fs)
-    title_node = node.recursive_find_title_node_by_name("# Hello")
+    node = _make_node(tmp_path)
+    title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
     server = create_mcp_server(node, permissions=[(title_node, Permission.READ)])
@@ -231,15 +217,15 @@ def test_mcp_append_tool_permission_denied(fs):
         asyncio.run(call())
 
 
-def test_mcp_unfold_tool(fs):
-    import asyncio
+def test_mcp_unfold_tool(tmp_path):
 
-    fs.create_file("/tmp/fold.md", contents="# 1. Parent\n## 1.1. Child\nChild content.\n")
-    node = FoldableMarkdownTextFileNode(Path("/tmp/fold.md"))
-    child_title = node.recursive_find_title_node_by_name("## 1.1. Child")
+    (tmp_path / "fold.md").write_text("# 1. Parent\n## 1.1. Child\nChild content.\n")
+    node = FoldableMarkdownTextFileNode(tmp_path / "fold.md")
+    root = node.get_root_title()
+    child_title = root.recursive_find_title_node_by_name("## 1.1. Child")
     assert child_title is not None
     child_title.fold_mode = FoldMode.SHOW_TITLE
-    parent_title = node.recursive_find_title_node_by_name("# 1. Parent")
+    parent_title = root.recursive_find_title_node_by_name("# 1. Parent")
     if parent_title is not None:
         parent_title.fold_mode = FoldMode.SHOW_CHILD
 
@@ -253,10 +239,9 @@ def test_mcp_unfold_tool(fs):
     assert "Child content." in text
 
 
-def test_mcp_unfold_tool_target_not_found(fs):
-    import asyncio
+def test_mcp_unfold_tool_target_not_found(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -267,15 +252,15 @@ def test_mcp_unfold_tool_target_not_found(fs):
     assert "unfold failed" in text
 
 
-def test_mcp_unfold_tool_permission_denied(fs):
-    import asyncio
+def test_mcp_unfold_tool_permission_denied(tmp_path):
 
-    fs.create_file("/tmp/fold.md", contents="# 1. Parent\n## 1.1. Child\nChild content.\n")
-    node = FoldableMarkdownTextFileNode(Path("/tmp/fold.md"))
-    child_title = node.recursive_find_title_node_by_name("## 1.1. Child")
+    (tmp_path / "fold.md").write_text("# 1. Parent\n## 1.1. Child\nChild content.\n")
+    node = FoldableMarkdownTextFileNode(tmp_path / "fold.md")
+    root = node.get_root_title()
+    child_title = root.recursive_find_title_node_by_name("## 1.1. Child")
     assert child_title is not None
     child_title.fold_mode = FoldMode.SHOW_TITLE
-    parent_title = node.recursive_find_title_node_by_name("# 1. Parent")
+    parent_title = root.recursive_find_title_node_by_name("# 1. Parent")
     if parent_title is not None:
         parent_title.fold_mode = FoldMode.SHOW_CHILD
 
@@ -288,10 +273,9 @@ def test_mcp_unfold_tool_permission_denied(fs):
         asyncio.run(call())
 
 
-def test_mcp_replace_lines_tool_exact_match(fs):
-    import asyncio
+def test_mcp_replace_lines_tool_exact_match(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -306,10 +290,9 @@ def test_mcp_replace_lines_tool_exact_match(fs):
     assert "succeeded" in text
 
 
-def test_mcp_replace_lines_tool_fuzzy_match(fs):
-    import asyncio
+def test_mcp_replace_lines_tool_fuzzy_match(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -324,11 +307,10 @@ def test_mcp_replace_lines_tool_fuzzy_match(fs):
     assert "fuzzy match" in text
 
 
-def test_mcp_replace_lines_tool_multiple_matches(fs):
-    import asyncio
+def test_mcp_replace_lines_tool_multiple_matches(tmp_path):
 
-    fs.create_file("/tmp/dup.md", contents="# Hello\n\nSame.\nSame.\n")
-    node = MarkdownTextFileNode(Path("/tmp/dup.md"))
+    (tmp_path / "dup.md").write_text("# Hello\n\nSame.\nSame.\n")
+    node = MarkdownTextFileNode(tmp_path / "dup.md")
     server = create_mcp_server(node)
 
     async def call():
@@ -343,10 +325,9 @@ def test_mcp_replace_lines_tool_multiple_matches(fs):
     assert "matches found" in text
 
 
-def test_mcp_replace_lines_tool_no_match(fs):
-    import asyncio
+def test_mcp_replace_lines_tool_no_match(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -361,10 +342,9 @@ def test_mcp_replace_lines_tool_no_match(fs):
     assert "no match found" in text
 
 
-def test_mcp_replace_lines_tool_empty_old_lines(fs):
-    import asyncio
+def test_mcp_replace_lines_tool_empty_old_lines(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -379,11 +359,10 @@ def test_mcp_replace_lines_tool_empty_old_lines(fs):
     assert "matches found" in text
 
 
-def test_mcp_replace_lines_tool_permission_denied(fs):
-    import asyncio
+def test_mcp_replace_lines_tool_permission_denied(tmp_path):
 
-    node = _make_node(fs)
-    title_node = node.recursive_find_title_node_by_name("# Hello")
+    node = _make_node(tmp_path)
+    title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
     server = create_mcp_server(node, permissions=[(title_node, Permission.DENY)])
@@ -399,10 +378,9 @@ def test_mcp_replace_lines_tool_permission_denied(fs):
         asyncio.run(call())
 
 
-def test_mcp_rename_title_tool(fs):
-    import asyncio
+def test_mcp_rename_title_tool(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -417,10 +395,9 @@ def test_mcp_rename_title_tool(fs):
     assert "# Hello" not in text
 
 
-def test_mcp_rename_title_tool_target_not_found(fs):
-    import asyncio
+def test_mcp_rename_title_tool_target_not_found(tmp_path):
 
-    node = _make_node(fs)
+    node = _make_node(tmp_path)
     server = create_mcp_server(node)
 
     async def call():
@@ -434,11 +411,10 @@ def test_mcp_rename_title_tool_target_not_found(fs):
     assert "rename_title failed" in text
 
 
-def test_mcp_rename_title_tool_permission_denied(fs):
-    import asyncio
+def test_mcp_rename_title_tool_permission_denied(tmp_path):
 
-    node = _make_node(fs)
-    title_node = node.recursive_find_title_node_by_name("# Hello")
+    node = _make_node(tmp_path)
+    title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
     server = create_mcp_server(node, permissions=[(title_node, Permission.READ)])
