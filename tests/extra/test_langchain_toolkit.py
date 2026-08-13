@@ -84,6 +84,17 @@ def test_toolkit_read_tool_full_document_permission_denied(tmp_path):
     assert "权限不足" in result
 
 
+def test_toolkit_replace_tool_auto_saves(tmp_path):
+    doc = tmp_path / "doc.md"
+    doc.write_text("# Hello\n\nWorld content.\n", encoding="utf-8")
+    node = MarkdownTextFileNode(doc)
+    toolkit = MarkdownTreeToolkit(node)
+    tools = toolkit.get_tools()
+    replace_tool = next(t for t in tools if t.name == "replace")
+    replace_tool.invoke({"target": "# Hello", "replace_text": "# Goodbye\n\nFarewell."})
+    assert doc.read_text(encoding="utf-8") == "# Goodbye\n\nFarewell."
+
+
 def test_toolkit_permission_denied(tmp_path):
     node = _make_node(tmp_path)
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")

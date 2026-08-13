@@ -148,6 +148,59 @@ def test_mcp_read_tool_permission_denied(tmp_path):
         asyncio.run(call())
 
 
+def test_mcp_replace_tool_auto_saves(tmp_path):
+
+    doc = tmp_path / "doc.md"
+    doc.write_text("# Hello\n\nWorld content.\n", encoding="utf-8")
+    node = MarkdownTextFileNode(doc)
+    server = create_mcp_server(node)
+
+    async def call():
+        return await server.call_tool("replace", {
+            "target": "# Hello",
+            "replace_text": "# Goodbye\n\nFarewell.",
+        })
+
+    asyncio.run(call())
+    assert doc.read_text(encoding="utf-8") == "# Goodbye\n\nFarewell."
+
+
+def test_mcp_append_tool_auto_saves(tmp_path):
+
+    doc = tmp_path / "doc.md"
+    doc.write_text("# Hello\n\nWorld content.\n", encoding="utf-8")
+    node = MarkdownTextFileNode(doc)
+    server = create_mcp_server(node)
+
+    async def call():
+        return await server.call_tool("append", {
+            "target": "# Hello",
+            "append_text": "Appended.",
+        })
+
+    asyncio.run(call())
+    disk_text = doc.read_text(encoding="utf-8")
+    assert "Appended." in disk_text
+    assert "# Hello" in disk_text
+
+
+def test_mcp_rename_title_tool_auto_saves(tmp_path):
+
+    doc = tmp_path / "doc.md"
+    doc.write_text("# Hello\n\nWorld content.\n", encoding="utf-8")
+    node = MarkdownTextFileNode(doc)
+    server = create_mcp_server(node)
+
+    async def call():
+        return await server.call_tool("rename_title", {
+            "target": "# Hello",
+            "new_title_name": "Hi",
+        })
+
+    asyncio.run(call())
+    assert "# Hi" in doc.read_text(encoding="utf-8")
+
+
 def test_mcp_replace_tool_target_not_found(tmp_path):
 
     node = _make_node(tmp_path)
