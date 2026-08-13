@@ -86,19 +86,28 @@ class PermissionChecker:
 
         规则：
         - 权限列表为空 → 返回 READ_WRITE（默认允许）
-        - 权限列表非空 → 从节点向上遍历，找到最近的有效权限
+        - 权限列表非空 → 从节点向上遍历；遇到 DENY 立即返回 DENY（绝对生效），
+          否则取最近的有效权限
         - 如果到根节点仍未找到 → 返回 DENY（默认拒绝）
         """
         if not self._permissions:
             return Permission.READ_WRITE
 
-        current = node
-        while current is not None:
+        nearest: Permission | None = None
+        current: Node | None = node
+        while True:
             for perm_node, perm in self._permissions:
                 if perm_node is current:
-                    return perm
+                    if perm is Permission.DENY:
+                        return Permission.DENY
+                    if nearest is None:
+                        nearest = perm
+            if current is None:
+                break
             current = getattr(current, "parent", None)
 
+        if nearest is not None:
+            return nearest
         return Permission.DENY
 
     def _get_node_description(self, node: Node | None) -> str:
