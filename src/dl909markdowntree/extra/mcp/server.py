@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from ...node import Node
-from ...permissions import Permission, PermissionChecker
 from ..tools import (
     append_tool,
     read_tool,
@@ -20,21 +17,21 @@ if TYPE_CHECKING:
     from fastmcp import FastMCP
 
     from ...interface import AttributedMarkdownTextFileBase
+    from ...permissions import PermissionChecker
 
 
 def create_mcp_server(
     markdown_node: AttributedMarkdownTextFileBase,
-    permissions: Sequence[tuple[Node, Permission]] | None = None,
+    checker: PermissionChecker | None = None,
 ) -> FastMCP:
     """Create an MCP server exposing 6 markdown editing tools.
 
     Args:
         markdown_node: Any node implementing AttributedMarkdownTextFileProtocol.
-        permissions: Optional permission list forwarded to PermissionChecker.
+        checker: Permission checker (e.g. NodePermissionChecker or
+            TitlePathPermissionChecker). None disables permission checks.
     """
     from fastmcp import FastMCP
-
-    checker = PermissionChecker(permissions) if permissions else None
 
     mcp = FastMCP("dl909-markdowntree")
 

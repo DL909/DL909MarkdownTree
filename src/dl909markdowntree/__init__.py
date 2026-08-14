@@ -33,7 +33,12 @@ from .numbered_markdown_nodes import (
     NumberedMarkdownTextFileNode,
     NumberedMarkdownTitleNode,
 )
-from .permissions import Permission, PermissionChecker
+from .permissions import (
+    NodePermissionChecker,
+    Permission,
+    PermissionChecker,
+    TitlePathPermissionChecker,
+)
 from .plain_text_nodes import PlainTextFileNode, PlainTextNode
 from .text_node import TextNode
 
@@ -60,6 +65,7 @@ __all__ = [
     "MarkdownTitleNode",
     "MarkdownTreeError",
     "Node",
+    "NodePermissionChecker",
     "NumberedMarkdownFolderNode",
     "NumberedMarkdownTextFileBase",
     "NumberedMarkdownTextFileNode",
@@ -70,5 +76,6 @@ __all__ = [
     "PlainTextFileNode",
     "PlainTextNode",
     "TextNode",
+    "TitlePathPermissionChecker",
     "UnclosedCodeBlockError",
 ]

@@ -8,6 +8,7 @@ from dl909markdowntree import (
     FoldableMarkdownTextFileNode,
     FoldMode,
     MarkdownTextFileNode,
+    NodePermissionChecker,
     Permission,
 )
 from dl909markdowntree.extra.langchain import MarkdownTreeToolkit
@@ -76,7 +77,7 @@ def test_toolkit_read_tool_full_document_permission_denied(tmp_path):
 
     toolkit = MarkdownTreeToolkit(
         node,
-        permissions=[(title_node, Permission.READ_WRITE)],
+        checker=NodePermissionChecker([(title_node, Permission.READ_WRITE)]),
     )
     tools = toolkit.get_tools()
     read_tool = next(t for t in tools if t.name == "read")
@@ -102,7 +103,7 @@ def test_toolkit_permission_denied(tmp_path):
 
     toolkit = MarkdownTreeToolkit(
         node,
-        permissions=[(title_node, Permission.DENY)],
+        checker=NodePermissionChecker([(title_node, Permission.DENY)]),
     )
     tools = toolkit.get_tools()
     replace_tool = next(t for t in tools if t.name == "replace")
@@ -307,7 +308,7 @@ def test_toolkit_append_permission_denied(tmp_path):
 
     toolkit = MarkdownTreeToolkit(
         node,
-        permissions=[(title_node, Permission.READ)],
+        checker=NodePermissionChecker([(title_node, Permission.READ)]),
     )
     tools = toolkit.get_tools()
     append_tool = next(t for t in tools if t.name == "append")
@@ -325,7 +326,7 @@ def test_toolkit_unfold_permission_denied(tmp_path):
 
     toolkit = MarkdownTreeToolkit(
         node,
-        permissions=[(child_title, Permission.DENY)],
+        checker=NodePermissionChecker([(child_title, Permission.DENY)]),
     )
     tools = toolkit.get_tools()
     unfold_tool = next(t for t in tools if t.name == "unfold")
@@ -341,7 +342,7 @@ def test_toolkit_replace_lines_permission_denied(tmp_path):
 
     toolkit = MarkdownTreeToolkit(
         node,
-        permissions=[(title_node, Permission.DENY)],
+        checker=NodePermissionChecker([(title_node, Permission.DENY)]),
     )
     tools = toolkit.get_tools()
     rl_tool = next(t for t in tools if t.name == "replace_lines")
@@ -363,7 +364,7 @@ def test_toolkit_rename_title_permission_denied(tmp_path):
 
     toolkit = MarkdownTreeToolkit(
         node,
-        permissions=[(title_node, Permission.DENY)],
+        checker=NodePermissionChecker([(title_node, Permission.DENY)]),
     )
     tools = toolkit.get_tools()
     rename_tool = next(t for t in tools if t.name == "rename_title")

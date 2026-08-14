@@ -13,6 +13,7 @@ from dl909markdowntree import (
     FoldableMarkdownTextFileNode,
     FoldMode,
     MarkdownTextFileNode,
+    NodePermissionChecker,
     Permission,
 )
 from dl909markdowntree.extra.mcp import create_mcp_server
@@ -76,7 +77,7 @@ def test_mcp_read_tool_full_document_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, permissions=[(title_node, Permission.READ_WRITE)])
+    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.READ_WRITE)]))
 
     async def call():
         return await server.call_tool("read", {})
@@ -108,7 +109,7 @@ def test_mcp_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, permissions=[(title_node, Permission.DENY)])
+    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.DENY)]))
 
     async def call():
         return await server.call_tool("replace", {
@@ -139,7 +140,7 @@ def test_mcp_read_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, permissions=[(title_node, Permission.DENY)])
+    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.DENY)]))
 
     async def call():
         return await server.call_tool("read", {"target": "# Hello"})
@@ -223,7 +224,7 @@ def test_mcp_replace_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, permissions=[(title_node, Permission.READ)])
+    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.READ)]))
 
     async def call():
         return await server.call_tool("replace", {
@@ -273,7 +274,7 @@ def test_mcp_append_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, permissions=[(title_node, Permission.READ)])
+    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.READ)]))
 
     async def call():
         return await server.call_tool("append", {
@@ -332,7 +333,7 @@ def test_mcp_unfold_tool_permission_denied(tmp_path):
     if parent_title is not None:
         parent_title.fold_mode = FoldMode.SHOW_CHILD
 
-    server = create_mcp_server(node, permissions=[(child_title, Permission.DENY)])
+    server = create_mcp_server(node, checker=NodePermissionChecker([(child_title, Permission.DENY)]))
 
     async def call():
         return await server.call_tool("unfold", {"target": "## 1.1. Child"})
@@ -433,7 +434,7 @@ def test_mcp_replace_lines_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, permissions=[(title_node, Permission.DENY)])
+    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.DENY)]))
 
     async def call():
         return await server.call_tool("replace_lines", {
@@ -485,7 +486,7 @@ def test_mcp_rename_title_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, permissions=[(title_node, Permission.READ)])
+    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.READ)]))
 
     async def call():
         return await server.call_tool("rename_title", {

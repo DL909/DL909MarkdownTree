@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 from langchain_core.tools import ArgsSchema, BaseTool
 from pydantic import BaseModel, Field
 
 from ...interface import AttributedMarkdownTextFileBase
-from ...node import Node
-from ...permissions import Permission, PermissionChecker
+from ...permissions import PermissionChecker
 from ..tools import (
     append_tool,
     read_tool,
@@ -202,10 +199,15 @@ class MarkdownTreeToolkit:
     def __init__(
         self,
         markdown_node: AttributedMarkdownTextFileBase,
-        permissions: Sequence[tuple[Node | None, Permission]] | None = None,
+        checker: PermissionChecker | None = None,
     ):
+        """Args:
+        markdown_node: Any node implementing AttributedMarkdownTextFileProtocol.
+        checker: Permission checker (e.g. NodePermissionChecker or
+            TitlePathPermissionChecker). None disables permission checks.
+        """
         self._node = markdown_node
-        self._checker = PermissionChecker(permissions)
+        self._checker = checker
 
     def get_tools(self) -> list[BaseTool]:
         return [
