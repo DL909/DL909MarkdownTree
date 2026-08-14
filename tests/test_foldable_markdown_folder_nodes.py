@@ -96,6 +96,25 @@ def test_foldable_markdown_folder_node_save_full_text(tmp_path):
     assert "Content" in content
 
 
+def test_foldable_markdown_folder_node_save_folded_preamble(tmp_path):
+    """测试 save：折叠的 preamble 不把折叠标记写入 0.mdp"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "0.mdp").write_text(
+        "## 0.1. PreambleSub\nPre content", encoding="utf-8"
+    )
+    (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
+    preamble = node.markdown_text_node.children[0]
+    assert isinstance(preamble, FoldableMarkdownTitleNode)
+    preamble.fold_mode = FoldMode.SHOW_TITLE
+    node.save()
+    content = (folder / "0.mdp").read_text(encoding="utf-8")
+    assert "PreambleSub" in content
+    assert "Pre content" in content
+    assert "folded" not in content
+
+
 def test_foldable_markdown_folder_node_fold_and_save_round_trip(tmp_path):
     """测试 save/reload 周期保持折叠状态"""
     folder = tmp_path / "test.mdf"

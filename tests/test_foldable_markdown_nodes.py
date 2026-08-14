@@ -229,6 +229,24 @@ def test_foldable_markdown_text_file_node_reload(tmp_path):
     )
 
 
+def test_foldable_markdown_text_file_node_save_while_folded(tmp_path):
+    """测试 save：折叠状态下不把折叠标记写入文件，且保留完整内容"""
+    file_path = tmp_path / "foldable.md"
+    file_path.write_text("# 1. Title\nContent here\n## 1.1. Sub\nMore content")
+    test_file_node = FoldableMarkdownTextFileNode(file_path=file_path)
+    test_file_node.save()
+    content = file_path.read_text()
+    assert content == "# 1. Title\nContent here\n## 1.1. Sub\nMore content"
+    assert "folded" not in content
+    test_file_node.reload()
+    assert (
+        test_file_node.get_text(full_text=True)
+        == "# 1. Title\nContent here\n## 1.1. Sub\nMore content"
+    )
+    assert "# 1. Title" in test_file_node.get_text()
+    assert "[text folded]" in test_file_node.get_text()
+
+
 def test_foldable_markdown_title_node_multiple_children():
     title_node = FoldableMarkdownTitleNode(level=1, title="Parent", number=[1])
     title_node.set_text(

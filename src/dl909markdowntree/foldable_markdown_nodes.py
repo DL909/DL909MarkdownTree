@@ -1,4 +1,5 @@
 from enum import Enum
+from pathlib import Path
 from typing import Self, override
 
 from .exceptions import InvalidNodeOperationError
@@ -140,6 +141,11 @@ class FoldableMarkdownTextFileNode(
     @override
     def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
         return self.get_root_title().get_text(with_fold_info, full_text)
+
+    @override
+    def save_to_file(self, file_path: Path) -> None:
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(self.get_text(full_text=True))
 
     @override
     def get_root_title(self) -> FoldableMarkdownTitleBase:

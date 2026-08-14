@@ -12,6 +12,7 @@ from .interface import (
 from .numbered_markdown_nodes import (
     NumberedMarkdownTitleNode,
 )
+from .text_node import TextNode
 
 MDP_FILE_PATTERN = re.compile(r"^(\d+)_(.+)\.mdp$")
 
@@ -91,6 +92,9 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
     def _get_section_content(self, child: NumberedMarkdownTitleNode) -> str:
         return "".join(child.get_text().splitlines(keepends=True)[1:]).rstrip("\n")
 
+    def _get_preamble_part_content(self, part: TextNode) -> str:
+        return part.get_text()
+
     @override
     def reload(self, auto_correct: bool | None = None):
         synthetic_text = self._build_synthetic_text_from_dir(self.file_path)
@@ -133,7 +137,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         if preamble_parts:
             preamble_content = ""
             for part in preamble_parts:
-                preamble_content += part.get_text() + "\n" * 2
+                preamble_content += self._get_preamble_part_content(part) + "\n" * 2
             if preamble_content != "":
                 preamble_content = preamble_content[:-2].rstrip("\n")
 

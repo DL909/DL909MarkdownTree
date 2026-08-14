@@ -14,6 +14,7 @@ from .interface import (
 )
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .numbered_markdown_nodes import NumberedMarkdownTitleNode
+from .text_node import TextNode
 
 
 class FoldableMarkdownFolderNode(
@@ -39,6 +40,12 @@ class FoldableMarkdownFolderNode(
 
     def _get_section_content(self, child: NumberedMarkdownTitleNode) -> str:
         return self._get_mdp_content(child)
+
+    @override
+    def _get_preamble_part_content(self, part: TextNode) -> str:
+        if isinstance(part, FoldableMarkdownTitleNode):
+            return part.get_text(full_text=True)
+        return super()._get_preamble_part_content(part)
 
     def _collect_fold_states(self) -> dict[str, str]:
         states = {}
