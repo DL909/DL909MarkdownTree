@@ -1,3 +1,13 @@
+## v2.0.0 (2026-08-14)
+
+### Feat
+
+- **permission**: abstract permission checker and provide another approach by node tree path along side original node object
+
+### Perf
+
+- replace deepcopy with a better solution
+
 ## v1.1.1 (2026-08-14)
 
 ### Fix
