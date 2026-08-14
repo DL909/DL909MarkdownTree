@@ -69,6 +69,19 @@ def test_foldable_markdown_title_node_fold_modes():
     assert "[2 child title folded]" in text
 
 
+def test_foldable_set_text_preserves_fold_mode_on_success():
+    title_node = FoldableMarkdownTitleNode(level=1, title="Root", number=[1])
+    title_node.set_text("## 1.1. Child\nContent")
+    title_node.unfold_by_depth(1)
+    assert title_node.fold_mode is FoldMode.SHOW_CHILD
+    title_node.set_text("## 1.1. Child\nNew content\n## 1.2. Another\nMore")
+    assert title_node.fold_mode is FoldMode.SHOW_CHILD
+    assert (
+        title_node.get_text()
+        == "# 1. Root\n## 1.1. Child [text folded]\n## 1.2. Another [text folded]\n"
+    )
+
+
 def test_foldable_markdown_title_node_unfold():
     title_node = FoldableMarkdownTitleNode(level=1, title="Parent", number=[1])
     child = FoldableMarkdownTitleNode(level=2, title="Child", number=[1, 1])

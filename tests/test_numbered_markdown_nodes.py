@@ -109,3 +109,31 @@ def test_numbered_markdown_text_node_recursive_find_trailing_newline():
     assert found is not None
     assert found.title == "Subtitle"
     assert found.number == [1, 1]
+
+
+def test_numbered_from_self_copies_number_list_independently():
+    node = NumberedMarkdownTitleNode(level=2, title="test", number=[1, 2])
+    result = NumberedMarkdownTitleNode.from_self(node)
+    assert result.number == [1, 2]
+    assert result.number is not node.number
+    assert result.level == 2
+    assert result.title == "test"
+    assert result.auto_correct is node.auto_correct
+
+
+def test_numbered_from_self_number_override_wins():
+    node = NumberedMarkdownTitleNode(level=2, title="test", number=[1, 2])
+    result = NumberedMarkdownTitleNode.from_self(node, number=[9])
+    assert result.number == [9]
+    assert node.number == [1, 2]
+
+
+def test_numbered_set_text_does_not_pollute_original_number():
+    node = NumberedMarkdownTitleNode(
+        level=1, title="Chapter", number=[1], auto_correct=True
+    )
+    node.set_text("## 1.1. Section\nContent")
+    assert node.number == [1]
+    child = node.children[0]
+    assert isinstance(child, NumberedMarkdownTitleNode)
+    assert child.number == [1, 1]

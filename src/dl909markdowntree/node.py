@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from abc import ABC
 from typing import Self
 
@@ -15,6 +16,14 @@ class Node(ABC):
     def __init__(self) -> None:
         super().__init__()
         self.children = []
+
+    @classmethod
+    def from_self(cls, origin: Self, **overrides: object) -> Self:
+        """从自身实例重建一个复制版本，overrides 中的键值覆盖相应属性"""
+        result = copy.copy(origin)
+        for key, value in overrides.items():
+            setattr(result, key, value)
+        return result
 
     def update(self) -> Self:
         for child in self.children:

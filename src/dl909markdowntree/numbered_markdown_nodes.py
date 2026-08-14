@@ -62,6 +62,13 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
         super().__init__(level=level, title=title)
 
     @override
+    @classmethod
+    def from_self(cls, origin: Self, **overrides: object) -> Self:  # pyright: ignore[reportIncompatibleMethodOverride] - Self is intentionally narrowed from base class
+        """复制时保证 number 列表独立，调用方传入的 number 覆盖优先"""
+        overrides.setdefault("number", list(origin.number))
+        return super().from_self(origin, **overrides)
+
+    @override
     def _add_title_child_to_children(self, child: Self) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
         if self.children and isinstance(self.children[-1], NumberedMarkdownTitleNode):
             correct_number = copy.deepcopy(self.children[-1].number)

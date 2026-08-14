@@ -50,6 +50,41 @@ def test_dispatch_on_orphan_is_noop():
     assert node.parent is None
 
 
+# ─── Node：from_self 复制 ─────────────────────────────────────────────
+
+
+def test_from_self_copies_attributes_and_applies_overrides():
+    root = Node()
+    child = Node()
+    root.addchild(child)
+    result = Node.from_self(root, children=[])
+    assert result is not root
+    assert result.children == []
+    assert result.parent is root.parent
+
+
+def test_from_self_without_overrides_shares_children_list():
+    root = Node()
+    root.addchild(Node())
+    result = Node.from_self(root)
+    assert result.children is root.children
+
+
+def test_from_self_override_wins_over_copy():
+    root = Node()
+    root.addchild(Node())
+    result = Node.from_self(root, children=[Node()])
+    assert result.children is not root.children
+    assert len(result.children) == 1
+
+
+def test_from_self_returns_same_concrete_class():
+    node = PlainTextNode("hello")
+    result = PlainTextNode.from_self(node, text="world")
+    assert isinstance(result, PlainTextNode)
+    assert result.get_text() == "world"
+
+
 # ─── TextNode / FileNode：抽象基类 ─────────────────────────────────────
 
 

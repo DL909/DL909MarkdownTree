@@ -359,3 +359,14 @@ def test_markdown_text_node_recursive_find_trailing_newline():
     found = test_text_node.recursive_find_title_node_by_name("## Subtitle\n")
     assert found is not None
     assert found.title == "Subtitle"
+
+def test_set_text_rebuilds_children_as_new_objects():
+    title_node = MarkdownTitleNode(title="Root", level=1)
+    title_node.set_text("## Section 1\nContent")
+    old_child = title_node.children[0]
+    assert len(title_node.children) == 1
+    title_node.set_text("## Section 1\nNew content")
+    new_child = title_node.children[0]
+    assert isinstance(new_child, MarkdownTitleNode)
+    assert new_child is not old_child
+    assert new_child.title == "Section 1"

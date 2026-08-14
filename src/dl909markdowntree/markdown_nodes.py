@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import re
 from pathlib import Path
 from typing import Self, override
@@ -83,8 +82,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
             lines = lines[1:]
             override_flag = True
         else:
-            result = copy.deepcopy(self)
-            result.children = []
+            result = type(self).from_self(self, children=[])
         cached_lines = ""
         code_block_flag = False
         fence_run = ""
