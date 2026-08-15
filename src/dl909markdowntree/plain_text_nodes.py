@@ -1,8 +1,6 @@
 import pathlib
 from typing import override
 
-from pydantic import Field
-
 from .file_node import FileNode
 from .text_node import TextNode
 
@@ -25,7 +23,7 @@ class PlainTextNode(TextNode):
 
 
 class PlainTextFileNode(FileNode, TextNode):
-    textNode: TextNode = Field(default_factory=PlainTextNode)
+    textNode: TextNode
 
     @override
     def save(self):
