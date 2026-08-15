@@ -172,6 +172,21 @@ def test_markdown_title_node_set_text_invalid_empty_title():
         title_node.set_text("#")
 
 
+def test_markdown_title_node_from_line_rejects_level_above_six():
+    with pytest.raises(InvalidMarkdownLineError):
+        MarkdownTitleNode.from_line("####### too deep")
+    with pytest.raises(InvalidMarkdownLineError):
+        MarkdownTitleNode.from_line("################ very deep")
+
+
+def test_markdown_title_node_set_text_level_above_six_is_plain_text():
+    title_node = MarkdownTitleNode(title="Root", level=1)
+    title_node.set_text("####### too deep\ncontent")
+    full_text = title_node.get_text()
+    assert "####### too deep" in full_text
+    assert isinstance(title_node.children[0], PlainTextNode)
+
+
 def test_markdown_title_node_set_text_invalid_lower_level():
     title_node = MarkdownTitleNode(title="Root", level=2)
     with pytest.raises(InvalidTitleLevelError):

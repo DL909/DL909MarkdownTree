@@ -26,7 +26,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
 
     @classmethod
     def from_line(cls, line: str) -> Self:
-        match = re.match(r"^(#+) (.+)$", line.rstrip("\n"))
+        match = re.match(r"^(#{1,6}) (.+)$", line.rstrip("\n"))
         if not match:
             raise InvalidMarkdownLineError(f"invalid Markdown title line: {line}")
         return cls(level=len(match.group(1)), title=match.group(2))
