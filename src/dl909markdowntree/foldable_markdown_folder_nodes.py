@@ -1,6 +1,7 @@
 """foldable_markdown_folder_nodes.py - 可折叠 Markdown 文件夹节点"""
 
 import json
+import logging
 from pathlib import Path
 from typing import override
 
@@ -15,6 +16,8 @@ from .interface import (
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .numbered_markdown_nodes import NumberedMarkdownTitleNode
 from .text_node import TextNode
+
+logger = logging.getLogger(__name__)
 
 
 class FoldableMarkdownFolderNode(
@@ -67,7 +70,12 @@ class FoldableMarkdownFolderNode(
                 if isinstance(child, FoldableMarkdownTitleNode):
                     key = json.dumps([child.level, *child.number])
                     if key in states:
-                        child.fold_mode = FoldMode[states[key]]
+                        try:
+                            child.fold_mode = FoldMode[states[key]]
+                        except KeyError:
+                            logger.warning(
+                                f"unknown fold state: {states[key]}, ignored"
+                            )
                     _walk(child)
 
         _walk(self.markdown_text_node)
@@ -79,7 +87,11 @@ class FoldableMarkdownFolderNode(
         if fold_states_path.exists():
             raw = fold_states_path.read_text(encoding="utf-8")
             if raw:
-                states = json.loads(raw)
+                try:
+                    states = json.loads(raw)
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.warning(f"ignored invalid fold_state.json: {e}")
+                    return
                 self._apply_fold_states(states)
 
     @override

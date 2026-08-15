@@ -141,3 +141,25 @@ def test_foldable_markdown_folder_node_fold_mode_default(tmp_path):
     for child in node.markdown_text_node.children:
         if isinstance(child, FoldableMarkdownTitleNode):
             assert child.fold_mode is FoldMode.SHOW_TITLE
+
+
+def test_foldable_markdown_folder_node_reload_corrupt_fold_state(tmp_path):
+    """测试 reload：损坏的 fold_state.json 被忽略而不抛异常"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
+    (folder / "fold_state.json").write_text("{ not valid json", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
+    assert node.markdown_text_node.children[0].fold_mode is FoldMode.SHOW_TITLE
+
+
+def test_foldable_markdown_folder_node_reload_unknown_fold_state(tmp_path):
+    """测试 reload：未知折叠状态名被忽略而不抛异常"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
+    (folder / "fold_state.json").write_text(
+        '{"[1]": "NOT_A_MODE"}', encoding="utf-8"
+    )
+    node = FoldableMarkdownFolderNode(file_path=Path(folder))
+    assert node.markdown_text_node.children[0].fold_mode is FoldMode.SHOW_TITLE
