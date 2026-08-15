@@ -88,7 +88,9 @@ def unfold_tool(
         return f"unfold failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ)
     try:
-        return node.unfold()
+        text = node.unfold()
+        markdown_node.save()
+        return text
     except MarkdownTreeError as e:
         return f"unfold failed: {e}"
 

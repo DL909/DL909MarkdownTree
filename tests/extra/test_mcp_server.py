@@ -10,6 +10,7 @@ from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 
 from dl909markdowntree import (
+    FoldableMarkdownFolderNode,
     FoldableMarkdownTextFileNode,
     FoldMode,
     MarkdownTextFileNode,
@@ -306,6 +307,35 @@ def test_mcp_unfold_tool(tmp_path):
     result = asyncio.run(call())
     text = result.content[0].text
     assert "Child content." in text
+
+
+def test_mcp_unfold_tool_persists_fold_state(tmp_path):
+
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "1_Parent.mdp").write_text("## 1.1. Child\nChild content.\n", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(folder)
+    parent_title = node.get_root_title().recursive_find_title_node_by_name("# 1. Parent")
+    assert parent_title is not None
+    parent_title.fold_mode = FoldMode.SHOW_CHILD
+    child_title = parent_title.recursive_find_title_node_by_name("## 1.1. Child")
+    assert child_title is not None
+    child_title.fold_mode = FoldMode.SHOW_TITLE
+
+    server = create_mcp_server(node)
+
+    async def call():
+        return await server.call_tool("unfold", {"target": "## 1.1. Child"})
+
+    result = asyncio.run(call())
+    assert "Child content." in result.content[0].text
+
+    reloaded = FoldableMarkdownFolderNode(folder)
+    reloaded_child = reloaded.get_root_title().recursive_find_title_node_by_name(
+        "## 1.1. Child"
+    )
+    assert reloaded_child is not None
+    assert reloaded_child.fold_mode is FoldMode.SHOW_CHILD
 
 
 def test_mcp_unfold_tool_target_not_found(tmp_path):
