@@ -309,6 +309,101 @@ def test_mcp_unfold_tool(tmp_path):
     assert "Child content." in text
 
 
+def test_mcp_replace_tool_rollback_on_save_failure(tmp_path, monkeypatch):
+    """测试 save 失败时内存修改被回滚"""
+
+    node = _make_node(tmp_path)
+    server = create_mcp_server(node)
+
+    def failing_save():
+        raise OSError("disk full")
+
+    monkeypatch.setattr(node, "save", failing_save)
+
+    async def call():
+        return await server.call_tool("replace", {
+            "target": "# Hello",
+            "replace_text": "# Changed\nnew content",
+        })
+
+    result = asyncio.run(call())
+    assert "replace failed" in result.content[0].text
+    assert "# Hello" in node.get_text()
+    assert "World content." in node.get_text()
+
+
+def test_mcp_append_tool_rollback_on_save_failure(tmp_path, monkeypatch):
+    """测试 save 失败时追加内容被回滚"""
+
+    node = _make_node(tmp_path)
+    server = create_mcp_server(node)
+
+    def failing_save():
+        raise OSError("disk full")
+
+    monkeypatch.setattr(node, "save", failing_save)
+
+    async def call():
+        return await server.call_tool("append", {
+            "target": "# Hello",
+            "append_text": "extra content",
+        })
+
+    result = asyncio.run(call())
+    assert "append failed" in result.content[0].text
+    assert "extra content" not in node.get_text()
+
+
+def test_mcp_rename_title_rollback_on_save_failure(tmp_path, monkeypatch):
+    """测试 save 失败时标题改名被回滚"""
+
+    node = _make_node(tmp_path)
+    server = create_mcp_server(node)
+
+    def failing_save():
+        raise OSError("disk full")
+
+    monkeypatch.setattr(node, "save", failing_save)
+
+    async def call():
+        return await server.call_tool("rename_title", {
+            "target": "# Hello",
+            "new_title_name": "Changed",
+        })
+
+    result = asyncio.run(call())
+    assert "rename_title failed" in result.content[0].text
+    assert "# Hello" in node.get_text()
+
+
+def test_mcp_unfold_tool_rollback_on_save_failure(tmp_path, monkeypatch):
+    """测试 save 失败时折叠状态被回滚"""
+
+    (tmp_path / "fold.md").write_text("# 1. Parent\n## 1.1. Child\nChild content.\n")
+    node = FoldableMarkdownTextFileNode(tmp_path / "fold.md")
+    root = node.get_root_title()
+    parent_title = root.recursive_find_title_node_by_name("# 1. Parent")
+    assert parent_title is not None
+    parent_title.fold_mode = FoldMode.SHOW_CHILD
+    child_title = parent_title.recursive_find_title_node_by_name("## 1.1. Child")
+    assert child_title is not None
+    child_title.fold_mode = FoldMode.SHOW_TITLE
+
+    def failing_save():
+        raise OSError("disk full")
+
+    monkeypatch.setattr(node, "save", failing_save)
+
+    server = create_mcp_server(node)
+
+    async def call():
+        return await server.call_tool("unfold", {"target": "## 1.1. Child"})
+
+    result = asyncio.run(call())
+    assert "unfold failed" in result.content[0].text
+    assert child_title.fold_mode is FoldMode.SHOW_TITLE
+
+
 def test_mcp_unfold_tool_persists_fold_state(tmp_path):
 
     folder = tmp_path / "folder"

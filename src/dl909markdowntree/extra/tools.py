@@ -8,6 +8,9 @@ from ..exceptions import MarkdownTreeError
 from ..interface import AttributedMarkdownTextFileBase
 from ..permissions import Permission, PermissionChecker
 
+# set_text 解析失败（MarkdownTreeError）或保存失败（OSError / RuntimeError）时回滚内存修改
+_TOOL_OPERATION_ERRORS = (MarkdownTreeError, OSError, RuntimeError)
+
 
 def _find_title_node(
     markdown_node: AttributedMarkdownTextFileBase, target: str
@@ -52,11 +55,13 @@ def replace_tool(
     if node is None:
         return f"replace failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
+    old_text = node.get_text()
     try:
         node.set_text(replace_text)
         markdown_node.save()
         return "replace succeeded"
-    except MarkdownTreeError as e:
+    except _TOOL_OPERATION_ERRORS as e:
+        node.set_text(old_text)
         return f"replace failed: {e}"
 
 
@@ -70,11 +75,13 @@ def append_tool(
     if node is None:
         return f"append failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
+    old_text = node.get_text()
     try:
         node.add_text(append_text)
         markdown_node.save()
         return "append succeeded"
-    except MarkdownTreeError as e:
+    except _TOOL_OPERATION_ERRORS as e:
+        node.set_text(old_text)
         return f"append failed: {e}"
 
 
@@ -87,11 +94,13 @@ def unfold_tool(
     if node is None:
         return f"unfold failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ)
+    old_mode = node.fold_mode
     try:
         text = node.unfold()
         markdown_node.save()
         return text
-    except MarkdownTreeError as e:
+    except _TOOL_OPERATION_ERRORS as e:
+        node.fold_mode = old_mode
         return f"unfold failed: {e}"
 
 
@@ -131,11 +140,13 @@ def replace_lines_tool(
 
         if best_ratio >= 0.8:
             matched = "".join(current_lines[best_start:best_end])
+            old_text = node.get_text()
             try:
                 node.set_text(current_text.replace(matched, new_lines, 1))
                 markdown_node.save()
                 return "replace_lines succeeded (fuzzy match)"
-            except MarkdownTreeError as e:
+            except _TOOL_OPERATION_ERRORS as e:
+                node.set_text(old_text)
                 return f"replace_lines failed: {e}"
         else:
             return (
@@ -144,11 +155,13 @@ def replace_lines_tool(
     elif match_count > 1:
         return f"replace_lines failed: {match_count} matches found, provide more context"
 
+    old_text = node.get_text()
     try:
         node.set_text(current_text.replace(old_lines, new_lines, 1))
         markdown_node.save()
         return "replace_lines succeeded"
-    except MarkdownTreeError as e:
+    except _TOOL_OPERATION_ERRORS as e:
+        node.set_text(old_text)
         return f"replace_lines failed: {e}"
 
 
@@ -162,9 +175,11 @@ def rename_title_tool(
     if node is None:
         return f"rename_title failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
+    old_title = node.title
     try:
         node.title = new_title_name
         markdown_node.save()
         return "rename_title succeeded"
-    except MarkdownTreeError as e:
+    except _TOOL_OPERATION_ERRORS as e:
+        node.title = old_title
         return f"rename_title failed: {e}"
