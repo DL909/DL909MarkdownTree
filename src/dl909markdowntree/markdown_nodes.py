@@ -40,7 +40,9 @@ class MarkdownTitleNode(MarkdownTitleBase):
     @override
     def addchild(self, child: Node) -> None:
         if isinstance(child, PlainTextNode):
-            if self.children:
+            if self.children and isinstance(self.children[-1], PlainTextNode):
+                self.children[-1].text += child.text
+            elif self.children:
                 return self.children[-1].addchild(child)
             else:
                 self.children.append(child)

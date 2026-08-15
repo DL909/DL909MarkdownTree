@@ -18,6 +18,15 @@ def test_markdown_title_node_init():
     assert title_node.children == []
 
 
+def test_markdown_title_node_addchild_consecutive_plain_text_merged():
+    title_node = MarkdownTitleNode(title="Test", level=1)
+    title_node.addchild(PlainTextNode("first line\n"))
+    title_node.addchild(PlainTextNode("second line\n"))
+    full_text = title_node.get_text()
+    assert "first line" in full_text
+    assert "second line" in full_text
+
+
 def test_markdown_title_node_init_with_text():
     title_node = MarkdownTitleNode(title="Test", level=2)
     title_node.set_text("Some content")
