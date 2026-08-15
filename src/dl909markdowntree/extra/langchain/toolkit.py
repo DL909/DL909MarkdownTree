@@ -20,12 +20,21 @@ from ..tools import (
 class _ReadArgs(BaseModel):
     target: str | None = Field(
         None,
-        description="Markdown title including level sign (e.g. '# Hello'). Omit for full document.",
+        description=(
+            "Markdown title including level sign (e.g. '# Hello'). Omit for full document. "
+            "For numbered (foldable) nodes the number prefix is part of the title (e.g. '# 1. Hello')."
+        ),
     )
 
 
 class _ReplaceArgs(BaseModel):
-    target: str = Field(..., description="Markdown title including level sign.")
+    target: str = Field(
+        ...,
+        description=(
+            "Markdown title including level sign. For numbered (foldable) nodes the number "
+            "prefix is part of the title (e.g. '# 1. Hello')."
+        ),
+    )
     replace_text: str = Field(
         ...,
         description=(
@@ -37,7 +46,13 @@ class _ReplaceArgs(BaseModel):
 
 
 class _AppendArgs(BaseModel):
-    target: str = Field(..., description="Markdown title including level sign.")
+    target: str = Field(
+        ...,
+        description=(
+            "Markdown title including level sign. For numbered (foldable) nodes the number "
+            "prefix is part of the title (e.g. '# 1. Hello')."
+        ),
+    )
     append_text: str = Field(
         ...,
         description="Text to append. Must not contain titles at or above target's level.",
@@ -45,17 +60,35 @@ class _AppendArgs(BaseModel):
 
 
 class _UnfoldArgs(BaseModel):
-    target: str = Field(..., description="Markdown title including level sign.")
+    target: str = Field(
+        ...,
+        description=(
+            "Markdown title including level sign. For numbered (foldable) nodes the number "
+            "prefix is part of the title (e.g. '# 1. Hello')."
+        ),
+    )
 
 
 class _ReplaceLinesArgs(BaseModel):
-    target: str = Field(..., description="Markdown title including level sign.")
+    target: str = Field(
+        ...,
+        description=(
+            "Markdown title including level sign. For numbered (foldable) nodes the number "
+            "prefix is part of the title (e.g. '# 1. Hello')."
+        ),
+    )
     old_lines: str = Field(..., description="Original text to replace.")
     new_lines: str = Field(..., description="Replacement text.")
 
 
 class _RenameTitleArgs(BaseModel):
-    target: str = Field(..., description="Markdown title including level sign.")
+    target: str = Field(
+        ...,
+        description=(
+            "Markdown title including level sign. For numbered (foldable) nodes the number "
+            "prefix is part of the title (e.g. '# 1. Hello')."
+        ),
+    )
     new_title_name: str = Field(..., description="New title text (no level sign).")
 
 
