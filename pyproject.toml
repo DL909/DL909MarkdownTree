@@ -29,6 +29,9 @@ mcp = ["fastmcp>=0.4.0"]
 langchain = ["langchain-core>=0.3.0"]
 all = ["fastmcp>=0.4.0", "langchain-core>=0.3.0"]
 
+[project.entry-points."commitizen.plugin"]
+cz_dl909 = "dl909markdowntree.cz_plugin:DL909Commitizen"
+
 [dependency-groups]
 dev = [
   "pdbpp>=0.12.1",
@@ -41,7 +44,7 @@ dev = [
 ]
 
 [tool.commitizen]
-name = "cz_conventional_commits"
+name = "cz_dl909"
 version_provider = "uv"
 tag_format = "v$version"
 update_changelog_on_bump = true
