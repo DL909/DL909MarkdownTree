@@ -5,13 +5,11 @@ import logging
 from pathlib import Path
 from typing import override
 
-from .foldable_markdown_nodes import (
-    FoldableMarkdownTitleNode,
-    FoldMode,
-)
+from .foldable_markdown_nodes import FoldableMarkdownTitleNode
 from .interface import (
     FoldableMarkdownTextFileBase,
     FoldableMarkdownTitleBase,
+    FoldMode,
 )
 from .markdown_folder_nodes import NumberedMarkdownFolderNode
 from .numbered_markdown_nodes import NumberedMarkdownTitleNode

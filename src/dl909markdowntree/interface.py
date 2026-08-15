@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from enum import Enum
 from pathlib import Path
 from typing import Self, override
 
@@ -10,6 +11,11 @@ from pydantic import BaseModel
 
 from .file_node import FileNode
 from .text_node import TextNode
+
+
+class FoldMode(Enum):
+    SHOW_TITLE = "show_title"
+    SHOW_CHILD = "show_child_title"
 
 
 class MarkdownTitleBase(TextNode):
@@ -79,6 +85,8 @@ class NumberedMarkdownTextFileBase(MarkdownTextFileBase):
 
 
 class FoldableMarkdownTitleBase(NumberedMarkdownTitleBase):
+    fold_mode: FoldMode
+
     @abstractmethod
     @override
     def get_text(self, with_fold_info: bool = True, full_text=False) -> str: ...

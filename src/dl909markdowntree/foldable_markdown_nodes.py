@@ -1,4 +1,3 @@
-from enum import Enum
 from pathlib import Path
 from typing import Self, override
 
@@ -6,6 +5,7 @@ from .exceptions import InvalidNodeOperationError
 from .interface import (
     FoldableMarkdownTextFileBase,
     FoldableMarkdownTitleBase,
+    FoldMode,
 )
 from .markdown_nodes import MarkdownTitleNode
 from .numbered_markdown_nodes import (
@@ -13,11 +13,6 @@ from .numbered_markdown_nodes import (
     NumberedMarkdownTitleNode,
 )
 from .plain_text_nodes import PlainTextNode
-
-
-class FoldMode(Enum):
-    SHOW_TITLE = ("show_title",)
-    SHOW_CHILD = ("show_child_title",)
 
 
 class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitleBase):
