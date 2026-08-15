@@ -13,5 +13,9 @@ wheels/
 .pytest_cache/
 .ruff_cache/
 
+# Coverage
+.coverage
+htmlcov/
+
 # macOS
 .DS_Store
