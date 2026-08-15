@@ -90,7 +90,10 @@ class MarkdownTitleNode(MarkdownTitleBase):
         fence_run = ""
         for line in lines:
             if code_block_flag:
-                if re.match(rf"^({re.escape(fence_run)}) *\n", line):
+                if (
+                    (closing_match := re.match(r"^(``*)\s*\n", line))
+                    and len(closing_match.group(1)) >= len(fence_run)
+                ):
                     code_block_flag = False
                 cached_lines += line
             else:

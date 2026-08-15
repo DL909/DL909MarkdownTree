@@ -106,6 +106,19 @@ More text"""
     assert full_text.endswith("More text")
 
 
+def test_markdown_title_node_set_text_longer_closing_fence():
+    title_node = MarkdownTitleNode(title="Test", level=1)
+    text = """Some text
+```
+code
+````
+More text"""
+    title_node.set_text(text)
+    full_text = title_node.get_text()
+    assert "code" in full_text
+    assert full_text.endswith("More text")
+
+
 def test_markdown_title_node_set_text_closing_fence_trailing_spaces():
     title_node = MarkdownTitleNode(title="Test", level=1)
     text = """Some text
