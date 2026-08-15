@@ -31,6 +31,8 @@ class Node(ABC):
         # 反向遍历删除，避免在正向遍历中删除元素导致跳过后一个节点
         for i in range(len(self.children) - 1, -1, -1):
             if self.children[i].deprecated:
+                child = self.children[i]
+                child.parent = None
                 del self.children[i]
         return self
 

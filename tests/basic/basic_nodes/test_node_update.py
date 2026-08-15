@@ -45,3 +45,15 @@ def test_update_recurses_into_grandchildren():
     root.update()
     assert a.children == []
     assert root.children == [a]
+
+
+def test_removed_child_keeps_no_parent_reference():
+    root, (a,) = _tree(1)
+    a.deprecated = True
+    root.update()
+    assert root.children == []
+    assert a.parent is None
+
+    orphan = Node()
+    root.addchild(orphan)
+    assert root.children == [orphan]
