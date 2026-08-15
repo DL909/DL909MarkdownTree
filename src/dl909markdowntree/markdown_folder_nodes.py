@@ -141,7 +141,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
             if preamble_content != "":
                 preamble_content = preamble_content[:-2].rstrip("\n")
 
-        existing_mapping = {}
+        existing_files: dict[int, list[tuple[str, Path]]] = {}
         for entry in file_path.iterdir():
             if not entry.name.endswith(".mdp"):
                 continue
@@ -150,22 +150,39 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
             match = MDP_FILE_PATTERN.match(entry.name)
             if match:
                 N = int(match.group(1))
-                existing_mapping[N] = (match.group(2), entry)
+                existing_files.setdefault(N, []).append((match.group(2), entry))
 
         new_numbers = {N for N, _, _ in sections}
-        existing_numbers = set(existing_mapping.keys())
-        for N in existing_numbers - new_numbers:
-            _, path = existing_mapping[N]
-            path.unlink()
+        for N, files in existing_files.items():
+            if N not in new_numbers:
+                for _, path in files:
+                    path.unlink()
+
+        sections_by_N = {N: (title, content) for N, title, content in sections}
 
         for N, title, content in sections:
             target_name = f"{N}_{_sanitize_mdp_title(title)}.mdp"
             target_path = file_path / target_name
-            if N in existing_mapping:
-                _, old_path = existing_mapping[N]
-                if old_path != target_path:
+            if N in existing_files:
+                for _, old_path in existing_files[N]:
+                    if old_path == target_path:
+                        break
+                    if target_path.exists():
+                        target_path.unlink()
                     old_path.rename(target_path)
+                    break
             target_path.write_text(content, encoding="utf-8")
+
+        for N, files in existing_files.items():
+            if N not in new_numbers:
+                continue
+            target_name = (
+                f"{N}_{_sanitize_mdp_title(sections_by_N[N][0])}.mdp"
+            )
+            target_path = file_path / target_name
+            for _, path in files:
+                if path != target_path and path.exists():
+                    path.unlink()
 
         zero_path = file_path / "0.mdp"
         if preamble_content is not None:

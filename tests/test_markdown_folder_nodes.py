@@ -255,3 +255,31 @@ def test_numbered_markdown_folder_node_save_sanitizes_to_untitled(tmp_path):
     node.markdown_text_node.children[0].title = "."
     node.save()
     assert Path(folder / "1_untitled.mdp").exists()
+
+
+def test_numbered_markdown_folder_node_save_removes_duplicate_number(tmp_path):
+    """测试 save：同一编号的重复 .mdp 文件被清理"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_a.mdp").write_text("## 1.1. A content", encoding="utf-8")
+    (folder / "1_b.mdp").write_text("## 2.1. B content", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=Path(folder))
+    node.save()
+    assert Path(folder / "1_a.mdp").exists()
+    assert Path(folder / "2_b.mdp").exists()
+    assert not Path(folder / "1_b.mdp").exists()
+
+
+def test_numbered_markdown_folder_node_save_rename_over_existing(tmp_path):
+    """测试 save：重命名目标已被占用时不静默覆盖丢失数据"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_a.mdp").write_text("## 1.1. A content", encoding="utf-8")
+    (folder / "1_b.mdp").write_text("## 2.1. B content", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=Path(folder))
+    assert isinstance(node.markdown_text_node.children[0], NumberedMarkdownTitleNode)
+    node.markdown_text_node.children[0].title = "b"
+    node.save()
+    assert Path(folder / "1_b.mdp").exists()
+    assert Path(folder / "2_b.mdp").exists()
+    assert not Path(folder / "1_a.mdp").exists()
