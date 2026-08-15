@@ -1,3 +1,34 @@
+## v2.0.1 (2026-08-15)
+
+### Fix
+
+- **FoldableFolderNode**: tolerate corrupt fold_state.json
+- **FolderNode**: clean duplicate mdp files and avoid silent rename overwrite
+- **tools**: roll back in-memory changes on save failure
+- **tools**: persist fold state after unfold
+- **MarkdownTitle**: reject title levels above six in from_line
+- **Node**: clear parent of removed deprecated children
+- **MarkdownTitle**: allow longer closing code fence
+- **MarkdownTitle**: merge consecutive plain text children
+- **AttributedMarkdown**: support empty frontmatter
+
+### Refactor
+
+- **interface**: move FoldMode to interface and expose fold_mode
+- **PlainTextFileNode**: drop useless pydantic Field
+
+### Chore
+
+- ignore coverage artifacts
+
+### Ci
+
+- **cz**: patch cz
+
+### Docs
+
+- **tools**: clarify target title matching for numbered nodes
+
 ## v2.0.0 (2026-08-14)
 
 ### Feat
