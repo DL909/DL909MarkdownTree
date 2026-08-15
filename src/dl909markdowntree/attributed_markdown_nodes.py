@@ -62,7 +62,7 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
         """将 ``---\n<yaml>\n---\n<markdown>`` 拆分为 (yaml_data, markdown_content)"""
         if not content.startswith("---\n"):
             raise MarkdownTreeError("文件缺少 FrontMatter 起始标记 '---'")
-        i = content.find("\n---\n", 4)
+        i = content.find("\n---\n", 3)
         if i == -1:
             raise MarkdownTreeError("文件缺少 FrontMatter 结束标记 '---'")
         i += 1
@@ -76,7 +76,11 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
         self.markdown_text_node = FoldableMarkdownTitleNode.from_text(
             text=markdown_content
         )
-        self.attribute = parse_yaml_raw_as(type(self.attribute), yaml_data)
+        self.attribute = (
+            parse_yaml_raw_as(type(self.attribute), yaml_data)
+            if yaml_data.strip()
+            else type(self.attribute)()
+        )
 
     def __init__(
         self,
@@ -100,6 +104,8 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
                 text=markdown_content, auto_correct=auto_correct
             )
         )
-        self.attribute = (
-            attribute if attribute else parse_yaml_raw_as(attribute_type, yaml_data)
+        self.attribute = attribute if attribute else (
+            parse_yaml_raw_as(attribute_type, yaml_data)
+            if yaml_data.strip()
+            else attribute_type()
         )

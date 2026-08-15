@@ -258,6 +258,22 @@ author: test
     assert "Override content" in full_text
 
 
+def test_attributed_markdown_text_file_node_empty_frontmatter(tmp_path):
+    """测试空 FrontMatter（--- 紧邻 ---）"""
+    content = """---
+---
+# 1. Title
+Content"""
+    file_path = tmp_path / "empty_frontmatter.md"
+    file_path.write_text(content, encoding="utf-8")
+    test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
+        file_path=file_path, attribute_type=_TestAttribute
+    )
+    assert test_file_node.attribute.author == "default_author"
+    assert test_file_node.attribute.version == "1.0.0"
+    assert "# 1. Title" in test_file_node.get_text(full_text=True)
+
+
 def test_attributed_markdown_text_file_node_empty_tags(tmp_path):
     """测试空标签列表"""
     content = """---
