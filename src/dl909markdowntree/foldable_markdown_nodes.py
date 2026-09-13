@@ -66,10 +66,9 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitle
 
     def recursive_up_unfold(self) -> None:
         """递归的展开自身与自身的父级标题"""
-        if self.fold_mode == FoldMode.SHOW_TITLE:
-            self.fold_mode = FoldMode.SHOW_CHILD
-            if isinstance(self.parent, FoldableMarkdownTitleNode):
-                self.parent.recursive_up_unfold()
+        self.fold_mode = FoldMode.SHOW_CHILD
+        if isinstance(self.parent, FoldableMarkdownTitleNode):
+            self.parent.recursive_up_unfold()
 
     def unfold(self) -> str:
         if self.parent is not None and isinstance(

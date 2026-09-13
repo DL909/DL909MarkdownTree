@@ -2,21 +2,6 @@
 
 ## 待修复问题
 
-### 14. [中] recursive_up_unfold() 对已展开节点提前返回，祖先仍保持折叠
-
-`FoldableMarkdownTitleNode.recursive_up_unfold()` 在 `self` 已是 `SHOW_CHILD` 时提前返回，
-不再向上传播：
-
-```python
-parent.fold_mode = FoldMode.SHOW_TITLE
-child.fold_mode = FoldMode.SHOW_CHILD
-child.recursive_up_unfold()
-# parent.fold_mode 仍为 SHOW_TITLE
-```
-
-该状态可通过 `fold_state.json` 产生（文件只记录子节点为 `SHOW_CHILD`，父节点用默认值）。
-建议无论当前状态都向上传播。
-
 ### 15. [中] 工具编辑会重置后代折叠状态（文件夹节点会持久化丢失）
 
 工具通过 `set_text` 重建子节点，重建时不保留折叠状态；对

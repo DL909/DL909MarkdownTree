@@ -126,6 +126,19 @@ def test_foldable_markdown_title_node_recursive_up_unfold_nested_chain():
     assert title_node.fold_mode is FoldMode.SHOW_CHILD
 
 
+def test_foldable_markdown_title_node_recursive_up_unfold_already_unfolded_self():
+    """自身已展开时，recursive_up_unfold 仍应向上展开父级"""
+    title_node = FoldableMarkdownTitleNode(level=1, title="Root", number=[1])
+    child = FoldableMarkdownTitleNode(level=2, title="Child", number=[1, 1])
+    child.set_text("content")
+    title_node.addchild(child)
+    title_node.fold_mode = FoldMode.SHOW_TITLE
+    child.fold_mode = FoldMode.SHOW_CHILD
+    child.recursive_up_unfold()
+    assert child.fold_mode is FoldMode.SHOW_CHILD
+    assert title_node.fold_mode is FoldMode.SHOW_CHILD
+
+
 def test_foldable_markdown_title_node_recursive_up_unfold_no_parent():
     title_node = FoldableMarkdownTitleNode(level=1, title="Root", number=[1])
     title_node.recursive_up_unfold()
