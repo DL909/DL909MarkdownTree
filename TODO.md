@@ -2,19 +2,6 @@
 
 ## 待修复问题
 
-### 5. unfold 工具处理非折叠节点时抛未捕获的 AttributeError
-
-`extra.tools.unfold_tool` 直接访问 `node.fold_mode` / `node.unfold()`。
-对普通 `MarkdownTextFileNode`（其标题节点为 `MarkdownTitleNode`）：
-
-```python
-unfold_tool(MarkdownTextFileNode(p), None, "# Hello")
-# AttributeError: 'MarkdownTitleNode' object has no attribute 'fold_mode'
-```
-
-`AttributeError` 不在 `_TOOL_OPERATION_ERRORS` 中，也不会被 LangChain / MCP 包装层捕获，
-会直接抛给调用方。建议做能力判断并返回 "unfold failed: ..."。
-
 ### 6. PlainTextFileNode 不自动创建缺失文件
 
 `MarkdownTextFileNode`、`NumberedMarkdownTextFileNode`、`FoldableMarkdownTextFileNode`、

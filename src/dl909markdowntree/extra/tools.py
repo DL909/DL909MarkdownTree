@@ -101,6 +101,8 @@ def unfold_tool(
     if node is None:
         return f"unfold failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ)
+    if not isinstance(node, FoldableMarkdownTitleBase):
+        return f"unfold failed: node '{target}' is not foldable"
     old_mode = node.fold_mode
     try:
         text = node.unfold()

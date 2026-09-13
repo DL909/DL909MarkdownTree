@@ -1,7 +1,18 @@
 """Tests for dl909markdowntree.extra.tools"""
 
-from dl909markdowntree import FoldableMarkdownTextFileNode
-from dl909markdowntree.extra.tools import replace_lines_tool
+from dl909markdowntree import FoldableMarkdownTextFileNode, MarkdownTextFileNode
+from dl909markdowntree.extra.tools import replace_lines_tool, unfold_tool
+
+
+def test_unfold_tool_returns_error_for_non_foldable_node(tmp_path):
+    """非折叠节点调用 unfold 应返回失败信息而不是抛 AttributeError"""
+    doc_path = tmp_path / "plain.md"
+    doc_path.write_text("# Hello\ncontent\n", encoding="utf-8")
+    doc = MarkdownTextFileNode(doc_path)
+
+    result = unfold_tool(doc, None, "# Hello")
+
+    assert result == "unfold failed: node '# Hello' is not foldable"
 
 
 def test_replace_lines_matches_hidden_folded_line(tmp_path):
