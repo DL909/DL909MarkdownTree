@@ -1,3 +1,38 @@
+## v2.0.2 (2026-09-13)
+
+### Fix
+
+- **MarkdownTitle**: return empty title for level 0 nodes
+- **Node**: copy children list and reset parent in from_self
+- **FoldableMarkdownTitle**: preserve descendant fold states across set_text
+- **FoldableMarkdownTitle**: propagate recursive_up_unfold from already unfolded node
+- **interface**: declare get_markdown_text_node and implement for attributed node
+- **AttributedMarkdownFolderNode**: honor explicitly passed attribute
+- **AttributedMarkdownFolderNode**: handle empty FrontMatter.yaml
+- **tools**: snapshot full text for rollback to keep folded content
+- **MarkdownTitle**: set parent when appending plain text child
+- **AttributedMarkdownTextFileNode**: remove extra blank line before frontmatter end
+- **PlainTextFileNode**: create missing file instead of raising FileNotFoundError
+- **tools**: return failure message instead of AttributeError for unfold on non-foldable nodes
+- **MarkdownTitle**: recognize tilde fences and closing fence at end of text
+- **FolderNode**: accept str file_path by converting to Path
+- **tools**: match replace_lines against full text including folded content
+- **FoldableMarkdownTitle**: use full text in add_text to keep folded content
+
+### Chore
+
+- **deps**: remove unused lxml dependency
+
+### Docs
+
+- **USAGE**: align examples and notes with actual behavior
+- **TODO**: add newly found issues
+- **USAGE.md-&-TODO.md**: add usage and some todo
+
+### Test
+
+- **tools**: ensure replace_lines never matches folded view markers
+
 ## v2.0.1 (2026-08-15)
 
 ### Fix
