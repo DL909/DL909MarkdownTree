@@ -2,40 +2,6 @@
 
 ## 待修复问题
 
-### 1. [严重] 折叠节点上 append 会丢失隐藏内容
-
-`extra.tools.append_tool` 调用 `FoldableMarkdownTitleNode.add_text`（继承自 `MarkdownTitleNode`），
-而 `add_text` 内部使用 `self.get_text()`，对可折叠节点默认返回**折叠视图**（含
-`[text folded]` / `[N child title folded]` 标记）：
-
-```python
-# MarkdownTitleNode.add_text
-def add_text(self, text: str) -> None:
-    self.set_text(self.get_text() + "\n" + text)
-```
-
-后果：
-
-- 被折叠的正文与被折叠的子标题内容全部丢失；
-- 折叠标记 `[text folded]` 会被当作标题文字或正文写入文件。
-
-复现（v2.0.1）：
-
-```python
-a = AttributedMarkdownTextFileNode(file_path=p, attribute_type=Attr)
-a.set_text("# 1. Title\nSecret hidden line\n## 1.1. Sub\nhidden sub content")
-a.save()
-append_tool(a, None, "# 1. Title", "appended line")
-# 文件变为: '# 1. Title [text folded] [1 child title folded]\n\nappended line'
-# 隐藏正文与 Sub 子节内容丢失
-```
-
-注意：即使父节点已展开（`fold_mode == SHOW_CHILD`），只要子树中存在处于折叠态的子节点，
-`append_tool` 同样会丢失这些子节点的内容。
-
-建议：覆写 `FoldableMarkdownTitleNode.add_text` 使用 `get_text(full_text=True)`；
-或在 `append_tool` 中先 `recursive_up_unfold()` 并在追加后按需恢复折叠状态。
-
 ### 2. [严重] replace_lines 无法匹配折叠视图中的隐藏行
 
 `extra.tools.replace_lines_tool` 基于 `node.get_text()`（折叠视图）做精确/模糊匹配，

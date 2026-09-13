@@ -59,6 +59,11 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitle
             text += "\n"
         return text
 
+    @override
+    def add_text(self, text: str) -> None:
+        """基于完整文本追加，避免把折叠视图与折叠标记写回节点"""
+        self.set_text(self.get_text(full_text=True) + "\n" + text)
+
     def recursive_up_unfold(self) -> None:
         """递归的展开自身与自身的父级标题"""
         if self.fold_mode == FoldMode.SHOW_TITLE:

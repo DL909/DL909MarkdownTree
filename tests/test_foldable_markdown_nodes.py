@@ -368,6 +368,21 @@ def test_foldable_markdown_text_node_recursive_find_trailing_newline():
     assert found.number == [1, 1]
 
 
+def test_foldable_add_text_preserves_hidden_content():
+    """add_text 应基于完整文本追加，不得丢失折叠内容或写入折叠标记"""
+    title_node = FoldableMarkdownTitleNode.from_text(
+        "# 1. Title\nSecret hidden line\n## 1.1. Sub\nhidden sub content"
+    )
+    target = title_node.recursive_find_title_node_by_name("# 1. Title")
+    assert target is not None
+    target.add_text("appended line")
+    assert (
+        title_node.get_text(full_text=True)
+        == "# 1. Title\nSecret hidden line\n## 1.1. Sub\nhidden sub content\nappended line"
+    )
+    assert "[text folded]" not in title_node.get_text(full_text=True)
+
+
 def test_foldable_markdown_title_node_within_shown_does_not_leak_folded():
     """折叠的子标题不应在 within_shown=True 时泄露"""
     title_node = FoldableMarkdownTitleNode(level=1, title="Root", number=[1])
