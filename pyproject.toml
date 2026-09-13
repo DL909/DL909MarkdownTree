@@ -5,7 +5,7 @@ description = "A library for tree-structured Markdown document parsing and read/
 readme = "README.md"
 authors = [{ name = "DL909", email = "matthewDingL@outlook.com" }]
 requires-python = ">=3.12"
-dependencies = ["lxml>=6.1.1", "pydantic>=2.13.4", "pydantic-yaml>=1.6.0"]
+dependencies = ["pydantic>=2.13.4", "pydantic-yaml>=1.6.0"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Development Status :: 5 - Production/Stable",

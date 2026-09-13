@@ -2,10 +2,7 @@
 
 ## 待修复问题
 
-### 18. [低] pyproject.toml 声明 lxml 依赖但代码未使用
-
-`pyproject.toml` 的 `dependencies` 中声明 `lxml>=6.1.1`，但在 `src/` 与 `tests/` 中均无引用。
-建议移除或在文档中说明用途。
+（无）
 
 ## 文档不一致（USAGE.md）
 
