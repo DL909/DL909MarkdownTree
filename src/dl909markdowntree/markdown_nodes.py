@@ -46,6 +46,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
                 return self.children[-1].addchild(child)
             else:
                 self.children.append(child)
+                child.parent = self
         elif isinstance(child, type(self)):
             if child.level <= self.level:
                 raise InvalidTitleLevelError("too high title level")

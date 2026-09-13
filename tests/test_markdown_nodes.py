@@ -27,6 +27,17 @@ def test_markdown_title_node_addchild_consecutive_plain_text_merged():
     assert "second line" in full_text
 
 
+def test_markdown_title_node_addchild_sets_plain_text_node_parent():
+    title_node = MarkdownTitleNode(title="Test", level=1)
+    first = PlainTextNode("first line\n")
+    second = PlainTextNode("second line\n")
+    title_node.addchild(first)
+    assert first.parent is title_node
+    title_node.addchild(second)
+    assert first.parent is title_node
+    assert second.parent is None
+
+
 def test_markdown_title_node_init_with_text():
     title_node = MarkdownTitleNode(title="Test", level=2)
     title_node.set_text("Some content")

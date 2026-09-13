@@ -2,18 +2,6 @@
 
 ## 待修复问题
 
-### 8. MarkdownTitleNode.addchild 不设置 PlainTextNode 的 parent
-
-```python
-n = MarkdownTitleNode(level=1, title="T")
-p = PlainTextNode("hello")
-n.addchild(p)
-p.parent  # None
-```
-
-文本子节点（合并分支与新增分支）均未设置 `parent`，`dispatch()` 无法将其从父节点摘除。
-标题子节点正常。目前对权限路径解析无实际影响（非标题节点视为根），但结构不完整。
-
 ### 9. [严重] 工具操作失败回滚使用折叠视图，导致隐藏内容被清空
 
 `extra.tools` 中的 `replace_tool` / `append_tool` / `replace_lines_tool` 在操作前用
