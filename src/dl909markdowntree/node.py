@@ -21,6 +21,8 @@ class Node(ABC):
     def from_self(cls, origin: Self, **overrides: object) -> Self:
         """从自身实例重建一个复制版本，overrides 中的键值覆盖相应属性"""
         result = copy.copy(origin)
+        result.children = list(origin.children)
+        result.parent = None
         for key, value in overrides.items():
             setattr(result, key, value)
         return result

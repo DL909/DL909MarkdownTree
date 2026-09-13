@@ -63,11 +63,14 @@ def test_from_self_copies_attributes_and_applies_overrides():
     assert result.parent is root.parent
 
 
-def test_from_self_without_overrides_shares_children_list():
+def test_from_self_without_overrides_copies_children_list():
     root = Node()
-    root.addchild(Node())
+    child = Node()
+    root.addchild(child)
     result = Node.from_self(root)
-    assert result.children is root.children
+    assert result.children == root.children
+    assert result.children is not root.children
+    assert result.parent is None
 
 
 def test_from_self_override_wins_over_copy():

@@ -2,19 +2,6 @@
 
 ## 待修复问题
 
-### 16. [低] Node.from_self 浅拷贝，共享 children 列表与 parent 引用
-
-```python
-m = MarkdownTitleNode.from_self(n)
-m.children is n.children  # True
-m.parent is n.parent      # True
-m.children.clear()        # n.children 也被清空
-```
-
-`NumberedMarkdownTitleNode.from_self` 已显式复制 `number`
-（`src/dl909markdowntree/numbered_markdown_nodes.py:66-69`），但未复制 `children`。
-建议默认复制子节点列表，并将 `parent` 置为 `None`。
-
 ### 17. [低] level-0 占位节点的 get_title() 返回空白垃圾
 
 ```python
