@@ -2,25 +2,6 @@
 
 ## 待修复问题
 
-### 10. [严重] replace_lines 匹配到折叠标记后"成功"并清空隐藏内容
-
-`replace_lines_tool` 在折叠视图上做匹配，用户若以可见的折叠标记 `[text folded]` 为匹配目标，
-会命中并返回成功，实际却删除了被折叠的隐藏内容，且会把标记文本落盘：
-
-```python
-doc = FoldableMarkdownTextFileNode(file_path=p)
-doc.set_text("# 1. Title\nsecret\n## 1.1. Sub\nhidden sub")
-doc.get_root_title()  # 折叠态，视图含 "# 1. Title [text folded] [1 child title folded]"
-replace_lines_tool(doc, None, "# 1. Title", "[text folded]", "[text hidden]")
-# 返回 "replace_lines succeeded"（精确匹配 1 处）
-doc.get_root_title().children  # []
-doc.get_text(full_text=True)   # '# 1. Title [text hidden] [1 child title folded]'
-doc.save()                     # 标记文本写入磁盘
-```
-
-与问题 2 不同：问题 2 是匹配不到，这里是"匹配成功并破坏数据"。
-建议在 `full_text=True` 的文本上进行匹配与替换。
-
 ### 11. [中] AttributedMarkdownFolderNode 已有目录时忽略显式传入的 attribute
 
 当目标目录及 `FrontMatter.yaml` 已存在时，构造传入的 `attribute` 会被文件内容覆盖：

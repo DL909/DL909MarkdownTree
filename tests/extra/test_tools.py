@@ -85,3 +85,18 @@ def test_append_tool_failure_rollback_preserves_folded_content(tmp_path, monkeyp
 
     assert "append failed" in result
     assert doc.get_text(full_text=True) == original
+
+
+def test_replace_lines_tool_does_not_match_folded_marker(tmp_path):
+    """折叠标记不应被匹配替换，匹配始终基于完整文本"""
+    doc = _make_folded_doc(tmp_path)
+    original = doc.get_text(full_text=True)
+    disk_before = doc.file_path.read_text(encoding="utf-8")
+
+    result = replace_lines_tool(
+        doc, None, "# 1. Title", "[text folded]", "[text hidden]"
+    )
+
+    assert "no match found" in result
+    assert doc.get_text(full_text=True) == original
+    assert doc.file_path.read_text(encoding="utf-8") == disk_before
