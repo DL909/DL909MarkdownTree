@@ -2,24 +2,6 @@
 
 ## 待修复问题
 
-### 15. [中] 工具编辑会重置后代折叠状态（文件夹节点会持久化丢失）
-
-工具通过 `set_text` 重建子节点，重建时不保留折叠状态；对
-`FoldableMarkdownFolderNode` 该状态会随 `save()` 写入 `fold_state.json`，重开后丢失：
-
-```python
-# 1_One.mdp 下含子节点 1.1；先展开 one 与 sub
-one.fold_mode = FoldMode.SHOW_CHILD
-sub.fold_mode = FoldMode.SHOW_CHILD
-doc.save()   # fold_state.json: {"[1,1]":SHOW_CHILD, "[2,1,1]":SHOW_CHILD}
-append_tool(doc, None, "# 1. One", "extra")
-doc.save()   # fold_state.json 仅剩 {"[1,1]": SHOW_CHILD}
-# 重开后 sub.fold_mode == SHOW_TITLE
-```
-
-单文件 `FoldableMarkdownTextFileNode` 同样会重置（内存中 `sub` 变为 `SHOW_TITLE`）。
-建议 `set_text` 后按 `[level, *number]` 路径恢复折叠状态，或原地编辑而非整体重建。
-
 ### 16. [低] Node.from_self 浅拷贝，共享 children 列表与 parent 引用
 
 ```python

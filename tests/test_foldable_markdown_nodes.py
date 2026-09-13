@@ -82,6 +82,23 @@ def test_foldable_set_text_preserves_fold_mode_on_success():
     )
 
 
+def test_foldable_markdown_title_node_set_text_preserves_descendant_fold_states():
+    """set_text 重建子节点后应恢复后代的折叠状态"""
+    title_node = FoldableMarkdownTitleNode.from_text(
+        "# 1. Title\n## 1.1. Sub\ncontent\n"
+    )
+    title_node.fold_mode = FoldMode.SHOW_CHILD
+    title = title_node.children[0]
+    sub = title.children[0]
+    sub.fold_mode = FoldMode.SHOW_CHILD
+
+    title_node.set_text(title_node.get_text(full_text=True))
+
+    new_sub = title_node.children[0].children[0]
+    assert new_sub.number == [1, 1]
+    assert new_sub.fold_mode is FoldMode.SHOW_CHILD
+
+
 def test_foldable_markdown_title_node_unfold():
     title_node = FoldableMarkdownTitleNode(level=1, title="Parent", number=[1])
     child = FoldableMarkdownTitleNode(level=2, title="Child", number=[1, 1])

@@ -64,6 +64,41 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitle
         """基于完整文本追加，避免把折叠视图与折叠标记写回节点"""
         self.set_text(self.get_text(full_text=True) + "\n" + text)
 
+    def _collect_descendant_fold_states(
+        self,
+    ) -> dict[tuple[int, ...], FoldMode]:
+        """收集后代折叠状态，键为 (level, *number)"""
+        states: dict[tuple[int, ...], FoldMode] = {}
+
+        def _walk(node: FoldableMarkdownTitleNode) -> None:
+            for child in node.children:
+                if isinstance(child, FoldableMarkdownTitleNode):
+                    states[(child.level, *child.number)] = child.fold_mode
+                    _walk(child)
+
+        _walk(self)
+        return states
+
+    def _apply_descendant_fold_states(
+        self, states: dict[tuple[int, ...], FoldMode]
+    ) -> None:
+        def _walk(node: FoldableMarkdownTitleNode) -> None:
+            for child in node.children:
+                if isinstance(child, FoldableMarkdownTitleNode):
+                    key = (child.level, *child.number)
+                    if key in states:
+                        child.fold_mode = states[key]
+                    _walk(child)
+
+        _walk(self)
+
+    @override
+    def set_text(self, text: str) -> None:
+        """重建子节点后恢复后代折叠状态"""
+        fold_states = self._collect_descendant_fold_states()
+        super().set_text(text)
+        self._apply_descendant_fold_states(fold_states)
+
     def recursive_up_unfold(self) -> None:
         """递归的展开自身与自身的父级标题"""
         self.fold_mode = FoldMode.SHOW_CHILD

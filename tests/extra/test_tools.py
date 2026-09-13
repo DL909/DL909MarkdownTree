@@ -1,6 +1,11 @@
 """Tests for dl909markdowntree.extra.tools"""
 
-from dl909markdowntree import FoldableMarkdownTextFileNode, MarkdownTextFileNode
+from dl909markdowntree import (
+    FoldableMarkdownFolderNode,
+    FoldableMarkdownTextFileNode,
+    FoldMode,
+    MarkdownTextFileNode,
+)
 from dl909markdowntree.extra.tools import (
     append_tool,
     replace_lines_tool,
@@ -100,3 +105,42 @@ def test_replace_lines_tool_does_not_match_folded_marker(tmp_path):
     assert "no match found" in result
     assert doc.get_text(full_text=True) == original
     assert doc.file_path.read_text(encoding="utf-8") == disk_before
+
+
+def test_append_tool_preserves_descendant_fold_states(tmp_path):
+    """工具编辑不应重置后代折叠状态"""
+    doc = _make_folded_doc(tmp_path)
+    title = doc.get_root_title().children[0]
+    sub = title.children[1]
+    title.fold_mode = FoldMode.SHOW_CHILD
+    sub.fold_mode = FoldMode.SHOW_CHILD
+
+    result = append_tool(doc, None, "# 1. Title", "extra")
+
+    assert "append succeeded" in result
+    new_title = doc.get_root_title().children[0]
+    new_sub = new_title.children[1]
+    assert new_title.fold_mode is FoldMode.SHOW_CHILD
+    assert new_sub.fold_mode is FoldMode.SHOW_CHILD
+
+
+def test_folder_tool_edit_persists_descendant_fold_states(tmp_path):
+    """文件夹节点工具编辑后折叠状态应持久化，重开不丢失"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "1_One.mdp").write_text("## 1.1. Sub\ncontent", encoding="utf-8")
+    doc = FoldableMarkdownFolderNode(folder)
+    title = doc.get_root_title().children[0]
+    sub = title.children[0]
+    title.fold_mode = FoldMode.SHOW_CHILD
+    sub.fold_mode = FoldMode.SHOW_CHILD
+
+    result = append_tool(doc, None, "# 1. One", "extra")
+    assert "append succeeded" in result
+    doc.save()
+
+    reopened = FoldableMarkdownFolderNode(folder)
+    new_title = reopened.get_root_title().children[0]
+    new_sub = new_title.children[0]
+    assert new_title.fold_mode is FoldMode.SHOW_CHILD
+    assert new_sub.fold_mode is FoldMode.SHOW_CHILD
