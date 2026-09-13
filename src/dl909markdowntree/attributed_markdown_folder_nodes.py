@@ -45,15 +45,17 @@ class AttributedMarkdownFolderNode[T: BaseModel](
         if not file_path.exists():
             self.create_file(file_path, attribute_type, attribute)
         yaml_path = file_path / "FrontMatter.yaml"
-        self.attribute = (
-            attribute
-            if attribute
-            else (
-                parse_yaml_raw_as(attribute_type, yaml_path.read_text(encoding="utf-8"))
-                if yaml_path.exists()
+        if attribute:
+            self.attribute = attribute
+        elif yaml_path.exists():
+            yaml_data = yaml_path.read_text(encoding="utf-8")
+            self.attribute = (
+                parse_yaml_raw_as(attribute_type, yaml_data)
+                if yaml_data.strip()
                 else attribute_type()
             )
-        )
+        else:
+            self.attribute = attribute_type()
         super().__init__(
             file_path=file_path,
             auto_correct=auto_correct,
@@ -71,7 +73,11 @@ class AttributedMarkdownFolderNode[T: BaseModel](
         yaml_path = Path(self.file_path) / "FrontMatter.yaml"
         if yaml_path.exists():
             yaml_data = yaml_path.read_text(encoding="utf-8")
-            self.attribute = parse_yaml_raw_as(type(self.attribute), yaml_data)
+            self.attribute = (
+                parse_yaml_raw_as(type(self.attribute), yaml_data)
+                if yaml_data.strip()
+                else type(self.attribute)()
+            )
         super().reload(auto_correct=auto_correct)
 
     @override

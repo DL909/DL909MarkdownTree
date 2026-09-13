@@ -171,3 +171,15 @@ def test_attributed_markdown_folder_node_with_preamble(tmp_path):
     )
     assert "Preamble text before sections" in node.get_text()
     assert "# 1. Chapter" in node.get_text()
+
+
+def test_attributed_markdown_folder_node_handles_empty_frontmatter(tmp_path):
+    """空的 FrontMatter.yaml 应回退到默认属性而不是崩溃"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "FrontMatter.yaml").write_text("", encoding="utf-8")
+    node = AttributedMarkdownFolderNode[_ChapterMeta](
+        file_path=Path(folder), attribute_type=_ChapterMeta
+    )
+    assert node.attribute.author == "default_author"
+    assert node.attribute.status == "draft"

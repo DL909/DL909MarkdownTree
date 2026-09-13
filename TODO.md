@@ -17,19 +17,6 @@ n2.attribute.author  # 'first' —— 传入 'second' 被忽略
 而 `AttributedMarkdownFolderNode.reload` 又用 `FrontMatter.yaml` 覆盖 `self.attribute`。
 `AttributedMarkdownTextFileNode` 则会保留传入的 attribute，二者行为不一致。
 
-### 12. [中] 空 FrontMatter.yaml 使 AttributedMarkdownFolderNode 崩溃
-
-0 字节的 `FrontMatter.yaml` 会触发 pydantic 校验错误：
-
-```python
-(p / "FrontMatter.yaml").write_text("", encoding="utf-8")
-AttributedMarkdownFolderNode(p, Attr)
-# pydantic ValidationError: Input should be a valid dictionary or instance of Attr, input_value=None
-```
-
-`AttributedMarkdownTextFileNode` 对空 frontmatter 有 `yaml_data.strip()` 回退到 `attribute_type()`，
-而文件夹节点的 `__init__` / `reload` 直接调用 `parse_yaml_raw_as`，无空内容判断。文件缺失可回退默认值，仅空文件崩溃。
-
 ### 13. [中] AttributedMarkdownTextFileNode 缺少 get_markdown_text_node()
 
 ```python
