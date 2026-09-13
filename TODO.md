@@ -2,18 +2,6 @@
 
 ## 待修复问题
 
-### 3. NumberedMarkdownFolderNode 不接受 str 路径
-
-其它节点构造均会将 `file_path` 转为 `Path`（如 `MarkdownTextFileNode`），但
-`NumberedMarkdownFolderNode.__init__` 直接使用传入值：
-
-```python
-NumberedMarkdownFolderNode(file_path=str(path))
-# AttributeError: 'str' object has no attribute 'exists'
-```
-
-建议：构造开始时统一 `file_path = Path(file_path)`。
-
 ### 4. 代码围栏只识别反引号，不识别 `~~~` 与缩进代码块
 
 `MarkdownTitleNode._parse_markdown` 仅用 `` ^(`{3,})([^`\n]*)\n `` 识别围栏：

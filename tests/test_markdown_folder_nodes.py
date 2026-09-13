@@ -33,6 +33,16 @@ def test_numbered_markdown_folder_node_reload_basic(tmp_path):
     assert node.markdown_text_node.children[1].number == [2]
 
 
+def test_numbered_markdown_folder_node_accepts_str_path(tmp_path):
+    """测试 file_path 传入 str 也能正常构造"""
+    folder = tmp_path / "str_path.mdf"
+    folder.mkdir()
+    (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=str(folder))
+    assert node.file_path == folder
+    assert isinstance(node.markdown_text_node.children[0], NumberedMarkdownTitleNode)
+
+
 def test_numbered_markdown_folder_node_reload_with_preamble(tmp_path):
     """测试 reload：包含 0.mdp 时 preamble 被正确解析"""
     folder = tmp_path / "test.mdf"

@@ -34,6 +34,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         auto_correct: bool = True,
         markdown_text_node: NumberedMarkdownTitleNode | None = None,
     ):
+        file_path = Path(file_path)
         self.file_path = file_path
         self.auto_correct = auto_correct
         self.markdown_text_node = (
