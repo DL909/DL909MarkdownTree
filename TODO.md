@@ -2,21 +2,6 @@
 
 ## 待修复问题
 
-### 7. AttributedMarkdownTextFileNode FrontMatter 输出多一个空行
-
-`to_yaml_str()` 返回值已以 `\n` 结尾，`create_file` / `save_to_file` 又拼接
-`f"---\n{to_yaml_str(...)}\n---\n"`，导致结束标记前多一个空行：
-
-```
----
-author: default
-tags: []
-
----
-```
-
-而 `AttributedMarkdownFolderNode` 的 `FrontMatter.yaml` 无此空行。解析不受影响，属外观不一致。
-
 ### 8. MarkdownTitleNode.addchild 不设置 PlainTextNode 的 parent
 
 ```python

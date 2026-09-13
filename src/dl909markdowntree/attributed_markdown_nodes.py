@@ -37,7 +37,7 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
     def save_to_file(self, file_path: Path) -> None:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(
-                f"---\n{to_yaml_str(self.attribute)}\n---\n{self.get_text(full_text=True)}"
+                f"---\n{to_yaml_str(self.attribute)}---\n{self.get_text(full_text=True)}"
             )
 
     @override
@@ -54,7 +54,7 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
         file_path.parent.mkdir(parents=True, exist_ok=True)
         if attribute is None:
             attribute = attribute_type()
-        content = f"---\n{to_yaml_str(attribute)}\n---\n"
+        content = f"---\n{to_yaml_str(attribute)}---\n"
         file_path.write_text(content, encoding="utf-8")
 
     @staticmethod

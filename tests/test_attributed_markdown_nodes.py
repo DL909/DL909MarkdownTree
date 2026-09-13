@@ -101,6 +101,30 @@ Original content"""
     assert "Saved content" in saved_content
 
 
+def test_attributed_create_file_no_blank_line_before_frontmatter_end(tmp_path):
+    """测试创建文件时 FrontMatter 结束标记前没有多余空行"""
+    file_path = tmp_path / "created.md"
+    AttributedMarkdownTextFileNode.create_file(file_path, attribute_type=_TestAttribute)
+    content = file_path.read_text(encoding="utf-8")
+    assert content.startswith("---\n")
+    assert content.endswith("---\n")
+    assert "\n\n---\n" not in content
+
+
+def test_attributed_save_to_file_no_blank_line_before_frontmatter_end(tmp_path):
+    """测试保存文件时 FrontMatter 结束标记前没有多余空行"""
+    content = "---\nauthor: a\n---\n# 1. Title\nBody"
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
+    test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
+        file_path=file_path, attribute_type=_TestAttribute
+    )
+    output_path = tmp_path / "output.md"
+    test_file_node.save_to_file(output_path)
+    saved_content = output_path.read_text(encoding="utf-8")
+    assert "\n\n---\n" not in saved_content
+
+
 def test_attributed_markdown_text_file_node_reload(tmp_path):
     """测试重新加载"""
     content = """---
