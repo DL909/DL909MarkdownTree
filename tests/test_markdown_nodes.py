@@ -132,6 +132,37 @@ More text"""
     assert full_text.endswith("More text")
 
 
+def test_markdown_title_node_set_text_with_tilde_fence():
+    title_node = MarkdownTitleNode(title="Test", level=1)
+    text = """Some text
+~~~
+# not a title
+~~~
+More text"""
+    title_node.set_text(text)
+    assert len([c for c in title_node.children if isinstance(c, MarkdownTitleNode)]) == 0
+    assert "# not a title" in title_node.get_text()
+    assert title_node.get_text().endswith("More text")
+
+
+def test_markdown_title_node_tilde_fence_needs_matching_length_to_close():
+    title_node = MarkdownTitleNode(title="Test", level=1)
+    text = """~~~~
+~~~
+# still inside
+~~~~
+After"""
+    title_node.set_text(text)
+    assert len([c for c in title_node.children if isinstance(c, MarkdownTitleNode)]) == 0
+    assert title_node.get_text().endswith("After")
+
+
+def test_markdown_title_node_code_block_closing_fence_at_end_of_text():
+    title_node = MarkdownTitleNode(title="Test", level=1)
+    title_node.set_text("Some text\n```\ncode\n```")
+    assert "code" in title_node.get_text()
+
+
 def test_markdown_title_node_set_text_with_nested_titles():
     title_node = MarkdownTitleNode(title="Root", level=1)
     text = """Introduction

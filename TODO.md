@@ -2,18 +2,6 @@
 
 ## 待修复问题
 
-### 4. 代码围栏只识别反引号，不识别 `~~~` 与缩进代码块
-
-`MarkdownTitleNode._parse_markdown` 仅用 `` ^(`{3,})([^`\n]*)\n `` 识别围栏：
-
-```python
-md.set_text("# T\n~~~\n# not a title\n~~~")
-# "# not a title" 被误解析为标题
-```
-
-CommonMark 合法的 `~~~` 围栏与缩进代码块内的 `#` 行都会被误解析为标题。
-建议支持 `~{3,}` 围栏（可统一抽象围栏字符与长度），并考虑缩进代码块。
-
 ### 5. unfold 工具处理非折叠节点时抛未捕获的 AttributeError
 
 `extra.tools.unfold_tool` 直接访问 `node.fold_mode` / `node.unfold()`。

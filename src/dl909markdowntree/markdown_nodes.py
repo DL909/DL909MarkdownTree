@@ -87,19 +87,25 @@ class MarkdownTitleNode(MarkdownTitleBase):
             result = type(self).from_self(self, children=[])
         cached_lines = ""
         code_block_flag = False
-        fence_run = ""
+        fence_char = ""
+        fence_run = 0
         for line in lines:
+            stripped_line = line.rstrip("\n")
             if code_block_flag:
                 if (
-                    (closing_match := re.match(r"^(``*)\s*\n", line))
-                    and len(closing_match.group(1)) >= len(fence_run)
+                    re.match(rf"^{fence_char}{{{fence_run},}}\s*$", stripped_line)
+                    is not None
                 ):
                     code_block_flag = False
                 cached_lines += line
             else:
-                if (fence_match := re.match(r"^(`{3,})([^`\n]*)\n", line)) is not None:
+                fence_match = re.match(r"^(`{3,})([^`]*)$", stripped_line)
+                if fence_match is None:
+                    fence_match = re.match(r"^(~{3,})(.*)$", stripped_line)
+                if fence_match is not None:
                     code_block_flag = True
-                    fence_run = fence_match.group(1)
+                    fence_char = fence_match.group(1)[0]
+                    fence_run = len(fence_match.group(1))
                     cached_lines += line
                 else:
                     if re.match(r"^#{1,6} ", line):
