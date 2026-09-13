@@ -2,15 +2,6 @@
 
 ## 待修复问题
 
-### 2. [严重] replace_lines 无法匹配折叠视图中的隐藏行
-
-`extra.tools.replace_lines_tool` 基于 `node.get_text()`（折叠视图）做精确/模糊匹配，
-折叠状态下隐藏正文不会出现在 `current_text` 中，只能返回
-`no match found (best similarity below 80%)`。
-
-与问题 1 同源。建议在工具层使用 `get_text(full_text=True)` 进行匹配与替换，
-或在文档中明确要求先展开。
-
 ### 3. NumberedMarkdownFolderNode 不接受 str 路径
 
 其它节点构造均会将 `file_path` 转为 `Path`（如 `MarkdownTextFileNode`），但

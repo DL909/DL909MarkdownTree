@@ -5,7 +5,7 @@ from __future__ import annotations
 from difflib import SequenceMatcher
 
 from ..exceptions import MarkdownTreeError
-from ..interface import AttributedMarkdownTextFileBase
+from ..interface import AttributedMarkdownTextFileBase, FoldableMarkdownTitleBase
 from ..permissions import Permission, PermissionChecker
 
 # set_text 解析失败（MarkdownTreeError）或保存失败（OSError / RuntimeError）时回滚内存修改
@@ -16,6 +16,13 @@ def _find_title_node(
     markdown_node: AttributedMarkdownTextFileBase, target: str
 ):
     return markdown_node.get_root_title().recursive_find_title_node_by_name(target)
+
+
+def _get_full_text(node) -> str:
+    """获取包含折叠隐藏内容的完整文本；非折叠节点退回普通 get_text()"""
+    if isinstance(node, FoldableMarkdownTitleBase):
+        return node.get_text(full_text=True)
+    return node.get_text()
 
 
 def _check_permission_or_raise(
@@ -116,7 +123,7 @@ def replace_lines_tool(
         return f"replace_lines failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
 
-    current_text = node.get_text()
+    current_text = _get_full_text(node)
     match_count = current_text.count(old_lines)
 
     if match_count == 0:
