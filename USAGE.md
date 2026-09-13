@@ -160,7 +160,8 @@ doc = MarkdownTextFileNode("notes/plain.md")
 # 文件不存在 -> 自动创建空文件并解析为空树
 # 文件已存在 -> 读取并解析
 
-doc = MarkdownTextFileNode.create_file("notes/plain.md")   # 静态方法：仅创建（已存在则清空）
+MarkdownTextFileNode.create_file("notes/plain.md")   # 静态方法：仅创建（已存在则清空），无返回值
+doc = MarkdownTextFileNode("notes/plain.md")          # 加载刚创建的文件
 ```
 
 `create_file(file_path)` 会自动创建缺失的父目录；若目标已存在则**清空重写**。
@@ -168,7 +169,7 @@ doc = MarkdownTextFileNode.create_file("notes/plain.md")   # 静态方法：仅�
 ### 4.2 解析规则
 
 - 仅识别行首、顶格的 `#` 到 `######`（`#` 后必须有一个空格）为标题；
-- 三个及以上反引号的围栏代码块内的 `#` 行不会被解析为标题；
+- 三个及以上反引号（`` ` ``）或波浪号（`~`）的围栏代码块内的 `#` 行不会被解析为标题；
 - 代码块未闭合时抛出 `UnclosedCodeBlockError`；
 - 标题层级必须比父标题更深，否则抛出 `InvalidTitleLevelError`；
 - 同一标题下的连续正文会合并为同一个 `PlainTextNode`。
@@ -289,7 +290,8 @@ chapter.unfold()                    # 展开单个节点；父节点处于折叠
                                     # InvalidNodeOperationError
 chapter.recursive_unfold()          # 展开自身与所有后代
 chapter.recursive_up_unfold()       # 展开自身与所有祖先
-root.unfold_by_depth(2)             # 展开到指定深度（0 不展开；负数抛 RuntimeError）
+root.unfold_by_depth(2)             # depth 从自身计起（1 仅自身，2 含一层子节点）；
+                                    # 0 不展开；负数抛 RuntimeError
 ```
 
 ### 6.4 查找
@@ -335,7 +337,7 @@ doc = AttributedMarkdownTextFileNode(
     attribute_type=DocAttr,
     attribute=None,          # 可选：直接传入属性实例（优先于文件内容）
     auto_correct=True,       # 可选：编号自动纠正
-    markdown_text_node=None, # 可选：直接传入已解析的标题树（会立即写盘）
+    markdown_text_node=None, # 可选：直接传入已解析的标题树（仅更新内存，需调用 save() 写盘）
 )
 
 doc.attribute.author             # 读取
@@ -414,7 +416,7 @@ from dl909markdowntree import FoldableMarkdownFolderNode
 doc = FoldableMarkdownFolderNode(Path("book.mdf"))
 doc.get_text()                       # 折叠视图
 doc.get_text(full_text=True)         # 完整内容
-doc.get_root_title().unfold_by_depth(1)
+doc.get_root_title().unfold_by_depth(2)   # depth 从自身计起，2 = 自身 + 一级子标题
 doc.save()                           # 同时写出 fold_state.json
 ```
 
@@ -587,13 +589,11 @@ rename_title_tool(doc, checker, target, new_title_name)         # 仅改标题�
 
 - 写操作成功后自动 `save()`；
 - 保存失败（`MarkdownTreeError` / `OSError` / `RuntimeError`）会回滚内存修改并返回失败消息；
-- 权限不足时抛出 `PermissionError`（LangChain / MCP 包装层会捕获并转为返回文本）；
+- 权限不足时抛出 `PermissionError`：LangChain 工具会捕获并转为返回文本；
+  MCP 服务不捕获，由 fastmcp 抛出 `ToolError`；
 - `replace_lines_tool` 要求精确匹配唯一一处；匹配不到时按行窗口做模糊匹配，
   相似度 ≥ 80% 才替换；匹配到多处时要求提供更多上下文；
 - `read_tool` 返回的是当前**折叠视图**；展开请用 `unfold_tool`。
-
-> 已知限制：对处于折叠状态的节调用 `append_tool` / `replace_lines_tool` 可能丢失
-> 或匹配不到隐藏内容，建议先 `unfold_tool` 展开。详见 `TODO.md`。
 
 ### 11.3 LangChain
 
