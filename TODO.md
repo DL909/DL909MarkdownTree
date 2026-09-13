@@ -2,16 +2,6 @@
 
 ## 待修复问题
 
-### 17. [低] level-0 占位节点的 get_title() 返回空白垃圾
-
-```python
-MarkdownTitleNode(level=0).get_title()          # ' '
-NumberedMarkdownTitleNode(level=0).get_title()  # '  '
-```
-
-占位节点（level 0）的标题为空，但 `get_title()` 返回由空白拼出的字符串。
-权限解析路径会跳过 level 0，实际影响小。建议 `level <= 0` 时直接返回 title。
-
 ### 18. [低] pyproject.toml 声明 lxml 依赖但代码未使用
 
 `pyproject.toml` 的 `dependencies` 中声明 `lxml>=6.1.1`，但在 `src/` 与 `tests/` 中均无引用。

@@ -27,6 +27,12 @@ def test_numbered_markdown_title_node():
     assert test_title_node.children[1].get_title() == "### 1.2.1. test2"
 
 
+def test_numbered_markdown_title_node_get_title_level_zero():
+    title_node = NumberedMarkdownTitleNode(level=0)
+    assert title_node.get_title() == ""
+    assert title_node.get_title(show_level_sign=False) == ""
+
+
 def test_numbered_markdown_text_node():
     test_text_node = NumberedMarkdownTitleNode.from_text(
         "test text 0\n# 1. test1\n## 1.1. test2\ntest text\n# 2. test2\n## 2.1. test3\ntest text",

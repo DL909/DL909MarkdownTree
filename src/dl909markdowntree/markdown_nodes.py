@@ -156,6 +156,8 @@ class MarkdownTitleNode(MarkdownTitleBase):
                 child.parent = self
 
     def get_title(self, show_level_sign: bool = True) -> str:
+        if self.level <= 0:
+            return self.title
         return (("#" * self.level + " ") if show_level_sign else "") + self.title
 
     def recursive_find_title_node_by_name(self, title_name: str) -> Self | None:

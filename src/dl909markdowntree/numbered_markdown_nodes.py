@@ -98,6 +98,8 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
 
     @override
     def get_title(self, show_level_sign: bool = True) -> str:
+        if self.level <= 0:
+            return self.title
         number_part = ""
         for i in self.number:
             number_part += f"{i}."

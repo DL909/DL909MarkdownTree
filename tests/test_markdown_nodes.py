@@ -53,6 +53,12 @@ def test_markdown_title_node_get_title():
     assert title_node.get_title(show_level_sign=False) == "Test"
 
 
+def test_markdown_title_node_get_title_level_zero():
+    title_node = MarkdownTitleNode(level=0)
+    assert title_node.get_title() == ""
+    assert title_node.get_title(show_level_sign=False) == ""
+
+
 def test_markdown_title_node_get_text():
     title_node = MarkdownTitleNode(title="Test", level=2)
     title_node.set_text("Content here")
