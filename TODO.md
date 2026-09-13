@@ -2,24 +2,6 @@
 
 ## 待修复问题
 
-### 9. [严重] 工具操作失败回滚使用折叠视图，导致隐藏内容被清空
-
-`extra.tools` 中的 `replace_tool` / `append_tool` / `replace_lines_tool` 在操作前用
-`old_text = node.get_text()` 保存快照，失败时 `node.set_text(old_text)` 回滚。对可折叠节点，
-`get_text()` 默认返回**折叠视图**，回滚会把标记文本写回，隐藏正文与子节点被销毁：
-
-```python
-doc = FoldableMarkdownTextFileNode(file_path=p)
-doc.set_text("# 1. Title\nsecret hidden line\n## 1.1. Sub\nhidden sub")
-doc.get_root_title()  # 折叠态
-replace_tool(doc, None, "# 1. Title", "## wrong level\nx")
-# 返回 "replace failed: invalid numbered title line: ## wrong level"
-doc.get_root_title().children  # [] —— 隐藏正文与子标题全部丢失
-```
-
-与问题 1（成功路径的 `add_text`）和问题 2（匹配失败）是不同代码路径，此处是**操作失败时的静默数据丢失**；
-`OSError` 写盘失败时同样触发。建议快照使用 `node.get_text(full_text=True)`。
-
 ### 10. [严重] replace_lines 匹配到折叠标记后"成功"并清空隐藏内容
 
 `replace_lines_tool` 在折叠视图上做匹配，用户若以可见的折叠标记 `[text folded]` 为匹配目标，

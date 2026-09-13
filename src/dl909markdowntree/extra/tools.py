@@ -62,7 +62,7 @@ def replace_tool(
     if node is None:
         return f"replace failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
-    old_text = node.get_text()
+    old_text = _get_full_text(node)
     try:
         node.set_text(replace_text)
         markdown_node.save()
@@ -82,7 +82,7 @@ def append_tool(
     if node is None:
         return f"append failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
-    old_text = node.get_text()
+    old_text = _get_full_text(node)
     try:
         node.add_text(append_text)
         markdown_node.save()
@@ -149,7 +149,7 @@ def replace_lines_tool(
 
         if best_ratio >= 0.8:
             matched = "".join(current_lines[best_start:best_end])
-            old_text = node.get_text()
+            old_text = _get_full_text(node)
             try:
                 node.set_text(current_text.replace(matched, new_lines, 1))
                 markdown_node.save()
@@ -164,7 +164,7 @@ def replace_lines_tool(
     elif match_count > 1:
         return f"replace_lines failed: {match_count} matches found, provide more context"
 
-    old_text = node.get_text()
+    old_text = _get_full_text(node)
     try:
         node.set_text(current_text.replace(old_lines, new_lines, 1))
         markdown_node.save()
