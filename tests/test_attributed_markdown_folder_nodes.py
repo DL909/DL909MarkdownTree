@@ -173,6 +173,22 @@ def test_attributed_markdown_folder_node_with_preamble(tmp_path):
     assert "# 1. Chapter" in node.get_text()
 
 
+def test_attributed_markdown_folder_node_keeps_explicit_attribute(tmp_path):
+    """目录已存在时，显式传入的 attribute 不应被 FrontMatter.yaml 覆盖"""
+    folder = tmp_path / "test.mdf"
+    AttributedMarkdownFolderNode[_ChapterMeta](
+        file_path=Path(folder),
+        attribute_type=_ChapterMeta,
+        attribute=_ChapterMeta(author="first"),
+    )
+    node = AttributedMarkdownFolderNode[_ChapterMeta](
+        file_path=Path(folder),
+        attribute_type=_ChapterMeta,
+        attribute=_ChapterMeta(author="second"),
+    )
+    assert node.attribute.author == "second"
+
+
 def test_attributed_markdown_folder_node_handles_empty_frontmatter(tmp_path):
     """空的 FrontMatter.yaml 应回退到默认属性而不是崩溃"""
     folder = tmp_path / "test.mdf"

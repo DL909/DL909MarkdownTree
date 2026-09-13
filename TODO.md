@@ -2,21 +2,6 @@
 
 ## 待修复问题
 
-### 11. [中] AttributedMarkdownFolderNode 已有目录时忽略显式传入的 attribute
-
-当目标目录及 `FrontMatter.yaml` 已存在时，构造传入的 `attribute` 会被文件内容覆盖：
-
-```python
-p.mkdir(parents=True, exist_ok=True)
-AttributedMarkdownFolderNode(p, Attr, attribute=Attr(author="first"))
-n2 = AttributedMarkdownFolderNode(p, Attr, attribute=Attr(author="second"))
-n2.attribute.author  # 'first' —— 传入 'second' 被忽略
-```
-
-原因：`__init__` 先从文件读取 attribute，随后 `super().__init__` 调用 `self.reload()`，
-而 `AttributedMarkdownFolderNode.reload` 又用 `FrontMatter.yaml` 覆盖 `self.attribute`。
-`AttributedMarkdownTextFileNode` 则会保留传入的 attribute，二者行为不一致。
-
 ### 13. [中] AttributedMarkdownTextFileNode 缺少 get_markdown_text_node()
 
 ```python

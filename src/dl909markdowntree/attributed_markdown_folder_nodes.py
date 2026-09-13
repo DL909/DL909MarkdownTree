@@ -45,7 +45,7 @@ class AttributedMarkdownFolderNode[T: BaseModel](
         if not file_path.exists():
             self.create_file(file_path, attribute_type, attribute)
         yaml_path = file_path / "FrontMatter.yaml"
-        if attribute:
+        if attribute is not None:
             self.attribute = attribute
         elif yaml_path.exists():
             yaml_data = yaml_path.read_text(encoding="utf-8")
@@ -61,6 +61,8 @@ class AttributedMarkdownFolderNode[T: BaseModel](
             auto_correct=auto_correct,
             markdown_text_node=markdown_text_node,
         )
+        if attribute is not None:
+            self.attribute = attribute
 
     @override
     def save_to_file(self, file_path: Path):
