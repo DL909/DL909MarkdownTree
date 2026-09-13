@@ -152,6 +152,8 @@ def test_text_file_node_reload_rerereads_disk(tmp_path: Path):
     assert node.get_text() == "second"
 
 
-def test_text_file_node_init_missing_file_raises(tmp_path: Path):
-    with pytest.raises(FileNotFoundError):
-        PlainTextFileNode(file_path=tmp_path / "not_there.txt")
+def test_text_file_node_init_missing_file_creates_empty(tmp_path: Path):
+    path = tmp_path / "not_there.txt"
+    node = PlainTextFileNode(file_path=path)
+    assert path.exists()
+    assert node.get_text() == ""

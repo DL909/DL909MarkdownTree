@@ -44,8 +44,11 @@ class PlainTextFileNode(FileNode, TextNode):
         self.textNode.set_text(text)
 
     def __init__(self, file_path: pathlib.Path):
+        file_path = pathlib.Path(file_path)
         super().__init__(file_path=file_path)
-        self.file_path = file_path
+        if not file_path.exists():
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_text("", encoding="utf-8")
         with open(file_path, "r", encoding="utf-8") as f:
             text_node = PlainTextNode(text=f.read())
         self.textNode = text_node

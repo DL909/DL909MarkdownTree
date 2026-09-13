@@ -2,13 +2,6 @@
 
 ## 待修复问题
 
-### 6. PlainTextFileNode 不自动创建缺失文件
-
-`MarkdownTextFileNode`、`NumberedMarkdownTextFileNode`、`FoldableMarkdownTextFileNode`、
-`AttributedMarkdownTextFileNode` 及文件夹节点在构造时都会自动创建缺失目标，
-但 `PlainTextFileNode.__init__` 直接 `open(file_path, "r")`，文件不存在时抛
-`FileNotFoundError`，行为不一致。
-
 ### 7. AttributedMarkdownTextFileNode FrontMatter 输出多一个空行
 
 `to_yaml_str()` 返回值已以 `\n` 结尾，`create_file` / `save_to_file` 又拼接
