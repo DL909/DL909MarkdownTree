@@ -196,6 +196,7 @@ class MarkdownTextFileNode(MarkdownTextFileBase):
     def set_text(self, text: str) -> None:
         self.markdown_text_node.set_text(text)
 
+    @override
     def get_markdown_text_node(self) -> MarkdownTitleNode:
         return self.markdown_text_node
 

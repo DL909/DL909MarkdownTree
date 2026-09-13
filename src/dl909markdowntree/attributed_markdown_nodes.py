@@ -31,6 +31,10 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
         return self.markdown_text_node
 
     @override
+    def get_markdown_text_node(self) -> FoldableMarkdownTitleNode:
+        return self.markdown_text_node
+
+    @override
     def set_text(self, text) -> None:
         self.markdown_text_node.set_text(text)
 

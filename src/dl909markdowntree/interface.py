@@ -71,6 +71,9 @@ class MarkdownTextFileBase(FileNode, TextNode):
     @abstractmethod
     def get_root_title(self) -> MarkdownTitleBase: ...
 
+    @abstractmethod
+    def get_markdown_text_node(self) -> MarkdownTitleBase: ...
+
 
 class NumberedMarkdownTitleBase(MarkdownTitleBase):
     number: list[int]

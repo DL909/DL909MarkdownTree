@@ -17,6 +17,18 @@ class _TestAttribute(BaseModel):
     tags: list[str] = []
 
 
+def test_attributed_markdown_text_file_node_get_markdown_text_node(tmp_path):
+    """测试获取 markdown 文本节点"""
+    content = "---\nauthor: a\n---\n# 1. Title\nBody"
+    file_path = tmp_path / "attributed.md"
+    file_path.write_text(content, encoding="utf-8")
+    node = AttributedMarkdownTextFileNode[_TestAttribute](
+        file_path=file_path, attribute_type=_TestAttribute
+    )
+    assert isinstance(node.get_markdown_text_node(), FoldableMarkdownTitleNode)
+    assert node.get_markdown_text_node() is node.markdown_text_node
+
+
 def test_attributed_markdown_text_file_node_init(tmp_path):
     """测试基本初始化"""
     content = """---

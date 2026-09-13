@@ -2,19 +2,6 @@
 
 ## 待修复问题
 
-### 13. [中] AttributedMarkdownTextFileNode 缺少 get_markdown_text_node()
-
-```python
-doc = AttributedMarkdownTextFileNode(file_path=p, attribute_type=Attr)
-hasattr(doc, "get_markdown_text_node")  # False
-doc.get_markdown_text_node()            # AttributeError
-```
-
-`MarkdownTextFileNode` 定义了该方法（`src/dl909markdowntree/markdown_nodes.py:192`），
-但 `interface.MarkdownTextFileBase` 未声明它（CHANGELOG 声称已加入 protocol），
-且 `AttributedMarkdownTextFileNode` 不继承 `MarkdownTextFileNode`。
-建议在接口中声明并让其返回 `self.markdown_text_node`。
-
 ### 14. [中] recursive_up_unfold() 对已展开节点提前返回，祖先仍保持折叠
 
 `FoldableMarkdownTitleNode.recursive_up_unfold()` 在 `self` 已是 `SHOW_CHILD` 时提前返回，
