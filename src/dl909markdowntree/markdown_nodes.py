@@ -184,8 +184,17 @@ class MarkdownTitleNode(MarkdownTitleBase):
         return None
 
     def add_text(self, text: str, ensure_new_line: bool = True) -> None:
+        if not text:
+            return
         current_text = self.get_text()
-        if ensure_new_line and current_text[-1] != "\n" and text[0] != "\n":
+        # 不能用 current_text[-1] / text[0]：空节点（get_text() == ""）或
+        # 空 text 会直接 IndexError。用 endswith/startswith 判空。
+        if (
+            ensure_new_line
+            and current_text
+            and not current_text.endswith("\n")
+            and not text.startswith("\n")
+        ):
             current_text += "\n"
         self.set_text(current_text + text)
 

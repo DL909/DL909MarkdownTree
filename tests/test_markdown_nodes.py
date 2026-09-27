@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from dl909markdowntree import (
+    FoldableMarkdownTextFileNode,
     InvalidMarkdownLineError,
     InvalidTitleLevelError,
     MarkdownTextFileNode,
@@ -460,3 +461,45 @@ def test_set_text_rebuilds_children_as_new_objects():
     assert isinstance(new_child, MarkdownTitleNode)
     assert new_child is not old_child
     assert new_child.title == "Section 1"
+
+
+@pytest.mark.parametrize("ensure_new_line", [True, False])
+def test_add_text_on_empty_node_does_not_raise(ensure_new_line):
+    """空节点的 get_text() 为 ""，add_text 取下标字符会 IndexError"""
+    node = MarkdownTitleNode(level=0)
+    assert node.get_text() == ""
+
+    node.add_text("body", ensure_new_line=ensure_new_line)
+
+    assert node.get_text() == "body"
+
+
+def test_add_text_with_empty_text_is_a_noop():
+    """空文本追加不应改动内容，也不应凭 ensure_new_line 补出行尾换行"""
+    node = MarkdownTitleNode.from_text("# 1. A\n")
+
+    node.add_text("")
+
+    assert node.get_text() == "# 1. A\n"
+
+
+def test_add_text_keeps_separating_newline_for_non_empty_node():
+    """非空节点仍应保证追加内容另起一行"""
+    node = MarkdownTitleNode.from_text("# 1. A\n")
+
+    node.add_text("body")
+
+    assert node.get_text() == "# 1. A\nbody"
+
+
+def test_foldable_add_text_on_empty_root_does_not_raise(tmp_path):
+    """折叠节点的 add_text 走 full_text，空根节点同样会 IndexError"""
+    doc_path = tmp_path / "empty.md"
+    doc_path.write_text("", encoding="utf-8")
+    doc = FoldableMarkdownTextFileNode(doc_path)
+    root = doc.get_root_title()
+    assert root.get_text(full_text=True) == ""
+
+    root.add_text("body")
+
+    assert root.get_text(full_text=True) == "body"

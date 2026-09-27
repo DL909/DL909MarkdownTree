@@ -62,8 +62,16 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitle
     @override
     def add_text(self, text: str, ensure_new_line: bool = True) -> None:
         """基于完整文本追加，避免把折叠视图与折叠标记写回节点"""
+        if not text:
+            return
         current_text = self.get_text(full_text=True)
-        if ensure_new_line and current_text[-1] != "\n" and text[0] != "\n":
+        # 空节点的 get_text(full_text=True) 为 ""，下标取字符会 IndexError
+        if (
+            ensure_new_line
+            and current_text
+            and not current_text.endswith("\n")
+            and not text.startswith("\n")
+        ):
             current_text += "\n"
         self.set_text(current_text + text)
 
