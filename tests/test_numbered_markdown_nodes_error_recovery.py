@@ -4,9 +4,9 @@ import pytest
 
 from dl909markdowntree import (
     IncorrectNumberError,
-    InvalidNumberedTitleLineError,
     InvalidTitleLevelError,
     NumberedMarkdownTitleNode,
+    UnclosedCodeBlockError,
 )
 
 
@@ -70,14 +70,14 @@ Content
 
 
 def test_numbered_title_node_set_text_empty_title_recovers_content():
-    """测试编号标题节点设置空标题失败时恢复原有内容"""
+    """测试编号标题节点设置失败时恢复原有内容"""
     title_node = NumberedMarkdownTitleNode(title="Root", level=1, number=[1])
     title_node.set_text("Original content")
     original_text = title_node.get_text()
 
-    # 尝试设置空标题（应该失败）
-    with pytest.raises(InvalidNumberedTitleLineError):
-        title_node.set_text("#")
+    # 尝试设置未闭合代码块（应该失败）
+    with pytest.raises(UnclosedCodeBlockError):
+        title_node.set_text("```\nunclosed")
 
     # 验证内容已恢复
     assert title_node.get_text() == original_text

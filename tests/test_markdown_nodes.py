@@ -219,10 +219,46 @@ Content
     assert title_node.children[0].children[1].title == "Subsection 1.2"
 
 
-def test_markdown_title_node_set_text_invalid_empty_title():
+def test_markdown_title_node_set_text_keeps_malformed_heading_as_text():
+    """残缺的标题行（'#' / '# '）应降级为普通文本，而不是打断整篇解析
+
+    早先检测正则 r"^#{1,6} " 认得 '# ' 是标题，解析正则 r"^(#{1,6}) (.+)$" 又不认，
+    两者的分歧让一行坏内容把整篇文档变成不可读。
+    """
+    text = "# Title\nbody\n\n# \nmore\n"
     title_node = MarkdownTitleNode(title="Root", level=1)
-    with pytest.raises(InvalidMarkdownLineError):
-        title_node.set_text("#")
+
+    title_node.set_text(text)
+
+    assert title_node.get_text() == text
+
+
+def test_markdown_title_node_from_line_still_rejects_malformed_heading():
+    """单行解析是显式 API，from_line 仍应严格拒绝残缺标题行"""
+    for line in ("#", "# ", "##", "#NoSpace", "   # indented"):
+        with pytest.raises(InvalidMarkdownLineError):
+            MarkdownTitleNode.from_line(line)
+
+
+def test_markdown_title_node_empty_heading_does_not_abort_document(caplog):
+    """文档中间的一行空标题不应让整篇解析失败，且应告警"""
+    text = "# Title\nbody\n\n# \n\n## Sub\nmore\n"
+
+    with caplog.at_level("WARNING"):
+        node = MarkdownTitleNode.from_text(text)
+
+    assert node.get_text() == text
+    top_level = [
+        c.get_title() for c in node.children if isinstance(c, MarkdownTitleNode)
+    ]
+    assert top_level == ["# Title"]
+    nested = [
+        c.get_title()
+        for c in node.children[0].children
+        if isinstance(c, MarkdownTitleNode)
+    ]
+    assert nested == ["## Sub"]
+    assert any("empty title line" in r.message for r in caplog.records)
 
 
 def test_markdown_title_node_from_line_rejects_level_above_six():

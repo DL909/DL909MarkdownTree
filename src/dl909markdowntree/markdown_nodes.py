@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 from pathlib import Path
 from typing import Self, override
@@ -12,6 +13,21 @@ from .exceptions import (
 from .interface import MarkdownTextFileBase, MarkdownTitleBase
 from .node import Node
 from .plain_text_nodes import PlainTextNode
+
+# 标题行的唯一权威定义。检测（"这行是不是标题"）与解析（"取出级别和标题文本"）
+# 必须用同一条正则：早先检测用 r"^#{1,6} " 而解析用 r"^(#{1,6}) (.+)$"，
+# 二者对 "# " 这种空标题的判断不一致，导致一行空标题把整篇文档的解析打断。
+_TITLE_LINE_PATTERN = re.compile(r"^(#{1,6}) (.+)$")
+# 反引号围栏的 info string 里不允许出现反引号，波浪号围栏则允许——两种围栏
+# 必须用各自的字符类，合并成一条会改变波浪号围栏的行为。
+_BACKTICK_FENCE_PATTERN = re.compile(r"^(`{3,})([^`]*)$")
+_TILDE_FENCE_PATTERN = re.compile(r"^(~{3,})(.*)$")
+# 形如 "# " / "## " 的空标题：CommonMark 不认为它是标题，早先会被检测正则
+# 认作标题、却过不了解析正则，从而让一行坏内容打断整篇文档的解析。
+# 现在降级为普通文本，同时告警，避免问题被静默吞掉。
+_EMPTY_TITLE_LINE_PATTERN = re.compile(r"^#{1,6}[ \t]*$")
+
+logger = logging.getLogger(__name__)
 
 
 class MarkdownTitleNode(MarkdownTitleBase):
@@ -26,7 +42,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
 
     @classmethod
     def from_line(cls, line: str) -> Self:
-        match = re.match(r"^(#{1,6}) (.+)$", line.rstrip("\n"))
+        match = _TITLE_LINE_PATTERN.match(line.rstrip("\n"))
         if not match:
             raise InvalidMarkdownLineError(f"invalid Markdown title line: {line}")
         return cls(level=len(match.group(1)), title=match.group(2))
@@ -78,10 +94,12 @@ class MarkdownTitleNode(MarkdownTitleBase):
         """
         lines = content.splitlines(keepends=True)
         override_flag = False
+        # 覆盖判定同样必须用权威正则：早先用宽松的 r"^(#+)" 会把 "# " 这类
+        # 并非标题的行也判成"同级别标题"，随后 _from_line 抛错打断整篇解析。
         if (
             lines
             and self.level > 0
-            and (match := re.match("^(#+)", lines[0]))
+            and (match := _TITLE_LINE_PATTERN.match(lines[0].rstrip("\n")))
             and len(match.group(1)) == self.level
         ):
             result = self._from_line(lines[0])
@@ -103,21 +121,26 @@ class MarkdownTitleNode(MarkdownTitleBase):
                     code_block_flag = False
                 cached_lines += line
             else:
-                fence_match = re.match(r"^(`{3,})([^`]*)$", stripped_line)
+                fence_match = _BACKTICK_FENCE_PATTERN.match(stripped_line)
                 if fence_match is None:
-                    fence_match = re.match(r"^(~{3,})(.*)$", stripped_line)
+                    fence_match = _TILDE_FENCE_PATTERN.match(stripped_line)
                 if fence_match is not None:
                     code_block_flag = True
-                    fence_char = fence_match.group(1)[0]
-                    fence_run = len(fence_match.group(1))
+                    fence = fence_match.group(1)
+                    fence_char = fence[0]
+                    fence_run = len(fence)
                     cached_lines += line
                 else:
-                    if re.match(r"^#{1,6} ", line):
+                    if _TITLE_LINE_PATTERN.match(stripped_line):
                         if cached_lines:
                             result.addchild(PlainTextNode(cached_lines))
                         cached_lines = ""
                         result.addchild(self._from_line(line))
                     else:
+                        if _EMPTY_TITLE_LINE_PATTERN.match(stripped_line):
+                            logger.warning(
+                                f"empty title line kept as plain text: {stripped_line!r}"
+                            )
                         cached_lines += line
         if code_block_flag:
             raise UnclosedCodeBlockError("unclosed code block")

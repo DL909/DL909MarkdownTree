@@ -3,9 +3,9 @@
 import pytest
 
 from dl909markdowntree import (
-    InvalidMarkdownLineError,
     InvalidTitleLevelError,
     MarkdownTitleNode,
+    UnclosedCodeBlockError,
 )
 
 
@@ -29,15 +29,15 @@ def test_title_node_set_text_invalid_level_recovers_content():
 
 
 def test_title_node_set_text_empty_title_recovers_content():
-    """测试当设置文本因空标题失败时，恢复原有内容"""
+    """测试当设置文本因未闭合代码块失败时，恢复原有内容"""
     title_node = MarkdownTitleNode(title="Root", level=1)
     title_node.set_text("Original content")
     original_text = title_node.get_text()
     original_children_count = len(title_node.children)
 
-    # 尝试设置空标题的文本（应该失败）
-    with pytest.raises(InvalidMarkdownLineError):
-        title_node.set_text("#")
+    # 尝试设置含未闭合代码块的文本（应该失败）
+    with pytest.raises(UnclosedCodeBlockError):
+        title_node.set_text("```\nunclosed")
 
     # 验证内容已恢复
     assert title_node.get_text() == original_text
@@ -50,9 +50,9 @@ def test_text_node_set_text_invalid_title_recovers_content():
     original_text = text_node.get_text()
     original_children_count = len(text_node.children)
 
-    # 尝试设置包含空标题的文本（应该失败）
-    with pytest.raises(InvalidMarkdownLineError):
-        text_node.set_text("# ")
+    # 尝试设置包含未闭合代码块的文本（应该失败）
+    with pytest.raises(UnclosedCodeBlockError):
+        text_node.set_text("```\nunclosed")
 
     # 验证内容已恢复
     assert text_node.get_text() == original_text
@@ -64,12 +64,10 @@ def test_text_node_set_text_mid_parse_failure_recovers_content():
     text_node = MarkdownTitleNode.from_text(text="# Title\nSome content")
     original_text = text_node.get_text()
 
-    # 使用空标题作为解析错误用例
-    invalid_text = """# Valid Title
-Content
-# """
+    # 使用未闭合代码块作为解析错误用例
+    invalid_text = "# Valid Title\nContent\n```\nunclosed"
 
-    with pytest.raises(InvalidMarkdownLineError):
+    with pytest.raises(UnclosedCodeBlockError):
         text_node.set_text(invalid_text)
 
     # 验证内容已恢复
@@ -99,13 +97,10 @@ Subcontent"""
     original_text = text_node.get_text()
     original_children_count = len(text_node.children)
 
-    # 尝试设置包含空标题的复杂文本
-    invalid_text = """# Valid Title
-Content
-## Valid Subtitle
-# """
+    # 尝试设置包含未闭合代码块的复杂文本
+    invalid_text = "# Valid Title\nContent\n## Valid Subtitle\n```\nunclosed"
 
-    with pytest.raises(InvalidMarkdownLineError):
+    with pytest.raises(UnclosedCodeBlockError):
         text_node.set_text(invalid_text)
 
     # 验证内容已恢复

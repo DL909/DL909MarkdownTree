@@ -6,8 +6,8 @@ from dl909markdowntree import (
     FoldableMarkdownTitleNode,
     FoldMode,
     IncorrectNumberError,
-    InvalidNumberedTitleLineError,
     InvalidTitleLevelError,
+    UnclosedCodeBlockError,
 )
 
 
@@ -67,14 +67,14 @@ Content
 
 
 def test_foldable_title_node_set_text_empty_title_recovers_content():
-    """测试可折叠标题节点设置空标题失败时恢复原有内容"""
+    """测试可折叠标题节点设置失败时恢复原有内容"""
     title_node = FoldableMarkdownTitleNode(level=1, title="Root", number=[1])
     title_node.set_text("Original content")
     original_text = title_node.get_text()
 
-    # 尝试设置空标题（应该失败）
-    with pytest.raises(InvalidNumberedTitleLineError):
-        title_node.set_text("#")
+    # 尝试设置未闭合代码块（应该失败）
+    with pytest.raises(UnclosedCodeBlockError):
+        title_node.set_text("```\nunclosed")
 
     # 验证内容已恢复
     assert title_node.get_text() == original_text
@@ -124,8 +124,8 @@ def test_foldable_title_node_set_text_failure_preserves_fold_state():
     original_text = title_node.get_text()
 
     # 尝试设置非法文本
-    with pytest.raises(InvalidNumberedTitleLineError):
-        title_node.set_text("#")
+    with pytest.raises(UnclosedCodeBlockError):
+        title_node.set_text("```\nunclosed")
 
     # 验证内容与折叠状态均已恢复/保持
     assert title_node.get_text() == original_text

@@ -7,7 +7,7 @@ from dl909markdowntree import (
     AttributedMarkdownTextFileNode,
     FoldableMarkdownTitleNode,
     IncorrectNumberError,
-    InvalidNumberedTitleLineError,
+    UnclosedCodeBlockError,
 )
 
 
@@ -83,7 +83,7 @@ Content
 
 
 def test_attributed_file_node_set_text_empty_title_recovers_content(tmp_path):
-    """测试属性化文件节点设置空标题失败时恢复原有内容"""
+    """测试属性化文件节点设置失败时恢复原有内容"""
     file_path = tmp_path / "test.md"
     file_path.write_text(
         """---
@@ -99,9 +99,9 @@ Content""",
     )
     original_text = file_node.get_text()
 
-    # 尝试设置空标题（应该失败）
-    with pytest.raises(InvalidNumberedTitleLineError):
-        file_node.set_text("# ")
+    # 尝试设置未闭合代码块（应该失败）
+    with pytest.raises(UnclosedCodeBlockError):
+        file_node.set_text("```\nunclosed")
 
     # 验证内容已恢复
     assert file_node.get_text() == original_text
@@ -187,8 +187,8 @@ Content""",
     original_text = file_node.markdown_text_node.get_text()
 
     # 直接调用 markdown_text_node 的 set_text
-    with pytest.raises(InvalidNumberedTitleLineError):
-        file_node.markdown_text_node.set_text("# ")
+    with pytest.raises(UnclosedCodeBlockError):
+        file_node.markdown_text_node.set_text("```\nunclosed")
 
     # 验证内容已恢复
     assert file_node.markdown_text_node.get_text() == original_text
