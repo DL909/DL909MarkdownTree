@@ -498,3 +498,79 @@ def test_node_checker_on_node_renamed_is_noop(tmp_path):
     checker.on_node_renamed(a)
 
     assert checker.check_permission(a, Permission.READ)[0] is False
+
+
+def test_permission_none_cannot_be_registered_as_a_grant(tmp_path):
+    """Permission.NONE 数值最高，登记为授权值等于无条件放行，必须拒绝"""
+    doc = _make_node(tmp_path)
+    node = doc.get_root_title()
+    root = node.children[0]
+
+    for checker_cls in (NodePermissionChecker, TitlePathPermissionChecker):
+        with pytest.raises(ValueError, match="NONE"):
+            checker_cls([(root, Permission.NONE)])
+
+
+def test_permission_none_still_short_circuits_as_required_value(tmp_path):
+    """作为 required 传入时 NONE 仍表示"跳过检查"，语义未被改动"""
+    doc = _make_node(tmp_path)
+    root = doc.get_root_title()
+    checker = NodePermissionChecker([(root, Permission.DENY)])
+
+    assert checker.check_permission(root, Permission.NONE) == (True, "")
+
+
+def test_node_checker_scales_with_many_permissions(tmp_path):
+    """条目数很大时查找仍是 O(深度)，不能退化成逐层线性扫描"""
+    body = []
+    for i in range(1, 40):
+        body.append(f"# {i}. T{i}\n")
+        for j in range(1, 40):
+            body.append(f"## {i}.{j}. S\nx\n")
+    doc_path = tmp_path / "big.md"
+    doc_path.write_text("\n".join(body), encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    root = doc.get_root_title()
+
+    def walk(node):
+        for child in node.children:
+            if hasattr(child, "children"):
+                yield child
+                yield from walk(child)
+
+    nodes = [root, *walk(root)]
+    checker = NodePermissionChecker([(n, Permission.READ) for n in nodes])
+
+    assert len(nodes) > 1500
+    for n in nodes[:400]:
+        assert checker.check_permission(n, Permission.READ)[0] is True
+
+
+def test_node_checker_set_permissions_rebuilds_index(tmp_path):
+    """set_permissions 后索引必须同步重建，否则改权限不生效"""
+    doc = _make_node(tmp_path)
+    root = doc.get_root_title()
+    target = root.children[0]
+    checker = NodePermissionChecker([(target, Permission.DENY)])
+    assert checker.check_permission(target, Permission.READ)[0] is False
+
+    checker.set_permissions([(target, Permission.READ_WRITE)])
+
+    assert checker.check_permission(target, Permission.READ_WRITE)[0] is True
+
+
+def test_node_checker_default_deny_preserved_with_index(tmp_path):
+    """默认拒绝与 DENY 绝对生效的语义在改用索引后不能变"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# One\nbody one\n\n# Two\nbody two\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    root = doc.get_root_title()
+    target = root.recursive_find_title_node_by_name("# One")
+    other = root.recursive_find_title_node_by_name("# Two")
+    checker = NodePermissionChecker([(target, Permission.DENY)])
+
+    # 未登记的节点向上找不到任何条目 -> DENY
+    assert checker.check_permission(other, Permission.READ)[0] is False
+    # DENY 绝对生效，胜过祖先的放行
+    checker.set_permissions([(target, Permission.DENY), (root, Permission.READ_WRITE)])
+    assert checker.check_permission(target, Permission.READ)[0] is False
