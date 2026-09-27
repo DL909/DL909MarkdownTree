@@ -168,11 +168,17 @@ doc = MarkdownTextFileNode("notes/plain.md")          # 加载刚创建的文件
 
 ### 4.2 解析规则
 
-- 仅识别行首、顶格的 `#` 到 `######`（`#` 后必须有一个空格）为标题；
+- 仅识别行首、顶格的 `#` 到 `######`（`#` 后必须有一个空格且标题非空）为标题；
 - 三个及以上反引号（`` ` ``）或波浪号（`~`）的围栏代码块内的 `#` 行不会被解析为标题；
+- 形如 `# ` / `## ` 的空标题行（CommonMark 本就不认为是标题）按**普通正文**保留，
+  并输出一条 warning，而不是让整篇文档解析失败；
 - 代码块未闭合时抛出 `UnclosedCodeBlockError`；
 - 标题层级必须比父标题更深，否则抛出 `InvalidTitleLevelError`；
 - 同一标题下的连续正文会合并为同一个 `PlainTextNode`。
+
+> `from_line()` 是"解析这一行"的显式 API，行为比整篇解析更严格：空标题行、
+> `##` 后面直接换行、行首带缩进等一律抛 `InvalidMarkdownLineError`。
+> 整篇解析的容错只作用于 `set_text()` / `from_text()`。
 
 ### 4.3 常用操作
 
@@ -307,6 +313,16 @@ root.recursive_find_title_node_by_name("## 1.1. 小节", within_shown=True)
 ```python
 doc.save()        # 写磁盘时自动使用 full_text=True，折叠标记不落盘
 ```
+
+**折叠状态只存在于内存中。** 单个 Markdown 文件的折叠态既不写进文件，也不另存
+旁挂文件，因此**新建一个节点对象再打开同一个文件，看到的永远是默认的
+`SHOW_TITLE` 折叠模式**。这是有意保留的限制：折叠态是编辑视图的临时状态，
+和正文一起序列化会在每次折叠切换时都改动文件，徒增 diff 噪声。
+
+需要跨会话保留折叠态时，请使用 `FoldableMarkdownFolderNode`——文件夹节点会把
+折叠态落到目录下的 `fold_state.json`（见 [8.2](#82-可折叠文件夹)）。
+如需在单个文件上达到同样效果，得自行在文件外维护状态并在 `reload()` 后回填
+`fold_mode`。
 
 ---
 
@@ -609,6 +625,23 @@ tools = toolkit.get_tools()                        # 6 个 langchain BaseTool
 # 工具名：read / replace / append / unfold / replace_lines / rename_title
 ```
 
+几个容易踩的点：
+
+- **工具一律返回字符串**，失败时是 `"<动作> failed: <原因>"`，不是抛异常；
+  唯一会抛的是 `PermissionError`（权限被拒）。
+- **`unfold` 需要写权限**（`READ_WRITE`）：它会改写 `fold_mode` 并 `save()`，
+  对文件夹节点还会落盘 `fold_state.json`，属于写操作而非读操作。
+- **`rename_title` 拒绝空标题和含换行的标题**。标题文本会被原样拼进
+  `# <编号> <标题>` 这一行，含换行就能凭空造出新的标题节点。
+  行首带 `#` 是**允许**的——它只会让标题文本本身以 `#` 开头。
+- **`replace_lines` 的 `old_lines` 不能为空**：空串在任意文本中匹配无穷多次，
+  工具会直接报 `old_lines is empty`。
+- **`replace_lines` 先精确匹配**；匹配到多处时报 `N matches found, provide more
+  context` 要求补充上下文；一处都匹配不上时按行做相似度打分，≥ 80% 才模糊替换，
+  替换的是**打分选中的那个行区间**而非全文首次出现的位置。
+- **写入失败会回滚内存状态**。若回滚本身也失败，会记 ERROR 日志并仍然返回
+  原始错误信息，此时节点可能处于已修改状态，需要调用方自行重载。
+
 ### 11.4 MCP
 
 ```bash
@@ -643,20 +676,36 @@ mcp.run()                                    # 以 stdio 启动
 
 1. **编号/折叠/属性节点必须使用编号标题**：`# 1. 标题` 而非 `# 标题`。
    普通 `MarkdownTextFileNode` 无此限制。
-2. **折叠节点上的 `append` / `replace_lines`**：折叠视图不含隐藏内容，
-   追加可能丢失隐藏正文，行替换无法匹配隐藏行。使用前先 `unfold_tool` 或
-   `recursive_up_unfold()` 展开（详见 `TODO.md` 问题 1、2）。
+2. **折叠视图不含隐藏内容**：`get_text()` 在折叠态下会把隐藏部分替换成
+   `[text folded]` 一类占位符，因此在折叠节点上做 `append` 可能丢失隐藏正文、
+   `replace_lines` 也匹配不到隐藏行。工具层已对写入类工具取
+   `full_text=True`，但直接调节点方法时请自行注意，或先 `unfold()` /
+   `recursive_up_unfold()` 展开。
 3. **`create_file` 对已存在文件是清空/覆盖语义**：文本文件节点会截断文件，
    属性文件节点会重置 FrontMatter；文件夹节点只创建目录、不破坏已有内容。
 4. **`PlainTextFileNode` 不会自动创建缺失文件**，构造时抛 `FileNotFoundError`，
    与其它文件节点行为不同。
 5. **`NumberedMarkdownFolderNode` / `FoldableMarkdownFolderNode` 的 `file_path` 需传 `Path`**，
    传 `str` 会抛 `AttributeError`（`AttributedMarkdownFolderNode` 已内部转换）。
-6. **代码围栏仅支持反引号**，`~~~` 围栏与缩进代码块内的 `#` 行会被误解析为标题。
-7. **闭合围栏长度**必须不小于开启围栏，且允许更长的闭合围栏。
+6. **解析器只做 CommonMark 的一个子集**，请注意以下几条：
+   - 围栏代码块支持反引号与波浪号两种，缩进式代码块**不**支持
+     （缩进代码块里的 `#` 行会被当成标题）；
+   - 反引号围栏的 info string 里不允许再出现反引号，波浪号围栏则允许——
+     这是 CommonMark 的规定，两种围栏行为**故意不同**；
+   - 闭合围栏长度必须不小于开启围栏，且允许更长的闭合围栏；
+   - 空标题行（`# ` / `## `）按正文保留而非报错，见 [4.2](#42-解析规则)。
+7. **单文件的折叠状态不持久化**，重新打开即回到默认折叠模式；
+   文件夹节点才会把它写进 `fold_state.json`，见 [6.5](#65-保存)。
 8. **`reload()` 会重建节点树**：基于节点对象的 `NodePermissionChecker` 条目失效，
    需改用 `TitlePathPermissionChecker` 或重新登记；文件节点的 `auto_correct`
    自定义设置也会恢复默认。
+9. **文件夹节点的 `reload()` 不接受参数**，与 `FileNode.reload()` 保持一致；
+   要临时改 `auto_correct` 请用 `reload_with(auto_correct)`，它会记住该设置
+   供后续 `reload()` 沿用。
+10. **`Permission.NONE` 不能登记为授权值**，调用 `set_permissions()` 时会抛
+    `ValueError`。它的数值高于 `READ_WRITE` 且比较用 `>=`，一旦被授权就等价于
+    对该节点无条件放行；它只是"跳过权限检查"的工具声明标记。作为工具的
+    `required` 参数传入时语义不变。
 
 ---
 
