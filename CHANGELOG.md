@@ -1,3 +1,10 @@
+## v2.0.3 (2026-09-27)
+
+### Fix
+
+- **FoldableMarkdownTitleNode**: fix incompatible method override
+- numbered markdown title can't auto correct title without number field
+
 ## v2.0.2 (2026-09-13)
 
 ### Fix
