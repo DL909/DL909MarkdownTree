@@ -433,3 +433,14 @@ def test_foldable_markdown_title_node_within_shown_does_not_leak_folded():
         "### 1.1.1. Grandchild", within_shown=False
     )
     assert found_unrestricted is not None
+
+
+def test_foldable_add_text_with_empty_text_is_a_noop():
+    """add_text("") 不应改动节点，也不应触发 IndexError"""
+    node = FoldableMarkdownTitleNode(level=1, title="A", number=[1])
+    node.add_text("body\n")
+    before = node.get_text(full_text=True)
+
+    node.add_text("")
+
+    assert node.get_text(full_text=True) == before

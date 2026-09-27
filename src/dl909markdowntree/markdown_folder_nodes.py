@@ -159,12 +159,14 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
     @override
     def save_to_file(self, file_path: Path):
         file_path = Path(file_path)
+        # 先判断再 mkdir：mkdir(exist_ok=True) 遇到已存在的普通文件抛的是
+        # FileExistsError，语义含混，路径确实不是目录时直接给出明确错误。
+        # 这段检查原先写在 mkdir 之后，因而永远走不到。
+        if file_path.exists() and not file_path.is_dir():
+            raise NotADirectoryError(f"{file_path} isn't a directory")
         # exist_ok=True：exists() 与 mkdir() 之间存在竞态，缺了会在并发
         # 创建同一目录时抛 FileExistsError
         file_path.mkdir(parents=True, exist_ok=True)
-
-        if not file_path.is_dir():
-            raise NotADirectoryError(f"{file_path} isn't a directory")
 
         preamble_parts = []
         sections = []

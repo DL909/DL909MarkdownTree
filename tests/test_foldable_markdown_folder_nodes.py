@@ -1,11 +1,13 @@
 """test_foldable_markdown_folder_nodes.py - 测试可折叠 Markdown 文件夹节点"""
 
+import json
 from pathlib import Path
 
 from dl909markdowntree import (
     FoldableMarkdownFolderNode,
     FoldableMarkdownTitleNode,
     FoldMode,
+    NumberedMarkdownTitleNode,
 )
 
 
@@ -170,3 +172,52 @@ def test_foldable_folder_node_initializes_children(tmp_path):
 
     assert node.children == []
     assert node.update() is node
+
+
+def test_foldable_folder_preamble_keeps_hidden_text(tmp_path):
+    """前言里的折叠节点也要取全文，不能把折叠标记写进 0.mdp"""
+    folder = tmp_path / "f.mdf"
+    node = FoldableMarkdownFolderNode(file_path=folder)
+    node.set_text("preamble text\n")
+    root = node.get_root_title()
+    nested = NumberedMarkdownTitleNode.from_text("# 1.1. Nested\nhidden\nmore\n")
+    root.addchild(nested)
+    nested.fold_mode = FoldMode.SHOW_CHILD
+
+    node.save()
+
+    written = (folder / "0.mdp").read_text(encoding="utf-8")
+    assert "hidden" in written
+    assert "folded" not in written
+
+
+def test_foldable_folder_ignores_unknown_fold_state(tmp_path):
+    """fold_state.json 里无法识别的状态值应告警并忽略，而不是崩溃"""
+    folder = tmp_path / "f.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("A\n", encoding="utf-8")
+    # 键是 json.dumps([level, *number])，值是 FoldMode 的成员名
+    (folder / "fold_state.json").write_text(
+        json.dumps({json.dumps([1, 1]): "NOT_A_MODE"}), encoding="utf-8"
+    )
+
+    node = FoldableMarkdownFolderNode(file_path=folder)
+
+    assert node.get_root_title().children[0].fold_mode is FoldMode.SHOW_TITLE
+
+
+def test_foldable_folder_removes_stale_fold_state_file(tmp_path):
+    """没有任何折叠态时，旧的 fold_state.json 应被清掉"""
+    folder = tmp_path / "f.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("A\n", encoding="utf-8")
+    (folder / "fold_state.json").write_text(
+        json.dumps([[1, 1], "HIDE_CHILD"]), encoding="utf-8"
+    )
+
+    node = FoldableMarkdownFolderNode(file_path=folder)
+    node.get_root_title().children[0].fold_mode = FoldMode.SHOW_TITLE
+
+    node.save()
+
+    assert not (folder / "fold_state.json").exists()

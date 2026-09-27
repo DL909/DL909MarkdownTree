@@ -539,3 +539,26 @@ def test_foldable_add_text_on_empty_root_does_not_raise(tmp_path):
     root.add_text("body")
 
     assert root.get_text(full_text=True) == "body"
+
+
+def test_markdown_title_node_addchild_delegates_to_non_title():
+    """既不是正文也不是同类型标题的子节点应交给基类 addchild 处理"""
+    root = MarkdownTitleNode(title="Root", level=1)
+    other = PlainTextNode("x")
+
+    root.addchild(other)
+
+    assert other in root.children
+    assert other.parent is root
+
+
+def test_markdown_text_file_node_keeps_supplied_text_node(tmp_path):
+    """显式传入 markdown_text_node 时应保留调用方持有的对象"""
+    doc_path = tmp_path / "doc.md"
+    supplied = MarkdownTitleNode.from_text("# Supplied\nbody\n")
+
+    doc = MarkdownTextFileNode(doc_path, markdown_text_node=supplied)
+
+    assert doc.get_root_title() is supplied
+    assert doc_path.read_text(encoding="utf-8") == "# Supplied\nbody\n"
+    assert doc.get_markdown_text_node() is supplied

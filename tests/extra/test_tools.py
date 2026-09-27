@@ -12,6 +12,7 @@ from dl909markdowntree import (
     NodePermissionChecker,
     NumberedMarkdownTextFileNode,
     Permission,
+    TitlePathPermissionChecker,
 )
 from dl909markdowntree.extra.tools import (
     append_tool,
@@ -308,3 +309,51 @@ def test_tool_rollback_failure_is_logged_not_raised(tmp_path, caplog):
     assert result == "replace failed: boom during set_text"
     assert calls["n"] == 2  # 首次失败 + 回滚也失败
     assert any("rollback also failed" in r.getMessage() for r in caplog.records)
+
+
+def test_replace_lines_missing_target_reports_failure(tmp_path):
+    """目标标题不存在时应报出找不到，而不是抛异常"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody A\n", encoding="utf-8")
+    doc = FoldableMarkdownTextFileNode(doc_path)
+
+    result = replace_lines_tool(doc, None, "# 9. Missing", "x", "y")
+
+    assert result == "replace_lines failed: no title matching '# 9. Missing'"
+
+
+def test_rename_rollback_rebinds_permissions(tmp_path):
+    """改名落盘失败后回滚，权限条目必须重新绑定到恢复后的标题"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. Old\nbody\n", encoding="utf-8")
+    doc = FoldableMarkdownTextFileNode(doc_path)
+    checker = TitlePathPermissionChecker()
+
+    renamed: list[str] = []
+    original = checker.on_node_renamed
+
+    def _spy(node) -> None:
+        renamed.append(node.title)
+        original(node)
+
+    with (
+        unittest.mock.patch.object(checker, "on_node_renamed", _spy),
+        unittest.mock.patch.object(type(doc), "save", side_effect=OSError("disk")),
+    ):
+        result = rename_title_tool(doc, checker, "# 1. Old", "New")
+
+    assert result == "rename_title failed: disk"
+    assert renamed == ["New", "Old"], "回滚后必须再绑一次，否则条目停在已不存在的标题上"
+
+
+def test_rename_rollback_survives_without_checker(tmp_path):
+    """checker 为 None 时回滚路径同样要走通"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. Old\nbody\n", encoding="utf-8")
+    doc = FoldableMarkdownTextFileNode(doc_path)
+
+    with unittest.mock.patch.object(type(doc), "save", side_effect=OSError("disk")):
+        result = rename_title_tool(doc, None, "# 1. Old", "New")
+
+    assert result == "rename_title failed: disk"
+    assert doc.get_root_title().children[0].title == "Old"

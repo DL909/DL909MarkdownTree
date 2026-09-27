@@ -7,6 +7,7 @@ import pytest
 from dl909markdowntree import (
     FoldableMarkdownTextFileNode,
     MarkdownTextFileNode,
+    Node,
     NodePermissionChecker,
     NumberedMarkdownTextFileNode,
     Permission,
@@ -574,3 +575,27 @@ def test_node_checker_default_deny_preserved_with_index(tmp_path):
     # DENY 绝对生效，胜过祖先的放行
     checker.set_permissions([(target, Permission.DENY), (root, Permission.READ_WRITE)])
     assert checker.check_permission(target, Permission.READ)[0] is False
+
+
+def test_permission_describe_prefers_title_over_name():
+    """权限说明文案优先用 title，其次 name，最后退化为类型名"""
+    checker = NodePermissionChecker()
+
+    titled = Node()
+    titled.title = "Titled"  # type: ignore[attr-defined]
+    assert "'Titled'" in checker._get_node_description(titled)
+
+    named = Node()
+    named.name = "Named"  # type: ignore[attr-defined]
+    assert "'Named'" in checker._get_node_description(named)
+
+    bare = Node()
+    assert checker._get_node_description(bare) == "<Node>"
+
+    assert "根节点" in checker._get_node_description(None)
+
+
+def test_title_path_checker_defaults_to_allow_when_empty(tmp_path):
+    """空权限表时默认放行（与 NodePermissionChecker 一致）"""
+    checker = TitlePathPermissionChecker()
+    assert checker._find_effective_permission(("1", "A")) is Permission.READ_WRITE

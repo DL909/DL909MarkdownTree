@@ -469,3 +469,39 @@ def test_numbered_markdown_folder_node_save_drops_removed_sections(tmp_path):
     node.save()
 
     assert sorted(p.name for p in folder.iterdir()) == ["1_A2.mdp"]
+
+
+def test_numbered_markdown_folder_node_rejects_file_path(tmp_path):
+    """save_to_file 指向已存在的普通文件时应抛 NotADirectoryError"""
+    not_a_dir = tmp_path / "plain.md"
+    not_a_dir.write_text("x", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=Path(tmp_path) / "f.mdf")
+
+    with pytest.raises(NotADirectoryError):
+        node.save_to_file(not_a_dir)
+
+
+def test_numbered_markdown_folder_node_rejects_content_after_first_section(tmp_path):
+    """首个 level-1 小节之后出现的游离节点应报错，而不是悄悄丢弃
+
+    解析器不会产出这种结构（正文总是挂在标题下，前言总在首个标题之前），
+    所以这里直接改 children 列表，模拟被外部改坏的树——守卫正是为它准备的。
+    """
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("A\n", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=folder)
+    node.set_text("# 1. A\nA body\n")
+    root = node.get_root_title()
+    root.children.append(PlainTextNode("stray text"))
+
+    with pytest.raises(RuntimeError, match="unexpected content after first"):
+        node.save()
+
+
+def test_numbered_markdown_folder_node_get_markdown_text_node(tmp_path):
+    """get_markdown_text_node 与 get_root_title 应指向同一棵树"""
+    folder = tmp_path / "test.mdf"
+    node = NumberedMarkdownFolderNode(file_path=folder)
+
+    assert node.get_markdown_text_node() is node.get_root_title()
