@@ -426,3 +426,46 @@ def test_folder_warns_when_title_is_rewritten_for_filename(tmp_path, caplog):
 
     assert (folder / "1_a_b_c.mdp").exists()
     assert any("a/b:c" in record.message % record.args for record in caplog.records)
+
+
+def test_numbered_markdown_folder_node_save_renames_section_file(tmp_path):
+    """标题改名后，磁盘上应只剩新名字，旧文件必须消失"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_Old.mdp").write_text("old A\n", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=folder)
+
+    node.set_text("# 1. New\nnew A\n")
+    node.save()
+
+    assert sorted(p.name for p in folder.iterdir()) == ["1_New.mdp"]
+    assert (folder / "1_New.mdp").read_text(encoding="utf-8") == "new A\n"
+
+
+def test_numbered_markdown_folder_node_save_collapses_duplicate_numbers(tmp_path):
+    """同一编号下的多个文件应收敛成一个，内容取自本节"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("A\n", encoding="utf-8")
+    (folder / "1_A_copy.mdp").write_text("dup\n", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=folder)
+
+    node.set_text("# 1. B\nB body\n")
+    node.save()
+
+    assert sorted(p.name for p in folder.iterdir()) == ["1_B.mdp"]
+    assert (folder / "1_B.mdp").read_text(encoding="utf-8") == "B body\n"
+
+
+def test_numbered_markdown_folder_node_save_drops_removed_sections(tmp_path):
+    """被删除的编号，其文件应一并清理"""
+    folder = tmp_path / "test.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("A\n", encoding="utf-8")
+    (folder / "2_B.mdp").write_text("B\n", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(file_path=folder)
+
+    node.set_text("# 1. A2\nA2\n")
+    node.save()
+
+    assert sorted(p.name for p in folder.iterdir()) == ["1_A2.mdp"]

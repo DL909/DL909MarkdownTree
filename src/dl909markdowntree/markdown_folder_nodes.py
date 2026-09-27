@@ -220,29 +220,14 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
                 for _, path in files:
                     path.unlink()
 
-        sections_by_N = {N: (title, content) for N, title, content in sections}
-
         for N, title, content in sections:
-            target_name = _mdp_filename(N, title)
-            target_path = file_path / target_name
-            if N in existing_files:
-                for _, old_path in existing_files[N]:
-                    if old_path == target_path:
-                        break
-                    if target_path.exists():
-                        target_path.unlink()
-                    old_path.rename(target_path)
-                    break
-            target_path.write_text(content, encoding="utf-8")
-
-        for N, files in existing_files.items():
-            if N not in new_numbers:
-                continue
-            target_name = _mdp_filename(N, sections_by_N[N][0])
-            target_path = file_path / target_name
-            for _, path in files:
-                if path != target_path and path.exists():
-                    path.unlink()
+            # 同一编号下的旧文件先全部删掉，再按新名字写一个。早先是
+            # "找到第一个旧文件 -> 删掉同名目标 -> rename 过去 -> 再删剩下的"，
+            # 三段循环才凑齐一个结果：文件名由本节的标题决定，内容永远来自本节，
+            # rename 纯属多余。删完再写让"标题改名""同编号多文件"走同一条路径。
+            for _, old_path in existing_files.get(N, ()):
+                old_path.unlink()
+            (file_path / _mdp_filename(N, title)).write_text(content, encoding="utf-8")
 
         zero_path = file_path / "0.mdp"
         if preamble_content is not None:
@@ -251,7 +236,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
             zero_path.unlink()
 
     @override
-    def save(self):
+    def save(self) -> None:
         self.save_to_file(self.file_path)
 
     @override
@@ -259,7 +244,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         return self.markdown_text_node.get_text()
 
     @override
-    def set_text(self, text) -> None:
+    def set_text(self, text: str) -> None:
         self.markdown_text_node.set_text(text)
 
     @override
