@@ -115,9 +115,7 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
     def get_title(self, show_level_sign: bool = True) -> str:
         if self.level <= 0:
             return self.title
-        number_part = ""
-        for i in self.number:
-            number_part += f"{i}."
+        number_part = "".join(f"{i}." for i in self.number)
         return (
             (("#" * self.level + " ") if show_level_sign else "")
             + number_part
@@ -128,7 +126,9 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
     @override
     def _override_self(self, origin: Self) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
         self.auto_correct = origin.auto_correct
-        self.number = origin.number
+        # 复制而不是直接引用：from_self 同样给 number 做了 list() 拷贝，
+        # 两处行为不一致会让共享 list 在后续改动时互相影响
+        self.number = list(origin.number)
         return super()._override_self(origin)
 
 

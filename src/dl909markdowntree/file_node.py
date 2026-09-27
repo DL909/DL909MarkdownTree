@@ -12,11 +12,11 @@ class FileNode(Node, ABC):
     file_path: Path
 
     @abstractmethod
-    def save(self):
+    def save(self) -> None:
         pass
 
     @abstractmethod
-    def reload(self):
+    def reload(self) -> None:
         pass
 
     def __init__(self, file_path: Path) -> None:

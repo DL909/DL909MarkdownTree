@@ -36,11 +36,11 @@ class PlainTextFileNode(FileNode, TextNode):
             self.textNode.set_text(f.read())
 
     @override
-    def get_text(self):
+    def get_text(self) -> str:
         return self.textNode.get_text()
 
     @override
-    def set_text(self, text):
+    def set_text(self, text: str) -> None:
         self.textNode.set_text(text)
 
     def __init__(self, file_path: pathlib.Path):

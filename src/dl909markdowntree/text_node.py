@@ -14,7 +14,7 @@ class TextNode(Node, ABC):
         pass
 
     @abstractmethod
-    def set_text(self, text) -> None:
+    def set_text(self, text: str) -> None:
         pass
 
     @override
