@@ -1,10 +1,12 @@
 """test_markdown_folder_nodes.py - 测试 Markdown 文件夹节点"""
 
+import inspect
 from pathlib import Path
 
 import pytest
 
 from dl909markdowntree import (
+    FileNode,
     InvalidMdpFilenameError,
     NumberedMarkdownFolderNode,
     NumberedMarkdownTitleNode,
@@ -226,16 +228,42 @@ def test_numbered_markdown_folder_node_round_trip(tmp_path):
 
 
 def test_numbered_markdown_folder_node_reload_auto_correct_false(tmp_path):
-    """测试 reload(auto_correct=False) 时显式传入的 False 不被旧值覆盖"""
+    """测试 reload_with(auto_correct=False) 时显式传入的 False 不被旧值覆盖"""
     folder = tmp_path / "test.mdf"
     folder.mkdir()
     (folder / "1_Intro.mdp").write_text("Content", encoding="utf-8")
     node = NumberedMarkdownFolderNode(file_path=Path(folder), auto_correct=True)
-    node.reload(auto_correct=False)
+    node.reload_with(auto_correct=False)
+    assert node.markdown_text_node.auto_correct is False
+    # reload_with 应记住该设置，后续无参 reload() 仍沿用
+    node.reload()
     assert node.markdown_text_node.auto_correct is False
     node2 = NumberedMarkdownFolderNode(file_path=Path(folder), auto_correct=False)
     node2.reload()
     assert node2.markdown_text_node.auto_correct is False
+
+
+def test_numbered_markdown_folder_node_reload_matches_base_signature(tmp_path):
+    """FileNode.reload() 不带参数，文件夹节点不得给 reload() 加参数（里氏替换）"""
+    folder = tmp_path / "test.mdf"
+    node = NumberedMarkdownFolderNode(file_path=Path(folder))
+
+    assert list(inspect.signature(node.reload).parameters) == []
+    assert list(inspect.signature(FileNode.reload).parameters) == ["self"]
+
+
+def test_numbered_markdown_folder_node_keeps_passed_markdown_text_node(tmp_path):
+    """显式传入 markdown_text_node 时，构造后应保留调用方持有的那个对象"""
+    folder = tmp_path / "test.mdf"
+    new_root = NumberedMarkdownTitleNode.from_text("# 5. Injected\ninjected body\n")
+
+    node = NumberedMarkdownFolderNode(
+        file_path=Path(folder), markdown_text_node=new_root
+    )
+
+    assert node.get_root_title() is new_root
+    assert (folder / "1_Injected.mdp").exists()
+    assert (folder / "1_Injected.mdp").read_text(encoding="utf-8") == "injected body\n"
 
 
 def test_numbered_markdown_folder_node_save_sanitizes_title(tmp_path):

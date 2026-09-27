@@ -19,12 +19,25 @@ class Node(ABC):
 
     @classmethod
     def from_self(cls, origin: Self, **overrides: object) -> Self:
-        """从自身实例重建一个复制版本，overrides 中的键值覆盖相应属性"""
+        """从自身实例重建一个复制版本，overrides 中的键值覆盖相应属性
+
+        注意：children 列表是新建的，但其中的子节点对象与 origin 共享，因此
+        副本接管这些子节点（parent 改指副本）。origin 之后再操作这些子节点
+        （例如 dispatch()）会影响副本。若需要与 origin 完全无关的空壳，
+        传 ``children=[]``——解析路径正是这么用的。
+
+        早先没有重挂 parent，副本里的子节点仍指向 origin，于是副本是一棵
+        "反向"的树：对副本的孩子调用 dispatch() 会把 origin 的孩子摘掉。
+        """
         result = copy.copy(origin)
         result.children = list(origin.children)
         result.parent = None
         for key, value in overrides.items():
             setattr(result, key, value)
+        # 重挂必须放在 overrides 之后：overrides 可能整体替换了 children
+        # （解析路径传的就是 children=[]），此时不该再去动 origin 的孩子。
+        for child in result.children:
+            child.parent = result
         return result
 
     def update(self) -> Self:

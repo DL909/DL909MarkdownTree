@@ -79,8 +79,8 @@ class FoldableMarkdownFolderNode(
         _walk(self.markdown_text_node)
 
     @override
-    def reload(self, auto_correct: bool | None = None):
-        super().reload(auto_correct=auto_correct)
+    def reload(self):
+        super().reload()
         fold_states_path = Path(self.file_path) / "fold_state.json"
         if fold_states_path.exists():
             raw = fold_states_path.read_text(encoding="utf-8")

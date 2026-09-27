@@ -81,10 +81,14 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
             )
         )
         if markdown_text_node:
+            # 传入的节点就是调用方期望的状态：落盘后直接返回。早先这里仍会
+            # 无条件 reload()，而 reload() 用磁盘内容重建节点树，会把调用方
+            # 刚拿到的节点整个替换掉——内容写进去了，对象身份却悄悄丢失。
             self.save()
+            return
         if not file_path.exists():
             self.create_file(file_path)
-        self.reload(auto_correct)
+        self.reload()
 
     @staticmethod
     def _build_synthetic_text_from_dir(mdf_dir: Path) -> str:
@@ -137,14 +141,20 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         return part.get_text()
 
     @override
-    def reload(self, auto_correct: bool | None = None):
+    def reload(self):
         synthetic_text = self._build_synthetic_text_from_dir(self.file_path)
         self.markdown_text_node = self._create_text_node(
-            synthetic_text,
-            auto_correct
-            if auto_correct is not None
-            else self.markdown_text_node.auto_correct,
+            synthetic_text, auto_correct=self.auto_correct
         )
+
+    def reload_with(self, auto_correct: bool) -> None:
+        """以指定的 auto_correct 重新加载，并记住该设置供后续 reload() 使用
+
+        单独提供而非给 reload() 加参数：FileNode.reload() 不带参数，文件夹节点
+        给它加一个带默认值的参数既违反里氏替换，也让"用哪个值"变得含糊。
+        """
+        self.auto_correct = auto_correct
+        self.reload()
 
     @override
     def save_to_file(self, file_path: Path):

@@ -79,12 +79,12 @@ class AttributedMarkdownFolderNode[T: BaseModel](
         yaml_path.write_text(to_yaml_str(self.attribute), encoding="utf-8")
 
     @override
-    def reload(self, auto_correct: bool | None = None):
+    def reload(self):
         if (self.file_path / "FrontMatter.yaml").exists():
             self.attribute = self._load_attribute(
                 type(self.attribute), Path(self.file_path)
             )
-        super().reload(auto_correct=auto_correct)
+        super().reload()
 
     @override
     def get_root_title(self) -> FoldableMarkdownTitleBase:

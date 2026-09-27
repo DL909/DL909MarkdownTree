@@ -73,6 +73,36 @@ def test_from_self_without_overrides_copies_children_list():
     assert result.parent is None
 
 
+def test_from_self_reparents_shared_children():
+    """副本接管共享的子节点：孩子的 parent 必须指向副本，而不是 origin
+
+    否则副本是一棵"反向"的树——对副本的孩子调用 dispatch() 会从 origin
+    身上把它摘掉。
+    """
+    root = Node()
+    child = Node()
+    root.addchild(child)
+
+    result = Node.from_self(root)
+
+    assert child.parent is result
+    child.dispatch()
+    assert result.children == []
+    assert root.children == [child]  # 原节点仍持有该孩子，只是反向指针已移交副本
+
+
+def test_from_self_with_empty_children_override_is_detached():
+    """传 children=[] 时副本与 origin 完全无关，不牵动任何共享状态"""
+    root = Node()
+    root.addchild(Node())
+    child = root.children[0]
+
+    result = Node.from_self(root, children=[])
+
+    assert result.children == []
+    assert child.parent is root
+
+
 def test_from_self_override_wins_over_copy():
     root = Node()
     root.addchild(Node())
