@@ -1,5 +1,6 @@
 """markdown_folder_nodes.py - Markdown 文件夹节点，管理 .mdp 文件目录"""
 
+import logging
 import re
 from pathlib import Path
 from typing import override
@@ -18,9 +19,34 @@ MDP_FILE_PATTERN = re.compile(r"^(\d+)_(.+)\.mdp$")
 
 _UNSAFE_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|\x00-\x1f]')
 
+logger = logging.getLogger(__name__)
+
 
 def _sanitize_mdp_title(title: str) -> str:
     return _UNSAFE_FILENAME_CHARS.sub("_", title).strip(". ") or "untitled"
+
+
+def _mdp_filename(section_number: int, title: str) -> str:
+    """生成 .mdp 文件名；标题被改写时告警（消毒不可逆，原标题将永久丢失）"""
+    safe = _sanitize_mdp_title(title)
+    if safe != title:
+        logger.warning(
+            f"section {section_number} title {title!r} contains characters that "
+            f"are unsafe for a filename; the .mdp file is named {safe!r} and the "
+            f"title will read back as {safe!r} after reload"
+        )
+    return f"{section_number}_{safe}.mdp"
+
+
+def _as_text_file_content(text: str) -> str:
+    """归一化为 POSIX 文本文件形态：非空内容恰好一个结尾换行，空内容则空文件
+
+    早期实现对每个 section 都 rstrip 掉结尾换行，导致每次保存都会产生一次
+    与用户无关的 diff（"body\\n" -> "body"）。现在写盘保留结尾换行，读盘时
+    再统一归一化，保证 reload -> save 往返幂等。
+    """
+    stripped = text.rstrip("\n")
+    return stripped + "\n" if stripped else ""
 
 
 class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
@@ -68,7 +94,11 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
             if not entry.name.endswith(".mdp"):
                 continue
             if entry.name == "0.mdp":
-                preamble = entry.read_text(encoding="utf-8")
+                # 归一化：0.mdp 的结尾换行由 save 统一补，读盘时先剥掉，
+                # 否则每次 reload 都会在段落之间多插一个空行并逐轮累积
+                preamble = _as_text_file_content(
+                    entry.read_text(encoding="utf-8")
+                ).rstrip("\n")
                 continue
             match = MDP_FILE_PATTERN.match(entry.name)
             if not match:
@@ -77,7 +107,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
                 )
             N = int(match.group(1))
             title = match.group(2)
-            content = entry.read_text(encoding="utf-8")
+            content = entry.read_text(encoding="utf-8").rstrip("\n")
             file_entries.append((N, title, content))
 
         file_entries.sort(key=lambda x: x[0])
@@ -86,9 +116,12 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         if preamble:
             parts.append(preamble)
         for N, title, content in file_entries:
-            parts.append(f"# {N}. {title}\n{content}")
+            section = f"# {N}. {title}"
+            if content:
+                section += "\n" + content
+            parts.append(section)
 
-        return "\n\n".join(parts)
+        return _as_text_file_content("\n\n".join(parts))
 
     def _create_text_node(
         self, text: str, auto_correct: bool = True
@@ -96,7 +129,9 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         return NumberedMarkdownTitleNode.from_text(text=text, auto_correct=auto_correct)
 
     def _get_section_content(self, child: NumberedMarkdownTitleNode) -> str:
-        return "".join(child.get_text().splitlines(keepends=True)[1:]).rstrip("\n")
+        return _as_text_file_content(
+            "".join(child.get_text().splitlines(keepends=True)[1:])
+        )
 
     def _get_preamble_part_content(self, part: TextNode) -> str:
         return part.get_text()
@@ -141,13 +176,20 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
                     f"unexpected content after first level-1 section: {type(child).__name__}"
                 )
 
-        preamble_content = None
+        # preamble_content 为 None 表示"本次没有前言"，与"前言为空串"区分开：
+        # 前者删除 0.mdp，后者写出空文件。纯空白段落归一化为空，避免
+        # "只含换行的 0.mdp" 在往返中被改写成空串造成漂移。
+        preamble_content: str | None = None
         if preamble_parts:
-            preamble_content = ""
-            for part in preamble_parts:
-                preamble_content += self._get_preamble_part_content(part) + "\n" * 2
-            if preamble_content != "":
-                preamble_content = preamble_content[:-2].rstrip("\n")
+            body = "\n\n".join(
+                text
+                for text in (
+                    self._get_preamble_part_content(part).rstrip("\n")
+                    for part in preamble_parts
+                )
+                if text.strip()
+            )
+            preamble_content = _as_text_file_content(body)
 
         existing_files: dict[int, list[tuple[str, Path]]] = {}
         for entry in file_path.iterdir():
@@ -169,7 +211,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         sections_by_N = {N: (title, content) for N, title, content in sections}
 
         for N, title, content in sections:
-            target_name = f"{N}_{_sanitize_mdp_title(title)}.mdp"
+            target_name = _mdp_filename(N, title)
             target_path = file_path / target_name
             if N in existing_files:
                 for _, old_path in existing_files[N]:
@@ -184,7 +226,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         for N, files in existing_files.items():
             if N not in new_numbers:
                 continue
-            target_name = f"{N}_{_sanitize_mdp_title(sections_by_N[N][0])}.mdp"
+            target_name = _mdp_filename(N, sections_by_N[N][0])
             target_path = file_path / target_name
             for _, path in files:
                 if path != target_path and path.exists():

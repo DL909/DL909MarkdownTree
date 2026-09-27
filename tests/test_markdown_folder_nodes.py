@@ -309,3 +309,92 @@ def test_folder_node_update_works(tmp_path):
     node = NumberedMarkdownFolderNode(folder)
 
     assert node.update() is node
+
+
+def _snapshot(folder: Path) -> dict[str, str]:
+    return {p.name: p.read_text(encoding="utf-8") for p in sorted(folder.iterdir())}
+
+
+def test_folder_save_preserves_trailing_newline(tmp_path):
+    """保存不得吞掉 .mdp 的结尾换行，否则每次保存都产生无谓 diff"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("body\n", encoding="utf-8")
+
+    node = NumberedMarkdownFolderNode(folder)
+    node.save()
+
+    assert (folder / "1_A.mdp").read_text(encoding="utf-8") == "body\n"
+
+
+def test_folder_save_preserves_preamble_trailing_newline(tmp_path):
+    """0.mdp 的结尾换行同样保留"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "0.mdp").write_text("intro\n", encoding="utf-8")
+    (folder / "1_A.mdp").write_text("body\n", encoding="utf-8")
+
+    node = NumberedMarkdownFolderNode(folder)
+    node.save()
+
+    assert (folder / "0.mdp").read_text(encoding="utf-8") == "intro\n"
+
+
+def test_folder_save_is_idempotent(tmp_path):
+    """连续保存不得产生逐轮累积的差异"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "0.mdp").write_text("intro\n", encoding="utf-8")
+    (folder / "1_A.mdp").write_text("line1\n\n\nsub\n", encoding="utf-8")
+    (folder / "2_B.mdp").write_text("other\n", encoding="utf-8")
+
+    NumberedMarkdownFolderNode(folder).save()
+    second = _snapshot(folder)
+    NumberedMarkdownFolderNode(folder).save()
+    third = _snapshot(folder)
+    NumberedMarkdownFolderNode(folder).save()
+    fourth = _snapshot(folder)
+
+    assert second == third == fourth
+
+
+def test_folder_save_normalizes_missing_trailing_newline_once(tmp_path):
+    """手写的无结尾换行文件首次保存补上换行，之后保持稳定"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("body", encoding="utf-8")
+
+    NumberedMarkdownFolderNode(folder).save()
+    assert (folder / "1_A.mdp").read_text(encoding="utf-8") == "body\n"
+    after_first = _snapshot(folder)
+
+    NumberedMarkdownFolderNode(folder).save()
+    assert _snapshot(folder) == after_first
+
+
+def test_folder_save_drops_whitespace_only_preamble_once(tmp_path):
+    """只含换行的 0.mdp 归一化为空并在首次保存后保持稳定"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "0.mdp").write_text("\n", encoding="utf-8")
+    (folder / "1_A.mdp").write_text("body\n", encoding="utf-8")
+
+    NumberedMarkdownFolderNode(folder).save()
+    after_first = _snapshot(folder)
+    assert "0.mdp" not in after_first
+
+    NumberedMarkdownFolderNode(folder).save()
+    assert _snapshot(folder) == after_first
+
+
+def test_folder_warns_when_title_is_rewritten_for_filename(tmp_path, caplog):
+    """标题含文件名非法字符被静默改写时必须告警（消毒不可逆）"""
+    folder = tmp_path / "book.mdf"
+    node = NumberedMarkdownFolderNode(folder)
+    node.set_text("# 1. a/b:c\nbody\n")
+
+    with caplog.at_level("WARNING"):
+        node.save()
+
+    assert (folder / "1_a_b_c.mdp").exists()
+    assert any("a/b:c" in record.message % record.args for record in caplog.records)
