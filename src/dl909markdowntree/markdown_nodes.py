@@ -31,6 +31,9 @@ class MarkdownTitleNode(MarkdownTitleBase):
             raise InvalidMarkdownLineError(f"invalid Markdown title line: {line}")
         return cls(level=len(match.group(1)), title=match.group(2))
 
+    def _from_line(self, line: str) -> Self:
+        return self.from_line(line)
+
     @classmethod
     def from_text(cls, text: str) -> Self:
         result = cls(level=0)
@@ -81,7 +84,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
             and (match := re.match("^(#+)", lines[0]))
             and len(match.group(1)) == self.level
         ):
-            result = self.from_line(lines[0])
+            result = self._from_line(lines[0])
             lines = lines[1:]
             override_flag = True
         else:
@@ -113,7 +116,7 @@ class MarkdownTitleNode(MarkdownTitleBase):
                         if cached_lines:
                             result.addchild(PlainTextNode(cached_lines))
                         cached_lines = ""
-                        result.addchild(self.from_line(line))
+                        result.addchild(self._from_line(line))
                     else:
                         cached_lines += line
         if code_block_flag:
@@ -137,8 +140,6 @@ class MarkdownTitleNode(MarkdownTitleBase):
         update attribute according to given
         """
         self.title = origin.title
-        if hasattr(origin, "number"):
-            self.number = origin.number
         self.children.clear()
         self.children.extend(origin.children)
         for child in self.children:
@@ -182,8 +183,11 @@ class MarkdownTitleNode(MarkdownTitleBase):
                     return result
         return None
 
-    def add_text(self, text: str) -> None:
-        self.set_text(self.get_text() + "\n" + text)
+    def add_text(self, text: str, ensure_new_line: bool = True) -> None:
+        current_text = self.get_text()
+        if ensure_new_line and current_text[-1] != "\n" and text[0] != "\n":
+            current_text += "\n"
+        self.set_text(current_text + text)
 
 
 class MarkdownTextFileNode(MarkdownTextFileBase):

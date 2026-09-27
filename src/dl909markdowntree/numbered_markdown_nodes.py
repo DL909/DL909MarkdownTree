@@ -32,15 +32,30 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
     def from_line(cls, line: str, auto_correct: bool = True) -> Self:
         match = re.match(r"^(#+) ((?:\d+\.)+) (.+)$", line.rstrip("\n"))
         if not match:
-            raise InvalidNumberedTitleLineError(
-                f"invalid numbered title line: {line}"
-            )
+            if auto_correct:
+                match = re.match(r"^(#+) (.+)$", line.rstrip("\n"))
+            if not match:
+                raise InvalidNumberedTitleLineError(
+                    f"invalid numbered title line: {line}"
+                )
+            else:
+                return cls(
+                    level=len(match.group(1)),
+                    number=[],
+                    title=match.group(2),
+                    auto_correct=auto_correct,
+                )
+
         return cls(
             level=len(match.group(1)),
             number=[int(x) for x in match.group(2).rstrip(".").split(".")],
             title=match.group(3),
             auto_correct=auto_correct,
         )
+
+    @override
+    def _from_line(self, line: str) -> Self:
+        return self.from_line(line, auto_correct=self.auto_correct)
 
     @override
     @classmethod
@@ -109,6 +124,12 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
             + " "
             + self.title
         )
+
+    @override
+    def _override_self(self, origin: Self) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
+        self.auto_correct = origin.auto_correct
+        self.number = origin.number
+        return super()._override_self(origin)
 
 
 class NumberedMarkdownTextFileNode(MarkdownTextFileNode, NumberedMarkdownTextFileBase):

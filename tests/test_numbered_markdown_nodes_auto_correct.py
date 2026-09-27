@@ -68,6 +68,14 @@ class TestNumberedMarkdownTitleNodeAutoCorrect:
         assert title_node.children[0].number == [1, 1]
         assert title_node.children[0].title == "Plain Title"
 
+    def test_auto_correct_title_without_number_field(self):
+        """测试无编号域标题自动纠正"""
+        title_node = NumberedMarkdownTitleNode(
+            title="Chapter 1", level=1, number=[1], auto_correct=True
+        )
+        title_node.add_text("## Wrong")
+        assert title_node.children[0].number == [1, 1]
+
     def test_auto_correct_get_title_includes_number(self):
         """测试 get_title() 输出包含正确的编号"""
         title_node = NumberedMarkdownTitleNode(

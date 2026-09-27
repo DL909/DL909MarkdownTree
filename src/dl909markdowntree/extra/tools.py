@@ -12,9 +12,7 @@ from ..permissions import Permission, PermissionChecker
 _TOOL_OPERATION_ERRORS = (MarkdownTreeError, OSError, RuntimeError)
 
 
-def _find_title_node(
-    markdown_node: AttributedMarkdownTextFileBase, target: str
-):
+def _find_title_node(markdown_node: AttributedMarkdownTextFileBase, target: str):
     return markdown_node.get_root_title().recursive_find_title_node_by_name(target)
 
 
@@ -158,11 +156,11 @@ def replace_lines_tool(
                 node.set_text(old_text)
                 return f"replace_lines failed: {e}"
         else:
-            return (
-                "replace_lines failed: no match found (best similarity below 80%)"
-            )
+            return "replace_lines failed: no match found (best similarity below 80%)"
     elif match_count > 1:
-        return f"replace_lines failed: {match_count} matches found, provide more context"
+        return (
+            f"replace_lines failed: {match_count} matches found, provide more context"
+        )
 
     old_text = _get_full_text(node)
     try:
@@ -192,3 +190,4 @@ def rename_title_tool(
     except _TOOL_OPERATION_ERRORS as e:
         node.title = old_title
         return f"rename_title failed: {e}"
+

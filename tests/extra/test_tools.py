@@ -40,9 +40,7 @@ def test_replace_lines_matches_hidden_folded_line(tmp_path):
     doc_path.write_text("# 1. Title\nhidden line\n", encoding="utf-8")
     doc = FoldableMarkdownTextFileNode(doc_path)
 
-    result = replace_lines_tool(
-        doc, None, "# 1. Title", "hidden line", "replaced line"
-    )
+    result = replace_lines_tool(doc, None, "# 1. Title", "hidden line", "replaced line")
 
     assert "replace_lines succeeded" in result
     assert doc.get_text(full_text=True) == "# 1. Title\nreplaced line\n"
@@ -54,7 +52,7 @@ def test_replace_tool_failure_rollback_preserves_folded_content(tmp_path):
     doc = _make_folded_doc(tmp_path)
     original = doc.get_text(full_text=True)
 
-    result = replace_tool(doc, None, "# 1. Title", "## wrong level\nx")
+    result = replace_tool(doc, None, "## 1.1. sub", "# wrong level\nx")
 
     assert "replace failed" in result
     assert doc.get_text(full_text=True) == original
@@ -68,9 +66,9 @@ def test_replace_lines_tool_failure_rollback_preserves_folded_content(tmp_path):
     result = replace_lines_tool(
         doc,
         None,
-        "# 1. Title",
-        "secret hidden line\n## 1.1. Sub\nhidden sub",
-        "## wrong level\nx",
+        "## 1.1. Sub",
+        "## 1.1. Sub",
+        "# wrong level\nx",
     )
 
     assert "replace_lines failed" in result
