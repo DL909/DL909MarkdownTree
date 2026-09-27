@@ -148,8 +148,10 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
 
     @override
     def save_to_file(self, file_path: Path):
-        if not file_path.exists():
-            file_path.mkdir(parents=True)
+        file_path = Path(file_path)
+        # exist_ok=True：exists() 与 mkdir() 之间存在竞态，缺了会在并发
+        # 创建同一目录时抛 FileExistsError
+        file_path.mkdir(parents=True, exist_ok=True)
 
         if not file_path.is_dir():
             raise NotADirectoryError(f"{file_path} isn't a directory")

@@ -4,8 +4,9 @@ from pathlib import Path
 from typing import override
 
 from pydantic import BaseModel
-from pydantic_yaml import parse_yaml_raw_as, to_yaml_str
+from pydantic_yaml import to_yaml_str
 
+from .attributed_markdown_nodes import AttributedMarkdownTextFileNode
 from .foldable_markdown_folder_nodes import FoldableMarkdownFolderNode
 from .foldable_markdown_nodes import (
     FoldableMarkdownTitleBase,
@@ -44,25 +45,32 @@ class AttributedMarkdownFolderNode[T: BaseModel](
         file_path = Path(file_path)
         if not file_path.exists():
             self.create_file(file_path, attribute_type, attribute)
-        yaml_path = file_path / "FrontMatter.yaml"
+        # 显式传入 attribute 时先就地赋值，不要去读 FrontMatter.yaml：
+        # 一来省掉一次磁盘读取，二来 super().__init__() 内部的 reload() 需要
+        # 用 type(self.attribute) 确定解析目标，此处是它唯一的类型锚点。
         if attribute is not None:
             self.attribute = attribute
-        elif yaml_path.exists():
-            yaml_data = yaml_path.read_text(encoding="utf-8")
-            self.attribute = (
-                parse_yaml_raw_as(attribute_type, yaml_data)
-                if yaml_data.strip()
-                else attribute_type()
-            )
         else:
-            self.attribute = attribute_type()
+            self.attribute = self._load_attribute(attribute_type, file_path)
         super().__init__(
             file_path=file_path,
             auto_correct=auto_correct,
             markdown_text_node=markdown_text_node,
         )
+        # reload() 会用 FrontMatter.yaml 覆盖 attribute，因此显式传入的值
+        # 必须在 super().__init__() 之后再放回去一次。
         if attribute is not None:
             self.attribute = attribute
+
+    def _load_attribute(self, attribute_type: type[T], folder: Path) -> T:
+        """从 FrontMatter.yaml 读取属性；文件缺失或为空则用默认值"""
+        yaml_path = folder / "FrontMatter.yaml"
+        if not yaml_path.exists():
+            return attribute_type()
+        yaml_data = yaml_path.read_text(encoding="utf-8")
+        return AttributedMarkdownTextFileNode._parse_attribute(
+            attribute_type, yaml_data, yaml_path
+        )
 
     @override
     def save_to_file(self, file_path: Path):
@@ -72,13 +80,9 @@ class AttributedMarkdownFolderNode[T: BaseModel](
 
     @override
     def reload(self, auto_correct: bool | None = None):
-        yaml_path = Path(self.file_path) / "FrontMatter.yaml"
-        if yaml_path.exists():
-            yaml_data = yaml_path.read_text(encoding="utf-8")
-            self.attribute = (
-                parse_yaml_raw_as(type(self.attribute), yaml_data)
-                if yaml_data.strip()
-                else type(self.attribute)()
+        if (self.file_path / "FrontMatter.yaml").exists():
+            self.attribute = self._load_attribute(
+                type(self.attribute), Path(self.file_path)
             )
         super().reload(auto_correct=auto_correct)
 

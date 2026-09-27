@@ -4,7 +4,10 @@ from pydantic import BaseModel
 from dl909markdowntree import (
     AttributedMarkdownTextFileNode,
     FoldableMarkdownTitleNode,
+    InvalidFrontMatterError,
     InvalidNumberedTitleLineError,
+    MarkdownFileError,
+    MarkdownTreeError,
 )
 
 
@@ -503,3 +506,89 @@ def test_attributed_markdown_folder_node_missing_frontmatter_fallback(tmp_path):
     )
     assert isinstance(node.attribute, _TestAttribute)
     assert node.attribute.author == "default_author"
+
+
+def test_attributed_node_declares_markdown_text_node_type(tmp_path):
+    """本类不经 MarkdownTextFileNode，必须自己声明 markdown_text_node_type"""
+    doc_path = tmp_path / "doc.md"
+    node = AttributedMarkdownTextFileNode(doc_path, attribute_type=_TestAttribute)
+
+    assert node.markdown_text_node_type is FoldableMarkdownTitleNode
+
+
+def test_frontmatter_without_trailing_newline_is_accepted(tmp_path):
+    """以 '---' 结尾、无尾换行的合法 FrontMatter 不应被判为缺结束标记"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("---\nauthor: alice\n---", encoding="utf-8")
+
+    node = AttributedMarkdownTextFileNode(doc_path, attribute_type=_TestAttribute)
+
+    assert node.attribute.author == "alice"
+    assert node.get_text() == ""
+
+
+def test_frontmatter_only_file_is_accepted(tmp_path):
+    """只有 FrontMatter、没有正文的文件应能解析"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("---\n---\n", encoding="utf-8")
+
+    node = AttributedMarkdownTextFileNode(doc_path, attribute_type=_TestAttribute)
+
+    assert node.get_text() == ""
+
+
+def test_missing_frontmatter_raises_invalid_front_matter_error(tmp_path):
+    """缺 FrontMatter 起始标记应抛 InvalidFrontMatterError（属 MarkdownTreeError）"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# no frontmatter\n", encoding="utf-8")
+
+    with pytest.raises(InvalidFrontMatterError):
+        AttributedMarkdownTextFileNode(doc_path, attribute_type=_TestAttribute)
+
+
+def test_unterminated_frontmatter_raises_invalid_front_matter_error(tmp_path):
+    """有起始无结束的 FrontMatter 应抛 InvalidFrontMatterError"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("---\nauthor: alice\n", encoding="utf-8")
+
+    with pytest.raises(InvalidFrontMatterError):
+        AttributedMarkdownTextFileNode(doc_path, attribute_type=_TestAttribute)
+
+
+def test_corrupt_frontmatter_yaml_raises_markdown_tree_error(tmp_path):
+    """YAML 语法错误应收敛为 MarkdownTreeError，而不是漏出 pydantic_yaml.ParserError"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("---\nauthor: [unclosed\n---\n# T\n", encoding="utf-8")
+
+    with pytest.raises(InvalidFrontMatterError) as excinfo:
+        AttributedMarkdownTextFileNode(doc_path, attribute_type=_TestAttribute)
+
+    assert isinstance(excinfo.value, MarkdownTreeError)
+
+
+def test_frontmatter_field_type_mismatch_raises_markdown_tree_error(tmp_path):
+    """字段类型不符应收敛为 MarkdownTreeError，而不是漏出 ValidationError"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("---\ntags: not-a-list\n---\n# T\n", encoding="utf-8")
+
+    with pytest.raises(MarkdownTreeError):
+        AttributedMarkdownTextFileNode(doc_path, attribute_type=_TestAttribute)
+
+
+def test_non_utf8_file_raises_markdown_file_error(tmp_path):
+    """非 UTF-8 内容应抛 MarkdownFileError（属 MarkdownTreeError）"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_bytes(b"---\nauthor: \xff\xfe\n---\n")
+
+    with pytest.raises(MarkdownFileError):
+        AttributedMarkdownTextFileNode(doc_path, attribute_type=_TestAttribute)
+
+
+def test_corrupt_frontmatter_on_reload_raises_markdown_tree_error(tmp_path):
+    """reload 路径同样应把解析错误收敛为 MarkdownTreeError"""
+    doc_path = tmp_path / "doc.md"
+    node = AttributedMarkdownTextFileNode(doc_path, attribute_type=_TestAttribute)
+    doc_path.write_text("---\nauthor: [unclosed\n---\n# T\n", encoding="utf-8")
+
+    with pytest.raises(MarkdownTreeError):
+        node.reload()

@@ -2,11 +2,13 @@ from .attributed_markdown_folder_nodes import AttributedMarkdownFolderNode
 from .attributed_markdown_nodes import AttributedMarkdownTextFileNode
 from .exceptions import (
     IncorrectNumberError,
+    InvalidFrontMatterError,
     InvalidMarkdownLineError,
     InvalidMdpFilenameError,
     InvalidNodeOperationError,
     InvalidNumberedTitleLineError,
     InvalidTitleLevelError,
+    MarkdownFileError,
     MarkdownTreeError,
     UnclosedCodeBlockError,
 )
@@ -54,11 +56,13 @@ __all__ = [
     "FoldableMarkdownTitleBase",
     "FoldableMarkdownTitleNode",
     "IncorrectNumberError",
+    "InvalidFrontMatterError",
     "InvalidMarkdownLineError",
     "InvalidMdpFilenameError",
     "InvalidNodeOperationError",
     "InvalidNumberedTitleLineError",
     "InvalidTitleLevelError",
+    "MarkdownFileError",
     "MarkdownTextFileBase",
     "MarkdownTextFileNode",
     "MarkdownTitleBase",

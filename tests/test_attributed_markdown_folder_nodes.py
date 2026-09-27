@@ -2,11 +2,14 @@
 
 from pathlib import Path
 
+import pytest
 from pydantic import BaseModel
 
 from dl909markdowntree import (
     AttributedMarkdownFolderNode,
     FoldableMarkdownTitleNode,
+    InvalidFrontMatterError,
+    MarkdownTreeError,
 )
 
 
@@ -208,3 +211,28 @@ def test_attributed_folder_node_initializes_children(tmp_path):
 
     assert node.children == []
     assert node.update() is node
+
+
+def test_corrupt_frontmatter_yaml_raises_markdown_tree_error(tmp_path):
+    """FrontMatter.yaml 损坏应收敛为 MarkdownTreeError，而不是漏出 ParserError"""
+    folder = tmp_path / "book.mdf"
+    node = AttributedMarkdownFolderNode(folder, attribute_type=_ChapterMeta)
+    (folder / "FrontMatter.yaml").write_text("author: [unclosed\n", encoding="utf-8")
+
+    with pytest.raises(InvalidFrontMatterError):
+        node.reload()
+
+    with pytest.raises(MarkdownTreeError):
+        AttributedMarkdownFolderNode(folder, attribute_type=_ChapterMeta)
+
+
+def test_folder_frontmatter_field_mismatch_raises_markdown_tree_error(tmp_path):
+    """字段类型不符同样收敛为 MarkdownTreeError"""
+    folder = tmp_path / "book.mdf"
+    node = AttributedMarkdownFolderNode(folder, attribute_type=_ChapterMeta)
+    (folder / "FrontMatter.yaml").write_text(
+        "word_count: not-an-int\n", encoding="utf-8"
+    )
+
+    with pytest.raises(MarkdownTreeError):
+        node.reload()
