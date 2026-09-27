@@ -60,9 +60,12 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitle
         return text
 
     @override
-    def add_text(self, text: str) -> None:
+    def add_text(self, text: str, ensure_new_line: bool = True) -> None:
         """基于完整文本追加，避免把折叠视图与折叠标记写回节点"""
-        self.set_text(self.get_text(full_text=True) + "\n" + text)
+        current_text = self.get_text(full_text=True)
+        if ensure_new_line and current_text[-1] != "\n" and text[0] != "\n":
+            current_text += "\n"
+        self.set_text(current_text + text)
 
     def _collect_descendant_fold_states(
         self,
@@ -106,9 +109,11 @@ class FoldableMarkdownTitleNode(NumberedMarkdownTitleNode, FoldableMarkdownTitle
             self.parent.recursive_up_unfold()
 
     def unfold(self) -> str:
-        if self.parent is not None and isinstance(
-            self.parent, FoldableMarkdownTitleNode
-        ) and self.parent.fold_mode not in [FoldMode.SHOW_CHILD]:
+        if (
+            self.parent is not None
+            and isinstance(self.parent, FoldableMarkdownTitleNode)
+            and self.parent.fold_mode not in [FoldMode.SHOW_CHILD]
+        ):
             raise InvalidNodeOperationError("parent must be unfolded before unfold")
         self.fold_mode = FoldMode.SHOW_CHILD
         return self.get_text()
