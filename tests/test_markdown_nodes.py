@@ -157,7 +157,9 @@ def test_markdown_title_node_set_text_with_tilde_fence():
 ~~~
 More text"""
     title_node.set_text(text)
-    assert len([c for c in title_node.children if isinstance(c, MarkdownTitleNode)]) == 0
+    assert (
+        len([c for c in title_node.children if isinstance(c, MarkdownTitleNode)]) == 0
+    )
     assert "# not a title" in title_node.get_text()
     assert title_node.get_text().endswith("More text")
 
@@ -170,7 +172,9 @@ def test_markdown_title_node_tilde_fence_needs_matching_length_to_close():
 ~~~~
 After"""
     title_node.set_text(text)
-    assert len([c for c in title_node.children if isinstance(c, MarkdownTitleNode)]) == 0
+    assert (
+        len([c for c in title_node.children if isinstance(c, MarkdownTitleNode)]) == 0
+    )
     assert title_node.get_text().endswith("After")
 
 
@@ -444,6 +448,7 @@ def test_markdown_text_node_recursive_find_trailing_newline():
     found = test_text_node.recursive_find_title_node_by_name("## Subtitle\n")
     assert found is not None
     assert found.title == "Subtitle"
+
 
 def test_set_text_rebuilds_children_as_new_objects():
     title_node = MarkdownTitleNode(title="Root", level=1)

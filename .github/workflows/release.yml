@@ -16,8 +16,9 @@ jobs:
       - name: astral-sh/setup-uv
         uses: astral-sh/setup-uv@v9.0.0
       - run: uv sync --dev --all-extras
-      - run: uv run pytest -q
-      - run: uv run ruff check src/
+      - run: uv run pytest -q --cov=src/dl909markdowntree --cov-report=term-missing
+      - run: uv run ruff check src/ tests/
+      - run: uv run ruff format --check src/ tests/
       - run: uv run pyright src/
 
   publish:

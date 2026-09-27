@@ -42,7 +42,14 @@ def test_mcp_server_has_six_tools(tmp_path):
 
     tools = asyncio.run(list_tools())
     tool_names = {t.name for t in tools}
-    assert tool_names == {"read", "replace", "append", "unfold", "replace_lines", "rename_title"}
+    assert tool_names == {
+        "read",
+        "replace",
+        "append",
+        "unfold",
+        "replace_lines",
+        "rename_title",
+    }
 
 
 def test_mcp_read_tool_full_document(tmp_path):
@@ -78,7 +85,9 @@ def test_mcp_read_tool_full_document_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.READ_WRITE)]))
+    server = create_mcp_server(
+        node, checker=NodePermissionChecker([(title_node, Permission.READ_WRITE)])
+    )
 
     async def call():
         return await server.call_tool("read", {})
@@ -93,10 +102,13 @@ def test_mcp_replace_tool(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        await server.call_tool("replace", {
-            "target": "# Hello",
-            "replace_text": "# Goodbye\n\nFarewell.",
-        })
+        await server.call_tool(
+            "replace",
+            {
+                "target": "# Hello",
+                "replace_text": "# Goodbye\n\nFarewell.",
+            },
+        )
         return node.get_text()
 
     text = asyncio.run(call())
@@ -110,13 +122,18 @@ def test_mcp_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.DENY)]))
+    server = create_mcp_server(
+        node, checker=NodePermissionChecker([(title_node, Permission.DENY)])
+    )
 
     async def call():
-        return await server.call_tool("replace", {
-            "target": "# Hello",
-            "replace_text": "# Hacked",
-        })
+        return await server.call_tool(
+            "replace",
+            {
+                "target": "# Hello",
+                "replace_text": "# Hacked",
+            },
+        )
 
     with pytest.raises(ToolError, match="权限不足"):
         asyncio.run(call())
@@ -141,7 +158,9 @@ def test_mcp_read_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.DENY)]))
+    server = create_mcp_server(
+        node, checker=NodePermissionChecker([(title_node, Permission.DENY)])
+    )
 
     async def call():
         return await server.call_tool("read", {"target": "# Hello"})
@@ -158,10 +177,13 @@ def test_mcp_replace_tool_auto_saves(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("replace", {
-            "target": "# Hello",
-            "replace_text": "# Goodbye\n\nFarewell.",
-        })
+        return await server.call_tool(
+            "replace",
+            {
+                "target": "# Hello",
+                "replace_text": "# Goodbye\n\nFarewell.",
+            },
+        )
 
     asyncio.run(call())
     assert doc.read_text(encoding="utf-8") == "# Goodbye\n\nFarewell."
@@ -175,10 +197,13 @@ def test_mcp_append_tool_auto_saves(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("append", {
-            "target": "# Hello",
-            "append_text": "Appended.",
-        })
+        return await server.call_tool(
+            "append",
+            {
+                "target": "# Hello",
+                "append_text": "Appended.",
+            },
+        )
 
     asyncio.run(call())
     disk_text = doc.read_text(encoding="utf-8")
@@ -194,10 +219,13 @@ def test_mcp_rename_title_tool_auto_saves(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("rename_title", {
-            "target": "# Hello",
-            "new_title_name": "Hi",
-        })
+        return await server.call_tool(
+            "rename_title",
+            {
+                "target": "# Hello",
+                "new_title_name": "Hi",
+            },
+        )
 
     asyncio.run(call())
     assert "# Hi" in doc.read_text(encoding="utf-8")
@@ -209,10 +237,13 @@ def test_mcp_replace_tool_target_not_found(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("replace", {
-            "target": "# Nonexistent",
-            "replace_text": "# X",
-        })
+        return await server.call_tool(
+            "replace",
+            {
+                "target": "# Nonexistent",
+                "replace_text": "# X",
+            },
+        )
 
     result = asyncio.run(call())
     text = result.content[0].text
@@ -225,13 +256,18 @@ def test_mcp_replace_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.READ)]))
+    server = create_mcp_server(
+        node, checker=NodePermissionChecker([(title_node, Permission.READ)])
+    )
 
     async def call():
-        return await server.call_tool("replace", {
-            "target": "# Hello",
-            "replace_text": "# Hacked",
-        })
+        return await server.call_tool(
+            "replace",
+            {
+                "target": "# Hello",
+                "replace_text": "# Hacked",
+            },
+        )
 
     with pytest.raises(ToolError, match="权限不足"):
         asyncio.run(call())
@@ -243,10 +279,13 @@ def test_mcp_append_tool(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        await server.call_tool("append", {
-            "target": "# Hello",
-            "append_text": "Appended.",
-        })
+        await server.call_tool(
+            "append",
+            {
+                "target": "# Hello",
+                "append_text": "Appended.",
+            },
+        )
         return node.get_text()
 
     text = asyncio.run(call())
@@ -259,10 +298,13 @@ def test_mcp_append_tool_target_not_found(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("append", {
-            "target": "# Nonexistent",
-            "append_text": "X",
-        })
+        return await server.call_tool(
+            "append",
+            {
+                "target": "# Nonexistent",
+                "append_text": "X",
+            },
+        )
 
     result = asyncio.run(call())
     text = result.content[0].text
@@ -275,13 +317,18 @@ def test_mcp_append_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.READ)]))
+    server = create_mcp_server(
+        node, checker=NodePermissionChecker([(title_node, Permission.READ)])
+    )
 
     async def call():
-        return await server.call_tool("append", {
-            "target": "# Hello",
-            "append_text": "X",
-        })
+        return await server.call_tool(
+            "append",
+            {
+                "target": "# Hello",
+                "append_text": "X",
+            },
+        )
 
     with pytest.raises(ToolError, match="权限不足"):
         asyncio.run(call())
@@ -321,10 +368,13 @@ def test_mcp_replace_tool_rollback_on_save_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(node, "save", failing_save)
 
     async def call():
-        return await server.call_tool("replace", {
-            "target": "# Hello",
-            "replace_text": "# Changed\nnew content",
-        })
+        return await server.call_tool(
+            "replace",
+            {
+                "target": "# Hello",
+                "replace_text": "# Changed\nnew content",
+            },
+        )
 
     result = asyncio.run(call())
     assert "replace failed" in result.content[0].text
@@ -344,10 +394,13 @@ def test_mcp_append_tool_rollback_on_save_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(node, "save", failing_save)
 
     async def call():
-        return await server.call_tool("append", {
-            "target": "# Hello",
-            "append_text": "extra content",
-        })
+        return await server.call_tool(
+            "append",
+            {
+                "target": "# Hello",
+                "append_text": "extra content",
+            },
+        )
 
     result = asyncio.run(call())
     assert "append failed" in result.content[0].text
@@ -366,10 +419,13 @@ def test_mcp_rename_title_rollback_on_save_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(node, "save", failing_save)
 
     async def call():
-        return await server.call_tool("rename_title", {
-            "target": "# Hello",
-            "new_title_name": "Changed",
-        })
+        return await server.call_tool(
+            "rename_title",
+            {
+                "target": "# Hello",
+                "new_title_name": "Changed",
+            },
+        )
 
     result = asyncio.run(call())
     assert "rename_title failed" in result.content[0].text
@@ -408,9 +464,13 @@ def test_mcp_unfold_tool_persists_fold_state(tmp_path):
 
     folder = tmp_path / "folder"
     folder.mkdir()
-    (folder / "1_Parent.mdp").write_text("## 1.1. Child\nChild content.\n", encoding="utf-8")
+    (folder / "1_Parent.mdp").write_text(
+        "## 1.1. Child\nChild content.\n", encoding="utf-8"
+    )
     node = FoldableMarkdownFolderNode(folder)
-    parent_title = node.get_root_title().recursive_find_title_node_by_name("# 1. Parent")
+    parent_title = node.get_root_title().recursive_find_title_node_by_name(
+        "# 1. Parent"
+    )
     assert parent_title is not None
     parent_title.fold_mode = FoldMode.SHOW_CHILD
     child_title = parent_title.recursive_find_title_node_by_name("## 1.1. Child")
@@ -458,7 +518,9 @@ def test_mcp_unfold_tool_permission_denied(tmp_path):
     if parent_title is not None:
         parent_title.fold_mode = FoldMode.SHOW_CHILD
 
-    server = create_mcp_server(node, checker=NodePermissionChecker([(child_title, Permission.DENY)]))
+    server = create_mcp_server(
+        node, checker=NodePermissionChecker([(child_title, Permission.DENY)])
+    )
 
     async def call():
         return await server.call_tool("unfold", {"target": "## 1.1. Child"})
@@ -473,11 +535,14 @@ def test_mcp_replace_lines_tool_exact_match(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("replace_lines", {
-            "target": "# Hello",
-            "old_lines": "World content.",
-            "new_lines": "Replaced.",
-        })
+        return await server.call_tool(
+            "replace_lines",
+            {
+                "target": "# Hello",
+                "old_lines": "World content.",
+                "new_lines": "Replaced.",
+            },
+        )
 
     result = asyncio.run(call())
     text = result.content[0].text
@@ -490,11 +555,14 @@ def test_mcp_replace_lines_tool_fuzzy_match(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("replace_lines", {
-            "target": "# Hello",
-            "old_lines": "Wrld content.",
-            "new_lines": "Replaced.",
-        })
+        return await server.call_tool(
+            "replace_lines",
+            {
+                "target": "# Hello",
+                "old_lines": "Wrld content.",
+                "new_lines": "Replaced.",
+            },
+        )
 
     result = asyncio.run(call())
     text = result.content[0].text
@@ -508,11 +576,14 @@ def test_mcp_replace_lines_tool_multiple_matches(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("replace_lines", {
-            "target": "# Hello",
-            "old_lines": "Same.",
-            "new_lines": "X.",
-        })
+        return await server.call_tool(
+            "replace_lines",
+            {
+                "target": "# Hello",
+                "old_lines": "Same.",
+                "new_lines": "X.",
+            },
+        )
 
     result = asyncio.run(call())
     text = result.content[0].text
@@ -525,11 +596,14 @@ def test_mcp_replace_lines_tool_no_match(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("replace_lines", {
-            "target": "# Hello",
-            "old_lines": "zzzz_not_there",
-            "new_lines": "X.",
-        })
+        return await server.call_tool(
+            "replace_lines",
+            {
+                "target": "# Hello",
+                "old_lines": "zzzz_not_there",
+                "new_lines": "X.",
+            },
+        )
 
     result = asyncio.run(call())
     text = result.content[0].text
@@ -542,11 +616,14 @@ def test_mcp_replace_lines_tool_empty_old_lines(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("replace_lines", {
-            "target": "# Hello",
-            "old_lines": "",
-            "new_lines": "X.",
-        })
+        return await server.call_tool(
+            "replace_lines",
+            {
+                "target": "# Hello",
+                "old_lines": "",
+                "new_lines": "X.",
+            },
+        )
 
     result = asyncio.run(call())
     text = result.content[0].text
@@ -559,14 +636,19 @@ def test_mcp_replace_lines_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.DENY)]))
+    server = create_mcp_server(
+        node, checker=NodePermissionChecker([(title_node, Permission.DENY)])
+    )
 
     async def call():
-        return await server.call_tool("replace_lines", {
-            "target": "# Hello",
-            "old_lines": "World content.",
-            "new_lines": "X.",
-        })
+        return await server.call_tool(
+            "replace_lines",
+            {
+                "target": "# Hello",
+                "old_lines": "World content.",
+                "new_lines": "X.",
+            },
+        )
 
     with pytest.raises(ToolError, match="权限不足"):
         asyncio.run(call())
@@ -578,10 +660,13 @@ def test_mcp_rename_title_tool(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        await server.call_tool("rename_title", {
-            "target": "# Hello",
-            "new_title_name": "Hi",
-        })
+        await server.call_tool(
+            "rename_title",
+            {
+                "target": "# Hello",
+                "new_title_name": "Hi",
+            },
+        )
         return node.get_text()
 
     text = asyncio.run(call())
@@ -595,10 +680,13 @@ def test_mcp_rename_title_tool_target_not_found(tmp_path):
     server = create_mcp_server(node)
 
     async def call():
-        return await server.call_tool("rename_title", {
-            "target": "# Nonexistent",
-            "new_title_name": "X",
-        })
+        return await server.call_tool(
+            "rename_title",
+            {
+                "target": "# Nonexistent",
+                "new_title_name": "X",
+            },
+        )
 
     result = asyncio.run(call())
     text = result.content[0].text
@@ -611,13 +699,18 @@ def test_mcp_rename_title_tool_permission_denied(tmp_path):
     title_node = node.get_root_title().recursive_find_title_node_by_name("# Hello")
     assert title_node is not None
 
-    server = create_mcp_server(node, checker=NodePermissionChecker([(title_node, Permission.READ)]))
+    server = create_mcp_server(
+        node, checker=NodePermissionChecker([(title_node, Permission.READ)])
+    )
 
     async def call():
-        return await server.call_tool("rename_title", {
-            "target": "# Hello",
-            "new_title_name": "X",
-        })
+        return await server.call_tool(
+            "rename_title",
+            {
+                "target": "# Hello",
+                "new_title_name": "X",
+            },
+        )
 
     with pytest.raises(ToolError, match="权限不足"):
         asyncio.run(call())

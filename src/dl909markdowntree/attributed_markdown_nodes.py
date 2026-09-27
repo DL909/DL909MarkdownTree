@@ -108,8 +108,12 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
                 text=markdown_content, auto_correct=auto_correct
             )
         )
-        self.attribute = attribute if attribute else (
-            parse_yaml_raw_as(attribute_type, yaml_data)
-            if yaml_data.strip()
-            else attribute_type()
+        self.attribute = (
+            attribute
+            if attribute
+            else (
+                parse_yaml_raw_as(attribute_type, yaml_data)
+                if yaml_data.strip()
+                else attribute_type()
+            )
         )

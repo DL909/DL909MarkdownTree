@@ -1,4 +1,3 @@
-
 import pytest
 from pydantic import BaseModel
 
@@ -498,9 +497,7 @@ def test_attributed_markdown_folder_node_missing_frontmatter_fallback(tmp_path):
 
     folder_path = tmp_path / "attributed_folder"
     folder_path.mkdir(parents=True)
-    (folder_path / "1_Section.mdp").write_text(
-        "## 1.1. Sub\nContent", encoding="utf-8"
-    )
+    (folder_path / "1_Section.mdp").write_text("## 1.1. Sub\nContent", encoding="utf-8")
     node = AttributedMarkdownFolderNode[_TestAttribute](
         file_path=folder_path, attribute_type=_TestAttribute
     )

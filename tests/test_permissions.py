@@ -128,10 +128,12 @@ def test_find_effective_permission_deny_at_child_overrides_parent(tmp_path: Path
     assert parent_title is not None
     assert child_title is not None
 
-    checker = NodePermissionChecker([
-        (parent_title, Permission.READ_WRITE),
-        (child_title, Permission.DENY),
-    ])
+    checker = NodePermissionChecker(
+        [
+            (parent_title, Permission.READ_WRITE),
+            (child_title, Permission.DENY),
+        ]
+    )
     ok, _ = checker.check_permission(child_title, Permission.READ)
     assert ok is False
 
@@ -145,10 +147,12 @@ def test_find_effective_permission_deny_at_parent_overrides_child(tmp_path: Path
     assert parent_title is not None
     assert child_title is not None
 
-    checker = NodePermissionChecker([
-        (parent_title, Permission.DENY),
-        (child_title, Permission.READ_WRITE),
-    ])
+    checker = NodePermissionChecker(
+        [
+            (parent_title, Permission.DENY),
+            (child_title, Permission.READ_WRITE),
+        ]
+    )
     ok, _ = checker.check_permission(child_title, Permission.READ)
     assert ok is False
 
@@ -195,8 +199,12 @@ def test_check_permission_foldable_node_inherits_parent_permission(tmp_path: Pat
     doc = tmp_path / "doc.md"
     doc.write_text("# 1. Parent\n## 1.1. Child\n\nContent.\n", encoding="utf-8")
     node = FoldableMarkdownTextFileNode(doc)
-    parent_title = node.get_root_title().recursive_find_title_node_by_name("# 1. Parent")
-    child_title = node.get_root_title().recursive_find_title_node_by_name("## 1.1. Child")
+    parent_title = node.get_root_title().recursive_find_title_node_by_name(
+        "# 1. Parent"
+    )
+    child_title = node.get_root_title().recursive_find_title_node_by_name(
+        "## 1.1. Child"
+    )
     assert parent_title is not None
     assert child_title is not None
 
@@ -234,10 +242,12 @@ def test_path_checker_node_registration_deny_overrides(tmp_path: Path):
     assert parent_title is not None
     assert child_title is not None
 
-    checker = TitlePathPermissionChecker([
-        (parent_title, Permission.READ_WRITE),
-        (child_title, Permission.DENY),
-    ])
+    checker = TitlePathPermissionChecker(
+        [
+            (parent_title, Permission.READ_WRITE),
+            (child_title, Permission.DENY),
+        ]
+    )
     ok, _ = checker.check_permission(child_title, Permission.READ)
     assert ok is False
 
@@ -249,10 +259,12 @@ def test_path_checker_explicit_path_registration(tmp_path: Path):
     child_title = node.get_root_title().recursive_find_title_node_by_name("## Child")
     assert child_title is not None
 
-    checker = TitlePathPermissionChecker([
-        (("# Parent",), Permission.READ),
-        (("# Parent", "## Child"), Permission.READ_WRITE),
-    ])
+    checker = TitlePathPermissionChecker(
+        [
+            (("# Parent",), Permission.READ),
+            (("# Parent", "## Child"), Permission.READ_WRITE),
+        ]
+    )
     ok, _ = checker.check_permission(child_title, Permission.READ_WRITE)
     assert ok is True
 
@@ -318,7 +330,9 @@ def test_path_checker_survives_reload(tmp_path: Path):
     checker = TitlePathPermissionChecker([(child_title, Permission.READ)])
 
     node.reload()
-    new_child_title = node.get_root_title().recursive_find_title_node_by_name("## Child")
+    new_child_title = node.get_root_title().recursive_find_title_node_by_name(
+        "## Child"
+    )
     assert new_child_title is not None
     assert new_child_title is not child_title
 
@@ -333,12 +347,16 @@ def test_path_checker_explicit_path_survives_reload(tmp_path: Path):
     doc = tmp_path / "doc.md"
     doc.write_text("# Parent\n## Child\n\nContent.\n", encoding="utf-8")
     node = MarkdownTextFileNode(doc)
-    checker = TitlePathPermissionChecker([
-        (("# Parent", "## Child"), Permission.READ),
-    ])
+    checker = TitlePathPermissionChecker(
+        [
+            (("# Parent", "## Child"), Permission.READ),
+        ]
+    )
 
     node.reload()
-    new_child_title = node.get_root_title().recursive_find_title_node_by_name("## Child")
+    new_child_title = node.get_root_title().recursive_find_title_node_by_name(
+        "## Child"
+    )
     assert new_child_title is not None
     ok, _ = checker.check_permission(new_child_title, Permission.READ)
     assert ok is True
@@ -351,9 +369,11 @@ def test_path_checker_deny_at_parent_overrides_child(tmp_path: Path):
     child_title = node.get_root_title().recursive_find_title_node_by_name("## Child")
     assert child_title is not None
 
-    checker = TitlePathPermissionChecker([
-        (("# Parent",), Permission.DENY),
-        (("# Parent", "## Child"), Permission.READ_WRITE),
-    ])
+    checker = TitlePathPermissionChecker(
+        [
+            (("# Parent",), Permission.DENY),
+            (("# Parent", "## Child"), Permission.READ_WRITE),
+        ]
+    )
     ok, _ = checker.check_permission(child_title, Permission.READ)
     assert ok is False

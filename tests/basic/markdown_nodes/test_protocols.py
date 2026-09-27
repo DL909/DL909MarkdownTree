@@ -105,9 +105,7 @@ def test_foldable_folder_node_satisfies_foldable_protocol(tmp_path: Path):
 def test_attributed_folder_node_satisfies_attributed_protocol(tmp_path: Path):
     path = tmp_path / "test.mdf"
     path.mkdir()
-    (path / "FrontMatter.yaml").write_text(
-        'author: test_author\nversion: "3.0"\n'
-    )
+    (path / "FrontMatter.yaml").write_text('author: test_author\nversion: "3.0"\n')
     (path / "1_Chapter.mdp").write_text("## 1.1. Section\nContent")
     node = AttributedMarkdownFolderNode[_TestAttribute](
         file_path=path, attribute_type=_TestAttribute
@@ -200,9 +198,7 @@ def test_polymorphic_attributed_protocol_with_file(tmp_path: Path):
 def test_polymorphic_attributed_protocol_with_folder(tmp_path: Path):
     path = tmp_path / "test.mdf"
     path.mkdir()
-    (path / "FrontMatter.yaml").write_text(
-        'author: bob\nversion: "2.0"\n'
-    )
+    (path / "FrontMatter.yaml").write_text('author: bob\nversion: "2.0"\n')
     (path / "1_Chapter.mdp").write_text("## 1.1. Section\nContent")
     node = AttributedMarkdownFolderNode[_TestAttribute](
         file_path=path, attribute_type=_TestAttribute
@@ -226,9 +222,7 @@ def test_markdown_protocol_returns_markdown_title(tmp_path: Path):
 def test_numbered_protocol_returns_numbered_title(tmp_path: Path):
     path = tmp_path / "test.md"
     path.write_text("# 1. Title\n## 1.1. Sub\nContent")
-    node: NumberedMarkdownTextFileBase = NumberedMarkdownTextFileNode(
-        file_path=path
-    )
+    node: NumberedMarkdownTextFileBase = NumberedMarkdownTextFileNode(file_path=path)
     found = node.get_root_title().recursive_find_title_node_by_name("## 1.1. Sub")
     assert found is not None
     assert found.number == [1, 1]
@@ -237,9 +231,7 @@ def test_numbered_protocol_returns_numbered_title(tmp_path: Path):
 def test_foldable_protocol_returns_foldable_title(tmp_path: Path):
     path = tmp_path / "test.md"
     path.write_text("# 1. Title\n## 1.1. Sub\nContent")
-    node: FoldableMarkdownTextFileBase = FoldableMarkdownTextFileNode(
-        file_path=path
-    )
+    node: FoldableMarkdownTextFileBase = FoldableMarkdownTextFileNode(file_path=path)
     found = node.get_root_title().recursive_find_title_node_by_name("## 1.1. Sub")
     assert found is not None
     assert hasattr(found, "fold_mode")

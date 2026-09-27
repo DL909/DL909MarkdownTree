@@ -190,4 +190,3 @@ def rename_title_tool(
     except _TOOL_OPERATION_ERRORS as e:
         node.title = old_title
         return f"rename_title failed: {e}"
-

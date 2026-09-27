@@ -50,9 +50,7 @@ def test_numbered_markdown_folder_node_reload_with_preamble(tmp_path):
     (folder / "0.mdp").write_text(
         "Preamble paragraph\n\nMore preamble", encoding="utf-8"
     )
-    (folder / "1_Chapter.mdp").write_text(
-        "## 1.1. Section\nContent", encoding="utf-8"
-    )
+    (folder / "1_Chapter.mdp").write_text("## 1.1. Section\nContent", encoding="utf-8")
     node = NumberedMarkdownFolderNode(file_path=Path(folder))
     assert isinstance(node.markdown_text_node.children[0], PlainTextNode)
     assert "Preamble paragraph" in node.markdown_text_node.children[0].get_text()
@@ -199,9 +197,7 @@ def test_numbered_markdown_folder_node_reload_after_modification(tmp_path):
     """测试 reload：重新加载反映外部文件变化"""
     folder = tmp_path / "test.mdf"
     folder.mkdir()
-    (folder / "1_Intro.mdp").write_text(
-        "## 1.1. Opening\nContent", encoding="utf-8"
-    )
+    (folder / "1_Intro.mdp").write_text("## 1.1. Opening\nContent", encoding="utf-8")
     node = NumberedMarkdownFolderNode(file_path=Path(folder))
     assert isinstance(node.markdown_text_node.children[0], NumberedMarkdownTitleNode)
     assert node.markdown_text_node.children[0].title == "Intro"

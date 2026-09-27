@@ -320,7 +320,9 @@ def test_toolkit_append_permission_denied(tmp_path):
 def test_toolkit_unfold_permission_denied(tmp_path):
     (tmp_path / "fold.md").write_text("# 1. Parent\n## 1.1. Child\nChild content.\n")
     node = FoldableMarkdownTextFileNode(tmp_path / "fold.md")
-    child_title = node.get_root_title().recursive_find_title_node_by_name("## 1.1. Child")
+    child_title = node.get_root_title().recursive_find_title_node_by_name(
+        "## 1.1. Child"
+    )
     assert child_title is not None
     child_title.fold_mode = FoldMode.SHOW_TITLE
 

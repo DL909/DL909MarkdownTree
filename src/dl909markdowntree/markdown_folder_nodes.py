@@ -101,7 +101,9 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         synthetic_text = self._build_synthetic_text_from_dir(self.file_path)
         self.markdown_text_node = self._create_text_node(
             synthetic_text,
-            auto_correct if auto_correct is not None else self.markdown_text_node.auto_correct,
+            auto_correct
+            if auto_correct is not None
+            else self.markdown_text_node.auto_correct,
         )
 
     @override
@@ -177,9 +179,7 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         for N, files in existing_files.items():
             if N not in new_numbers:
                 continue
-            target_name = (
-                f"{N}_{_sanitize_mdp_title(sections_by_N[N][0])}.mdp"
-            )
+            target_name = f"{N}_{_sanitize_mdp_title(sections_by_N[N][0])}.mdp"
             target_path = file_path / target_name
             for _, path in files:
                 if path != target_path and path.exists():

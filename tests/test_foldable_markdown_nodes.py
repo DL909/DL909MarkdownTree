@@ -1,4 +1,3 @@
-
 import pytest
 
 from dl909markdowntree import (
@@ -167,7 +166,9 @@ def test_foldable_markdown_title_node_unfold_by_depth():
     title_node.set_text("## 1.1. Level1\n### 1.1.1. Level2\n#### 1.1.1.1. Level3")
     title_node.unfold_by_depth(2)
     text = title_node.get_text()
-    assert text == "# 1. Root\n## 1.1. Level1\n### 1.1.1. Level2 [1 child title folded]\n"
+    assert (
+        text == "# 1. Root\n## 1.1. Level1\n### 1.1.1. Level2 [1 child title folded]\n"
+    )
 
 
 def test_foldable_markdown_title_node_unfold_by_depth_zero_is_noop():

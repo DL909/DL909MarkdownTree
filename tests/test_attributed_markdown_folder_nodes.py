@@ -42,7 +42,9 @@ def test_attributed_markdown_folder_node_default_attributes(tmp_path):
     """测试默认属性值"""
     folder = tmp_path / "test.mdf"
     folder.mkdir()
-    (folder / "FrontMatter.yaml").write_text("author: custom_author\n", encoding="utf-8")
+    (folder / "FrontMatter.yaml").write_text(
+        "author: custom_author\n", encoding="utf-8"
+    )
     (folder / "1_Chapter.mdp").write_text("## 1.1. Content", encoding="utf-8")
     node = AttributedMarkdownFolderNode[_ChapterMeta](
         file_path=Path(folder), attribute_type=_ChapterMeta
@@ -162,9 +164,7 @@ def test_attributed_markdown_folder_node_with_preamble(tmp_path):
     (folder / "FrontMatter.yaml").write_text(
         "author: test\nstatus: draft\nword_count: 0\n", encoding="utf-8"
     )
-    (folder / "0.mdp").write_text(
-        "Preamble text before sections", encoding="utf-8"
-    )
+    (folder / "0.mdp").write_text("Preamble text before sections", encoding="utf-8")
     (folder / "1_Chapter.mdp").write_text("## 1.1. Section\nContent", encoding="utf-8")
     node = AttributedMarkdownFolderNode[_ChapterMeta](
         file_path=Path(folder), attribute_type=_ChapterMeta

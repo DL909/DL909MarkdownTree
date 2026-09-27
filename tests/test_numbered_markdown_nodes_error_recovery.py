@@ -12,9 +12,7 @@ from dl909markdowntree import (
 
 def test_numbered_title_node_set_text_invalid_level_recovers_content():
     """测试编号标题节点设置文本因标题级别过低失败时，恢复原有内容"""
-    title_node = NumberedMarkdownTitleNode(
-        title="Root", level=2, number=[1]
-    )
+    title_node = NumberedMarkdownTitleNode(title="Root", level=2, number=[1])
     title_node.set_text("Original content")
     original_text = title_node.get_text()
     original_children_count = len(title_node.children)
@@ -73,9 +71,7 @@ Content
 
 def test_numbered_title_node_set_text_empty_title_recovers_content():
     """测试编号标题节点设置空标题失败时恢复原有内容"""
-    title_node = NumberedMarkdownTitleNode(
-        title="Root", level=1, number=[1]
-    )
+    title_node = NumberedMarkdownTitleNode(title="Root", level=1, number=[1])
     title_node.set_text("Original content")
     original_text = title_node.get_text()
 

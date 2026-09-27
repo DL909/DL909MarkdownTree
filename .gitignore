@@ -12,6 +12,7 @@ wheels/
 # Caches / tooling
 .pytest_cache/
 .ruff_cache/
+.dsh-meow/
 
 # Coverage
 .coverage

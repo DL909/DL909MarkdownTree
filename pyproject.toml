@@ -24,6 +24,16 @@ packages = ["src/dl909markdowntree"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 
+# pyright does not infer pythonVersion from requires-python; without this it
+# falls back to an old default and flags PEP 695 generics and typing.Self /
+# typing.override as errors on every run.
+[tool.pyright]
+pythonVersion = "3.12"
+include = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+
 [project.optional-dependencies]
 mcp = ["fastmcp>=0.4.0"]
 langchain = ["langchain-core>=0.3.0"]
