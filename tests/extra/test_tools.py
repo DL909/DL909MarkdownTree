@@ -1,5 +1,7 @@
 """Tests for dl909markdowntree.extra.tools"""
 
+import unittest.mock
+
 import pytest
 
 from dl909markdowntree import (
@@ -236,3 +238,73 @@ def test_rename_title_accepts_normal_title(tmp_path):
 
     assert rename_title_tool(doc, None, "# 1. A", "Renamed") == "rename_title succeeded"
     assert doc_path.read_text(encoding="utf-8") == "# 1. Renamed\nbody A\n"
+
+
+def test_replace_lines_fuzzy_replaces_at_the_matched_line_not_the_first(tmp_path):
+    """模糊匹配只应改写命中的那一行，其余内容保持不变"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nrepeat me\nrepeat me\nrepeat me\n", encoding="utf-8")
+    doc = FoldableMarkdownTextFileNode(doc_path)
+
+    result = replace_lines_tool(doc, None, "# 1. A", "repat me", "FIXED\n")
+
+    assert "fuzzy match" in result
+    written = doc_path.read_text(encoding="utf-8")
+    assert written.count("repeat me") == 2
+    assert written.count("FIXED") == 1
+
+
+def test_replace_lines_fuzzy_preserves_surrounding_lines(tmp_path):
+    """模糊替换不得吞掉匹配窗口之外的内容"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nalpha\nbravo\ncharlie\ndelta\n", encoding="utf-8")
+    doc = FoldableMarkdownTextFileNode(doc_path)
+
+    # 故意与正文不完全一致，确保走模糊匹配分支
+    result = replace_lines_tool(
+        doc, None, "# 1. A", "bravoo\ncharlle", "BRAVO\nCHARLIE\n"
+    )
+
+    assert "fuzzy match" in result
+    written = doc_path.read_text(encoding="utf-8")
+    assert "alpha" in written
+    assert "delta" in written
+    assert "BRAVO" in written
+    assert "bravo" not in written
+
+
+def test_replace_lines_empty_old_lines_reports_real_reason(tmp_path):
+    """空 old_lines 应报出真实原因，而不是与"多处匹配"混淆的错误"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody A\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+
+    result = replace_lines_tool(doc, None, "# 1. A", "", "INSERTED")
+
+    assert result == "replace_lines failed: old_lines is empty"
+    assert "INSERTED" not in doc.get_text()
+
+
+def test_tool_rollback_failure_is_logged_not_raised(tmp_path, caplog):
+    """回滚自身抛错也不得穿透工具函数，应记录日志并返回原始失败信息"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody A\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    title_type = type(doc.get_root_title())
+    calls = {"n": 0}
+
+    def flaky_set_text(self, text):
+        calls["n"] += 1
+        raise RuntimeError(
+            "boom during set_text" if calls["n"] == 1 else "boom during rollback"
+        )
+
+    with (
+        caplog.at_level("ERROR"),
+        unittest.mock.patch.object(title_type, "set_text", flaky_set_text),
+    ):
+        result = replace_tool(doc, None, "# 1. A", "new body\n")
+
+    assert result == "replace failed: boom during set_text"
+    assert calls["n"] == 2  # 首次失败 + 回滚也失败
+    assert any("rollback also failed" in r.getMessage() for r in caplog.records)

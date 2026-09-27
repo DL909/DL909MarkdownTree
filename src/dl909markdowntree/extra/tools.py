@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+import logging
+from collections.abc import Callable
 from difflib import SequenceMatcher
 
 from ..exceptions import MarkdownTreeError
 from ..interface import AttributedMarkdownTextFileBase, FoldableMarkdownTitleBase
 from ..permissions import Permission, PermissionChecker
 
+logger = logging.getLogger(__name__)
+
 # set_text 解析失败（MarkdownTreeError）或保存失败（OSError / RuntimeError）时回滚内存修改
 _TOOL_OPERATION_ERRORS = (MarkdownTreeError, OSError, RuntimeError)
+
+# 模糊匹配的相似度下限
+_FUZZY_MATCH_THRESHOLD = 0.8
 
 
 def _find_title_node(markdown_node: AttributedMarkdownTextFileBase, target: str):
@@ -47,6 +54,36 @@ def _validate_title_text(text: str) -> str | None:
     return None
 
 
+def _commit(
+    markdown_node: AttributedMarkdownTextFileBase,
+    action: Callable[[], str],
+    restore: Callable[[], object],
+    failure_prefix: str,
+) -> str:
+    """执行 action() 修改节点并落盘，失败时回滚并返回错误信息
+
+    action 负责改动内存状态并返回成功时给调用方的字符串。回滚本身也必须
+    兜住：早先各工具里的 ``except: node.set_text(old_text)`` 是裸调，一旦
+    它自己再抛，异常会穿透工具函数，且此时节点已处于半改状态。
+    """
+    try:
+        result = action()
+        markdown_node.save()
+        return result
+    except _TOOL_OPERATION_ERRORS as e:
+        try:
+            restore()
+        except Exception as rollback_error:  # noqa: BLE001 - 回滚失败不能盖掉原始错误
+            logger.error(
+                "%s failed (%s) and rollback also failed (%s); "
+                "the node may be left in a modified state",
+                failure_prefix,
+                e,
+                rollback_error,
+            )
+        return f"{failure_prefix} failed: {e}"
+
+
 def read_tool(
     markdown_node: AttributedMarkdownTextFileBase,
     checker: PermissionChecker | None,
@@ -77,13 +114,12 @@ def replace_tool(
         return f"replace failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
     old_text = _get_full_text(node)
-    try:
-        node.set_text(replace_text)
-        markdown_node.save()
-        return "replace succeeded"
-    except _TOOL_OPERATION_ERRORS as e:
-        node.set_text(old_text)
-        return f"replace failed: {e}"
+    return _commit(
+        markdown_node,
+        lambda: node.set_text(replace_text) or "replace succeeded",
+        lambda: node.set_text(old_text),
+        "replace",
+    )
 
 
 def append_tool(
@@ -97,13 +133,12 @@ def append_tool(
         return f"append failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
     old_text = _get_full_text(node)
-    try:
+
+    def _append() -> str:
         node.add_text(append_text)
-        markdown_node.save()
         return "append succeeded"
-    except _TOOL_OPERATION_ERRORS as e:
-        node.set_text(old_text)
-        return f"append failed: {e}"
+
+    return _commit(markdown_node, _append, lambda: node.set_text(old_text), "append")
 
 
 def unfold_tool(
@@ -120,13 +155,12 @@ def unfold_tool(
     if not isinstance(node, FoldableMarkdownTitleBase):
         return f"unfold failed: node '{target}' is not foldable"
     old_mode = node.fold_mode
-    try:
-        text = node.unfold()
-        markdown_node.save()
-        return text
-    except _TOOL_OPERATION_ERRORS as e:
-        node.fold_mode = old_mode
-        return f"unfold failed: {e}"
+    return _commit(
+        markdown_node,
+        node.unfold,
+        lambda: setattr(node, "fold_mode", old_mode),
+        "unfold",
+    )
 
 
 def replace_lines_tool(
@@ -141,53 +175,55 @@ def replace_lines_tool(
         return f"replace_lines failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
 
+    # 必须先于精确匹配判断：非空文本里 "...".count("") 恒大于 1，
+    # 否则会落进下面的"多处匹配"分支，报出与真实原因无关的错误
+    if not old_lines:
+        return "replace_lines failed: old_lines is empty"
+
     current_text = _get_full_text(node)
     match_count = current_text.count(old_lines)
 
+    def restore() -> None:
+        node.set_text(current_text)
+
     if match_count == 0:
+        current_lines = current_text.splitlines(keepends=True)
+        old_count = len(old_lines.splitlines(keepends=True))
         best_ratio = 0.0
         best_start = -1
-        best_end = -1
-        current_lines = current_text.splitlines(keepends=True)
-        old_lines_list = old_lines.splitlines(keepends=True)
-        old_count = len(old_lines_list)
-
-        if old_count == 0:
-            return "replace_lines failed: old_lines is empty"
-
         for i in range(len(current_lines) - old_count + 1):
             candidate = "".join(current_lines[i : i + old_count])
             ratio = SequenceMatcher(None, old_lines, candidate).ratio()
             if ratio > best_ratio:
                 best_ratio = ratio
                 best_start = i
-                best_end = i + old_count
 
-        if best_ratio >= 0.8:
-            matched = "".join(current_lines[best_start:best_end])
-            old_text = _get_full_text(node)
-            try:
-                node.set_text(current_text.replace(matched, new_lines, 1))
-                markdown_node.save()
-                return "replace_lines succeeded (fuzzy match)"
-            except _TOOL_OPERATION_ERRORS as e:
-                node.set_text(old_text)
-                return f"replace_lines failed: {e}"
-        else:
+        if best_ratio < _FUZZY_MATCH_THRESHOLD:
             return "replace_lines failed: no match found (best similarity below 80%)"
-    elif match_count > 1:
+        best_end = best_start + old_count
+        # 按行号切片替换。早先用 current_text.replace(matched, new_lines, 1)，
+        # 替换的是首次出现的位置，而 best_start 是逐行扫描选出的最佳位置，
+        # 两者不一定一致——正文含重复行时会改错地方。
+        updated = "".join(
+            current_lines[:best_start] + [new_lines] + current_lines[best_end:]
+        )
+
+        def _fuzzy_replace() -> str:
+            node.set_text(updated)
+            return "replace_lines succeeded (fuzzy match)"
+
+        return _commit(markdown_node, _fuzzy_replace, restore, "replace_lines")
+
+    if match_count > 1:
         return (
             f"replace_lines failed: {match_count} matches found, provide more context"
         )
 
-    old_text = _get_full_text(node)
-    try:
+    def _exact_replace() -> str:
         node.set_text(current_text.replace(old_lines, new_lines, 1))
-        markdown_node.save()
         return "replace_lines succeeded"
-    except _TOOL_OPERATION_ERRORS as e:
-        node.set_text(old_text)
-        return f"replace_lines failed: {e}"
+
+    return _commit(markdown_node, _exact_replace, restore, "replace_lines")
 
 
 def rename_title_tool(
@@ -203,16 +239,19 @@ def rename_title_tool(
     if (reason := _validate_title_text(new_title_name)) is not None:
         return f"rename_title failed: {reason}"
     old_title = node.title
-    try:
+
+    def _rename() -> str:
         node.title = new_title_name
         if checker is not None:
             # 以标题路径为键的权限条目必须跟着改名重新解析，
             # 否则 DENY 会因路径失配而静默退化成祖先的放行。
             checker.on_node_renamed(node)
-        markdown_node.save()
         return "rename_title succeeded"
-    except _TOOL_OPERATION_ERRORS as e:
+
+    def _restore_title() -> None:
         node.title = old_title
         if checker is not None:
+            # 回滚同样要重绑，否则权限条目会停在一个已不存在的标题上
             checker.on_node_renamed(node)
-        return f"rename_title failed: {e}"
+
+    return _commit(markdown_node, _rename, _restore_title, "rename_title")

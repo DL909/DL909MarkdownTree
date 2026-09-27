@@ -627,7 +627,8 @@ def test_mcp_replace_lines_tool_empty_old_lines(tmp_path):
 
     result = asyncio.run(call())
     text = result.content[0].text
-    assert "matches found" in text
+    # 早先会落进"多处匹配"分支，报出与真实原因无关的 "N matches found"
+    assert "old_lines is empty" in text
 
 
 def test_mcp_replace_lines_tool_permission_denied(tmp_path):

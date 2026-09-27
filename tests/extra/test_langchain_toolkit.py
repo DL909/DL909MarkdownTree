@@ -244,6 +244,7 @@ def test_toolkit_replace_lines_tool_multiple_matches(tmp_path):
             "new_lines": "X.",
         }
     )
+    # 早先会落进"多处匹配"分支，报出 "N matches found" 这种与真实原因无关的错误
     assert "matches found" in result
 
 
@@ -276,7 +277,9 @@ def test_toolkit_replace_lines_tool_empty_old_lines(tmp_path):
             "new_lines": "X.",
         }
     )
-    assert "matches found" in result
+    # 早先会落进"多处匹配"分支，报出 "N matches found" 这种与真实原因无关的错误
+    # 早先会落进"多处匹配"分支，报出与真实原因无关的 "N matches found"
+    assert "old_lines is empty" in result
 
 
 def test_toolkit_rename_title_tool_run(tmp_path):
