@@ -33,6 +33,20 @@ def _check_permission_or_raise(
         raise PermissionError(msg)
 
 
+def _validate_title_text(text: str) -> str | None:
+    """校验待写入的标题文本，返回拒绝原因（None 表示通过）。
+
+    标题文本会被原样拼进 ``# <number> <title>`` 这一行。只要不含换行，
+    它就不可能凭空变成新的标题节点（行首多一个 ``#`` 只会让标题文本本身
+    以 ``#`` 开头，仍是同一个节点），所以这里只需挡掉换行与空标题。
+    """
+    if not text.strip():
+        return "new title is empty"
+    if "\n" in text or "\r" in text:
+        return "new title must not contain line breaks"
+    return None
+
+
 def read_tool(
     markdown_node: AttributedMarkdownTextFileBase,
     checker: PermissionChecker | None,
@@ -44,7 +58,9 @@ def read_tool(
         if node is None:
             return f"read failed: no title matching '{target}'"
         _check_permission_or_raise(checker, node, Permission.READ)
-        return node.get_text()
+        # 目标标题可能处于折叠态，必须取含折叠内容的完整文本，
+        # 否则读到的只是 "[text folded]" 之类的占位符而非正文。
+        return _get_full_text(node)
     root = markdown_node.get_root_title()
     _check_permission_or_raise(checker, root, Permission.READ)
     return markdown_node.get_text()
@@ -98,7 +114,9 @@ def unfold_tool(
     node = _find_title_node(markdown_node, target)
     if node is None:
         return f"unfold failed: no title matching '{target}'"
-    _check_permission_or_raise(checker, node, Permission.READ)
+    # unfold 会改写 fold_mode 并 save()，属于写操作；对文件夹节点还会落盘
+    # fold_state.json，因此必须要求 READ_WRITE 而不是 READ。
+    _check_permission_or_raise(checker, node, Permission.READ_WRITE)
     if not isinstance(node, FoldableMarkdownTitleBase):
         return f"unfold failed: node '{target}' is not foldable"
     old_mode = node.fold_mode
@@ -182,6 +200,8 @@ def rename_title_tool(
     if node is None:
         return f"rename_title failed: no title matching '{target}'"
     _check_permission_or_raise(checker, node, Permission.READ_WRITE)
+    if (reason := _validate_title_text(new_title_name)) is not None:
+        return f"rename_title failed: {reason}"
     old_title = node.title
     try:
         node.title = new_title_name

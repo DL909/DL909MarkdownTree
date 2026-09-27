@@ -89,7 +89,13 @@ class _RenameTitleArgs(BaseModel):
             "prefix is part of the title (e.g. '# 1. Hello')."
         ),
     )
-    new_title_name: str = Field(..., description="New title text (no level sign).")
+    new_title_name: str = Field(
+        ...,
+        description=(
+            "New title text. Must be non-empty and must not contain line breaks, "
+            "which would forge extra title nodes."
+        ),
+    )
 
 
 def _denied_message(exc: PermissionError) -> str:
@@ -161,7 +167,10 @@ class _MarkdownAppendTool(BaseTool):
 
 class _MarkdownUnfoldTool(BaseTool):
     name: str = "unfold"
-    description: str = "Unfold a foldable title and return its full content."
+    description: str = (
+        "Unfold a foldable title and return its full content. Persists the new "
+        "fold state, so it needs write permission."
+    )
     args_schema: ArgsSchema | None = _UnfoldArgs
 
     def __init__(

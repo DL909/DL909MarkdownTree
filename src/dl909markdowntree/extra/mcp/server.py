@@ -74,6 +74,8 @@ def create_mcp_server(
     def unfold(target: str) -> str:
         """Unfold a foldable title and return its full content.
 
+        Persists the new fold state, so it needs write permission.
+
         Args:
             target: Markdown title including level sign. For numbered (foldable) nodes the
                 number prefix is part of the title (e.g. '# 1. Hello').
@@ -99,7 +101,8 @@ def create_mcp_server(
         Args:
             target: Markdown title including level sign. For numbered (foldable) nodes the
                 number prefix is part of the title (e.g. '# 1. Hello').
-            new_title_name: New title text (no level sign or number prefix).
+            new_title_name: New title text. Must be non-empty and must not contain
+                line breaks, which would forge extra title nodes.
         """
         return rename_title_tool(markdown_node, checker, target, new_title_name)
 
