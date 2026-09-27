@@ -199,3 +199,12 @@ def test_attributed_markdown_folder_node_handles_empty_frontmatter(tmp_path):
     )
     assert node.attribute.author == "default_author"
     assert node.attribute.status == "draft"
+
+
+def test_attributed_folder_node_initializes_children(tmp_path):
+    """属性化文件夹节点同样必须初始化 children"""
+    folder = tmp_path / "book.mdf"
+    node = AttributedMarkdownFolderNode(folder, attribute_type=_ChapterMeta)
+
+    assert node.children == []
+    assert node.update() is node

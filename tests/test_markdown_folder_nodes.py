@@ -289,3 +289,23 @@ def test_numbered_markdown_folder_node_save_rename_over_existing(tmp_path):
     assert Path(folder / "1_b.mdp").exists()
     assert Path(folder / "2_b.mdp").exists()
     assert not Path(folder / "1_a.mdp").exists()
+
+
+def test_folder_node_initializes_children(tmp_path):
+    """文件夹节点必须走 FileNode.__init__，否则 children 属性缺失"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("body\n", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(folder)
+
+    assert node.children == []
+
+
+def test_folder_node_update_works(tmp_path):
+    """Node.update() 是基类公开 API，文件夹节点不得因缺 children 而崩溃"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("body\n", encoding="utf-8")
+    node = NumberedMarkdownFolderNode(folder)
+
+    assert node.update() is node

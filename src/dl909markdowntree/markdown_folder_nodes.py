@@ -35,7 +35,12 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
         markdown_text_node: NumberedMarkdownTitleNode | None = None,
     ):
         file_path = Path(file_path)
-        self.file_path = file_path
+        # 必须走 FileNode.__init__：它负责初始化 Node.children。早先这里直接
+        # 赋值 self.file_path 而跳过 super().__init__()，导致 children 属性缺失，
+        # node.children 与基类的 Node.update() 都会抛 AttributeError。
+        # 文件节点的 children 约定为空列表（内容挂在 markdown_text_node 上），
+        # 与 PlainTextFileNode 等保持一致。
+        super().__init__(file_path=file_path)
         self.auto_correct = auto_correct
         self.markdown_text_node = (
             markdown_text_node

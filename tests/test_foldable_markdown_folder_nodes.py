@@ -159,3 +159,14 @@ def test_foldable_markdown_folder_node_reload_unknown_fold_state(tmp_path):
     (folder / "fold_state.json").write_text('{"[1]": "NOT_A_MODE"}', encoding="utf-8")
     node = FoldableMarkdownFolderNode(file_path=Path(folder))
     assert node.markdown_text_node.children[0].fold_mode is FoldMode.SHOW_TITLE
+
+
+def test_foldable_folder_node_initializes_children(tmp_path):
+    """折叠文件夹节点同样必须初始化 children"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "1_A.mdp").write_text("body\n", encoding="utf-8")
+    node = FoldableMarkdownFolderNode(folder)
+
+    assert node.children == []
+    assert node.update() is node
