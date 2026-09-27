@@ -205,8 +205,14 @@ def rename_title_tool(
     old_title = node.title
     try:
         node.title = new_title_name
+        if checker is not None:
+            # 以标题路径为键的权限条目必须跟着改名重新解析，
+            # 否则 DENY 会因路径失配而静默退化成祖先的放行。
+            checker.on_node_renamed(node)
         markdown_node.save()
         return "rename_title succeeded"
     except _TOOL_OPERATION_ERRORS as e:
         node.title = old_title
+        if checker is not None:
+            checker.on_node_renamed(node)
         return f"rename_title failed: {e}"

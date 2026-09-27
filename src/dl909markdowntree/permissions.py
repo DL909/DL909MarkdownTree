@@ -20,6 +20,15 @@ from .interface import MarkdownTitleBase
 from .node import Node
 
 
+def _iter_subtree(node: Node):
+    """自底向上遍历节点自身及其全部后代"""
+    yield node
+    # getattr 兜底：用户自定义的 Node 子类可能没有调用 Node.__init__，
+    # 此时 children 属性缺失，不应让权限检查因此崩溃
+    for child in getattr(node, "children", []):
+        yield from _iter_subtree(child)
+
+
 class Permission(Enum):
     """权限级别枚举
 
@@ -47,6 +56,15 @@ class PermissionChecker[T](ABC):
     def _find_effective_permission(self, node: Node | None) -> Permission:
         """查找节点的有效权限（向上遍历继承）"""
         ...
+
+    def on_node_renamed(self, node: Node) -> None:
+        """节点标题被改写后的钩子。
+
+        以标题路径为键的检查器需要借此重新解析键，否则条目会因路径失配而
+        静默失效（见 TitlePathPermissionChecker）。以节点身份为键的实现
+        无需处理。直接绕过工具改写 node.title 时也需手动调用本方法。
+        """
+        return
 
     def check_permission(
         self,
@@ -161,6 +179,11 @@ class TitlePathPermissionChecker(PermissionChecker[tuple[str, ...] | None]):
     登记方式二选一：
     - 传入节点对象（含 None 表示根节点），登记时立即解析为标题路径
     - 直接传入标题路径元组（() 或 None 表示根节点），可在节点尚不存在时配置
+
+    注意：标题是路径键的一部分，改写标题会让已登记的条目失配并静默失效
+    （DENY 会退化成祖先的放行）。用节点对象登记的条目会在
+    :meth:`on_node_renamed` 时自动重新解析；直接传路径元组登记的条目
+    没有节点可供跟踪，改名后需调用 set_permissions 重新登记。
     """
 
     def __init__(
@@ -168,7 +191,10 @@ class TitlePathPermissionChecker(PermissionChecker[tuple[str, ...] | None]):
         permissions: Sequence[tuple[tuple[str, ...] | Node | None, Permission]]
         | None = None,
     ):
-        self._permissions: list[tuple[tuple[str, ...] | None, Permission]] = []
+        # 每项为 (标题路径键, 权限, 登记时的节点引用或 None)
+        self._permissions: list[
+            tuple[tuple[str, ...] | None, Permission, Node | None]
+        ] = []
         if permissions:
             self.set_permissions(permissions)
 
@@ -177,8 +203,24 @@ class TitlePathPermissionChecker(PermissionChecker[tuple[str, ...] | None]):
     ) -> None:
         """设置权限列表（节点对象立即解析为标题路径）"""
         self._permissions = [
-            (self._resolve_key(entry), perm) for entry, perm in permissions
+            (self._resolve_key(entry), perm, entry if isinstance(entry, Node) else None)
+            for entry, perm in permissions
         ]
+
+    def on_node_renamed(self, node: Node) -> None:
+        """标题改写后重新解析以该节点及其后代登记的条目，避免条目静默失配
+
+        改名会同时改变整棵子树的标题路径，因此只重绑节点本身不够：
+        受保护的后代会以旧祖先标题为键，失配后回落到祖先的放行。
+        """
+        affected = {id(n) for n in _iter_subtree(node)}
+        for index, (_path, perm, origin_node) in enumerate(self._permissions):
+            if origin_node is not None and id(origin_node) in affected:
+                self._permissions[index] = (
+                    self._node_to_path(origin_node),
+                    perm,
+                    origin_node,
+                )
 
     def _resolve_key(
         self, entry: tuple[str, ...] | Node | None
@@ -207,7 +249,7 @@ class TitlePathPermissionChecker(PermissionChecker[tuple[str, ...] | None]):
         nearest: Permission | None = None
         current_path: tuple[str, ...] | None = path
         while True:
-            for perm_path, perm in self._permissions:
+            for perm_path, perm, _origin in self._permissions:
                 if perm_path == current_path:
                     if perm is Permission.DENY:
                         return Permission.DENY

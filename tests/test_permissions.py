@@ -2,13 +2,17 @@
 
 from pathlib import Path
 
+import pytest
+
 from dl909markdowntree import (
     FoldableMarkdownTextFileNode,
     MarkdownTextFileNode,
     NodePermissionChecker,
+    NumberedMarkdownTextFileNode,
     Permission,
     TitlePathPermissionChecker,
 )
+from dl909markdowntree.extra.tools import rename_title_tool
 
 
 def _make_node(tmp_path: Path) -> MarkdownTextFileNode:
@@ -377,3 +381,120 @@ def test_path_checker_deny_at_parent_overrides_child(tmp_path: Path):
     )
     ok, _ = checker.check_permission(child_title, Permission.READ)
     assert ok is False
+
+
+def test_title_path_checker_survives_rename_via_tool(tmp_path):
+    """改名祖先后，受保护后代的 DENY 条目必须仍生效，不得退化成祖先的放行"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody\n\n## 1.1. Secret\nhidden\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    root = doc.get_root_title()
+    secret = root.recursive_find_title_node_by_name("## 1.1. Secret")
+    checker = TitlePathPermissionChecker(
+        [(secret, Permission.DENY), (root, Permission.READ_WRITE)]
+    )
+    assert checker.check_permission(secret, Permission.READ)[0] is False
+
+    # A 自身继承 root 的 READ_WRITE，因此改名是允许的
+    assert rename_title_tool(doc, checker, "# 1. A", "Renamed") == (
+        "rename_title succeeded"
+    )
+
+    ok, msg = checker.check_permission(secret, Permission.READ)
+    assert ok is False, f"后代 DENY 条目在祖先改名后失效: {msg}"
+
+
+def test_title_path_checker_rename_still_checks_permission(tmp_path):
+    """改名需要写权限：被 DENY 的节点不得被改名"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    root = doc.get_root_title()
+    a = root.recursive_find_title_node_by_name("# 1. A")
+    checker = TitlePathPermissionChecker(
+        [(a, Permission.DENY), (root, Permission.READ_WRITE)]
+    )
+
+    with pytest.raises(PermissionError):
+        rename_title_tool(doc, checker, "# 1. A", "A2")
+
+    assert doc_path.read_text(encoding="utf-8") == "# 1. A\nbody\n"
+
+
+def test_title_path_checker_rebinds_on_manual_title_change(tmp_path):
+    """绕过工具直接改 title 时，手动调用 on_node_renamed 也能重绑"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    root = doc.get_root_title()
+    a = root.recursive_find_title_node_by_name("# 1. A")
+    checker = TitlePathPermissionChecker(
+        [(a, Permission.DENY), (root, Permission.READ_WRITE)]
+    )
+
+    a.title = "Renamed"
+    checker.on_node_renamed(a)
+
+    assert checker.check_permission(a, Permission.READ)[0] is False
+
+
+def test_title_path_checker_rebinds_descendant_on_manual_change(tmp_path):
+    """直接改写祖先标题时，后代登记的条目也必须一并重绑"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody\n\n## 1.1. Secret\nhidden\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    root = doc.get_root_title()
+    a = root.recursive_find_title_node_by_name("# 1. A")
+    secret = root.recursive_find_title_node_by_name("## 1.1. Secret")
+    checker = TitlePathPermissionChecker(
+        [(secret, Permission.DENY), (root, Permission.READ_WRITE)]
+    )
+
+    a.title = "Renamed"
+    checker.on_node_renamed(a)
+
+    ok, msg = checker.check_permission(secret, Permission.READ)
+    assert ok is False, f"后代 DENY 条目在祖先改名后失效: {msg}"
+
+
+def test_title_path_checker_entries_registered_by_path_are_unaffected(tmp_path):
+    """直接传路径元组登记的条目不含节点引用，不应被 on_node_renamed 破坏"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    root = doc.get_root_title()
+    a = root.recursive_find_title_node_by_name("# 1. A")
+    checker = TitlePathPermissionChecker([(("# 1. A",), Permission.DENY)])
+
+    checker.on_node_renamed(a)
+
+    # 路径元组登记的条目不跟踪节点，改名后仍按原路径匹配
+    assert checker.check_permission(root, Permission.READ)[0] is False
+
+
+def test_title_path_checker_still_survives_reload(tmp_path):
+    """on_node_renamed 的引入不能破坏原有的 reload 后路径可解析能力"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    a = doc.get_root_title().recursive_find_title_node_by_name("# 1. A")
+    checker = TitlePathPermissionChecker([(a, Permission.DENY)])
+
+    doc.reload()
+    a2 = doc.get_root_title().recursive_find_title_node_by_name("# 1. A")
+
+    assert checker.check_permission(a2, Permission.READ)[0] is False
+
+
+def test_node_checker_on_node_renamed_is_noop(tmp_path):
+    """以身份为键的检查器无需处理改名"""
+    doc_path = tmp_path / "doc.md"
+    doc_path.write_text("# 1. A\nbody\n", encoding="utf-8")
+    doc = NumberedMarkdownTextFileNode(doc_path)
+    a = doc.get_root_title().recursive_find_title_node_by_name("# 1. A")
+    checker = NodePermissionChecker([(a, Permission.DENY)])
+
+    a.title = "Renamed"
+    checker.on_node_renamed(a)
+
+    assert checker.check_permission(a, Permission.READ)[0] is False
