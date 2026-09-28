@@ -27,7 +27,11 @@ class PlainTextFileNode(FileNode, TextNode):
 
     @override
     def save(self):
-        with open(self.file_path, "w", encoding="utf-8") as f:
+        self.save_to_file(self.file_path)
+
+    @override
+    def save_to_file(self, file_path: pathlib.Path) -> None:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(self.textNode.get_text())
 
     @override

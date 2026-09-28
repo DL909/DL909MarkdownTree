@@ -499,9 +499,9 @@ def test_numbered_markdown_folder_node_rejects_content_after_first_section(tmp_p
         node.save()
 
 
-def test_numbered_markdown_folder_node_get_markdown_text_node(tmp_path):
-    """get_markdown_text_node 与 get_root_title 应指向同一棵树"""
+def test_numbered_markdown_folder_node_root_title_is_held_tree(tmp_path):
+    """get_root_title 与持有的 markdown_text_node 应是同一棵树"""
     folder = tmp_path / "test.mdf"
     node = NumberedMarkdownFolderNode(file_path=folder)
 
-    assert node.get_markdown_text_node() is node.get_root_title()
+    assert node.get_root_title() is node.markdown_text_node

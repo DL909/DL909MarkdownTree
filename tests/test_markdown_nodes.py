@@ -560,5 +560,5 @@ def test_markdown_text_file_node_keeps_supplied_text_node(tmp_path):
     doc = MarkdownTextFileNode(doc_path, markdown_text_node=supplied)
 
     assert doc.get_root_title() is supplied
+    assert doc.markdown_text_node is supplied
     assert doc_path.read_text(encoding="utf-8") == "# Supplied\nbody\n"
-    assert doc.get_markdown_text_node() is supplied

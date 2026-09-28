@@ -246,10 +246,6 @@ class MarkdownTextFileNode(MarkdownTextFileBase):
     def set_text(self, text: str) -> None:
         self.markdown_text_node.set_text(text)
 
-    @override
-    def get_markdown_text_node(self) -> MarkdownTitleNode:
-        return self.markdown_text_node
-
     def save_to_file(self, file_path: Path) -> None:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(self.get_text())

@@ -252,7 +252,3 @@ class NumberedMarkdownFolderNode(NumberedMarkdownTextFileBase):
     @override
     def get_root_title(self) -> NumberedMarkdownTitleBase:
         return self.markdown_text_node
-
-    @override
-    def get_markdown_text_node(self) -> NumberedMarkdownTitleBase:
-        return self.markdown_text_node

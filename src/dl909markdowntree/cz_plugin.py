@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, ClassVar, cast
 
 if TYPE_CHECKING:
-    from commitizen.question import CzQuestion
+    from commitizen.question import Choice, CzQuestion
 
     class DL909Commitizen:
         """类型检查期的占位声明；运行时的类由模块级 __getattr__ 惰性构造
@@ -38,7 +38,11 @@ _CHANGE_TYPE_MAP: dict[str, str] = {
     "revert": "Revert",
 }
 
-_CHORE_CHOICE = {
+# 标注成 Choice 而不是让它被推断成 dict[str, str]：ListQuestion 的 choices
+# 是 list[Choice]，裸 dict 赋不进去，pyright 报 reportGeneralTypeIssues。
+# 本文件有 from __future__ import annotations，运行时不求值这个注解，
+# 所以 Choice 只在 TYPE_CHECKING 下导入也安全。
+_CHORE_CHOICE: Choice = {
     "value": "chore",
     "name": "chore: Other changes that don't modify src or test",
     "key": "h",

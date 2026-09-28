@@ -16,6 +16,9 @@ class FileNode(Node, ABC):
         pass
 
     @abstractmethod
+    def save_to_file(self, file_path: Path) -> None: ...
+
+    @abstractmethod
     def reload(self) -> None:
         pass
 
