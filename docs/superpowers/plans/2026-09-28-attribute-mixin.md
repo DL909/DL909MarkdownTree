@@ -969,3 +969,46 @@ EOF
 **2. Placeholder 扫描** — 无 TBD / TODO / "类似 Task N"。Task 3 的 A 组用行号表而非逐行代码，因为那是确定性文本替换且行号已核实；B/C 组给出完整替换后代码。
 
 **3. 类型一致性** — `_create_text_node(text, auto_correct=True)` 在 Task 6 定义，`FrontMatterTextFileMixin.__init__`（Task 7）以 `self._create_text_node(markdown_content, auto_correct)` 调用，`reload` 以 `self._create_text_node(markdown_content)` 调用，两处签名一致。`to_markdown()` 在 Task 7 Step 2 定义、Task 5 Step 1 与 Task 8 Step 4 引用，命名一致。`AttributedMixin._parse_attribute` 在 Task 7 Step 2 定义、Step 3 由文件夹调用，路径一致。
+
+---
+
+## 执行偏差（实施后回填）
+
+计划与实际有五处出入，都记在这里以免下次照着计划再踩一遍。
+
+**1. Task 2 漏了 `AttributedMarkdownTextFileNode` 自己的 `get_text` 覆写。**
+规格 §5.1 把 `attributed_markdown_nodes.py:31-46` 那四段重复覆写归到提交二一并删，
+但提交一改完 `FoldableMarkdownTextFileNode` 后，这个类**仍然覆写着**
+`get_text(with_fold_info, full_text)`，5 个测试直接红。提交一必须先把它改成零参
+（`save_to_file` 里的 `get_text(full_text=True)` 同步改成 `get_text()`），
+提交二再连同其余三段一起删。**凡是覆写了 `get_text` 的子类都要单独过一遍。**
+
+**2. Task 1 里我写的断言错了。** `node.get_text()` 的返回值末尾**没有**换行——
+`FoldableMarkdownTitleNode.get_text` 只在标题行后加 `\n`，最后一个正文块不加。
+计划里照抄了别处的断言习惯，忘了核实。先写测试再照着测试写实现，测试本身也是会被
+自己的假设骗到的东西。
+
+**3. mixin 的 `__init__` 不能走 `super()`。**
+`FrontMatterTextFileMixin.__init__` 原本调 `super().__init__(file_path=...)`，
+MRO 会走到 `MarkdownTextFileNode.__init__`，而它末尾调 `self.reload()`——此刻
+`self.attribute` 还没赋值，直接 `AttributeError`。**必须从 `FileNode.__init__` 起链。**
+这也意味着 mixin 拿不到"super 链"能提供的东西，它是个完整的构造替代品，不是补丁。
+
+**4. mixin 依赖的两个方法，两种声明方式都是错的。**
+
+- 写方法体（`def get_text(self) -> str: ...`）→ mixin 自己**提供**了 `get_text`，
+  而 mixin 在 MRO 中排在 `MarkdownTextFileNode` 前面，一遮蔽真实实现，
+  `to_markdown` 拿到的 `get_text()` 恒为 `None`。
+- 标 `@abstractmethod` → 抽象桩同样排在前面，ABC 按 `getattr` 查到的第一个是抽象桩，
+  判定**整个具体类是抽象的**，`TypeError: Can't instantiate abstract class`。
+- 正解是 `if TYPE_CHECKING:` 块里只写声明：类型检查时看得到，运行时不生成任何
+  属性，不会遮蔽也不会被当作抽象桩。
+
+**5. 计划说"pyright 预计无新增错误"是乐观的。** mixin 一接进来就冒出 13 个，
+收敛到最后剩 4 个，都是**真实的类型收窄**（`create_file` 带属性形态必然多两个参数、
+可变属性 `markdown_text_node`/`markdown_text_node_type` 的类型只能不变、
+`_create_text_node` 在编号侧返回窄类型）。逐个加了带理由的 `pyright: ignore`，
+没有用更宽的类型把问题糊过去。
+
+另外补充：Task 3 的行号表在 Task 2 追加测试后会整体位移，实际改的时候是按**代码内容**
+定位的，不是按行号。这正是计划里禁止脚本批量替换的另一个理由。
