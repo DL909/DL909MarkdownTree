@@ -53,25 +53,25 @@ def test_replace_lines_matches_hidden_folded_line(tmp_path):
     result = replace_lines_tool(doc, None, "# 1. Title", "hidden line", "replaced line")
 
     assert "replace_lines succeeded" in result
-    assert doc.get_text(full_text=True) == "# 1. Title\nreplaced line\n"
+    assert doc.get_text() == "# 1. Title\nreplaced line\n"
     assert "hidden line" not in doc_path.read_text(encoding="utf-8")
 
 
 def test_replace_tool_failure_rollback_preserves_folded_content(tmp_path):
     """replace 失败回滚时不应丢失折叠隐藏内容"""
     doc = _make_folded_doc(tmp_path)
-    original = doc.get_text(full_text=True)
+    original = doc.get_text()
 
     result = replace_tool(doc, None, "## 1.1. sub", "# wrong level\nx")
 
     assert "replace failed" in result
-    assert doc.get_text(full_text=True) == original
+    assert doc.get_text() == original
 
 
 def test_replace_lines_tool_failure_rollback_preserves_folded_content(tmp_path):
     """replace_lines 失败回滚时不应丢失折叠隐藏内容"""
     doc = _make_folded_doc(tmp_path)
-    original = doc.get_text(full_text=True)
+    original = doc.get_text()
 
     result = replace_lines_tool(
         doc,
@@ -82,13 +82,13 @@ def test_replace_lines_tool_failure_rollback_preserves_folded_content(tmp_path):
     )
 
     assert "replace_lines failed" in result
-    assert doc.get_text(full_text=True) == original
+    assert doc.get_text() == original
 
 
 def test_append_tool_failure_rollback_preserves_folded_content(tmp_path, monkeypatch):
     """append 保存失败回滚时不应丢失折叠隐藏内容"""
     doc = _make_folded_doc(tmp_path)
-    original = doc.get_text(full_text=True)
+    original = doc.get_text()
 
     def failing_save():
         raise OSError("disk full")
@@ -97,13 +97,13 @@ def test_append_tool_failure_rollback_preserves_folded_content(tmp_path, monkeyp
     result = append_tool(doc, None, "# 1. Title", "appended")
 
     assert "append failed" in result
-    assert doc.get_text(full_text=True) == original
+    assert doc.get_text() == original
 
 
 def test_replace_lines_tool_does_not_match_folded_marker(tmp_path):
     """折叠标记不应被匹配替换，匹配始终基于完整文本"""
     doc = _make_folded_doc(tmp_path)
-    original = doc.get_text(full_text=True)
+    original = doc.get_text()
     disk_before = doc.file_path.read_text(encoding="utf-8")
 
     result = replace_lines_tool(
@@ -111,7 +111,7 @@ def test_replace_lines_tool_does_not_match_folded_marker(tmp_path):
     )
 
     assert "no match found" in result
-    assert doc.get_text(full_text=True) == original
+    assert doc.get_text() == original
     assert doc.file_path.read_text(encoding="utf-8") == disk_before
 
 
@@ -161,6 +161,19 @@ def test_read_tool_returns_full_text_for_folded_target(tmp_path):
     title.fold_mode = FoldMode.SHOW_TITLE
 
     result = read_tool(doc, None, "# 1. Title")
+
+    assert "secret hidden line" in result
+    assert "hidden sub" in result
+    assert "folded" not in result
+
+
+def test_read_tool_full_document_returns_full_text_while_folded(tmp_path):
+    """全量读取应返回完整正文，而不是 [text folded] 占位符"""
+    doc = _make_folded_doc(tmp_path)
+    # 前置：文档确实处于折叠态
+    assert "[text folded]" in doc.get_root_title().get_text()
+
+    result = read_tool(doc, None)
 
     assert "secret hidden line" in result
     assert "hidden sub" in result

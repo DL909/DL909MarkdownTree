@@ -114,13 +114,15 @@ class FoldableMarkdownTitleBase(NumberedMarkdownTitleBase):
 
 
 class FoldableMarkdownTextFileBase(NumberedMarkdownTextFileBase):
-    """可折叠的 Markdown 文件协议"""
+    """可折叠的 Markdown 文件协议
+
+    文件节点只工作在内容层：get_text() 零参数、永远返回完整正文。折叠视图
+    属于阅读视角，挂在标题节点上（见 FoldableMarkdownTitleBase.get_text），
+    文件节点不再转发 with_fold_info / full_text。
+    """
 
     @abstractmethod
     def get_root_title(self) -> FoldableMarkdownTitleBase: ...
-
-    @abstractmethod
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str: ...
 
 
 class AttributedMarkdownTextFileBase[T: BaseModel](FoldableMarkdownTextFileBase):

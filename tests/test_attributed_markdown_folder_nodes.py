@@ -118,8 +118,8 @@ def test_attributed_markdown_folder_node_save_and_reload_mdp(tmp_path):
     node.save()
     node.reload()
     assert node.attribute.word_count == 1000
-    assert "Modified content" in node.get_text(full_text=True)
-    assert "NewSection" in node.get_text(full_text=True)
+    assert "Modified content" in node.get_text()
+    assert "NewSection" in node.get_text()
 
 
 def test_attributed_markdown_folder_node_get_text_folded(tmp_path):
@@ -133,8 +133,8 @@ def test_attributed_markdown_folder_node_get_text_folded(tmp_path):
     node = AttributedMarkdownFolderNode[_ChapterMeta](
         file_path=Path(folder), attribute_type=_ChapterMeta
     )
-    assert "Content" not in node.get_text()
-    assert "Content" in node.get_text(full_text=True)
+    assert "Content" not in node.get_root_title().get_text()
+    assert "Content" in node.get_text()
 
 
 def test_attributed_markdown_folder_node_find_title(tmp_path):

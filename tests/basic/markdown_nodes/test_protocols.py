@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import pytest
 from pydantic import BaseModel
 
 from dl909markdowntree import (
@@ -66,17 +67,20 @@ def test_attributed_markdown_text_file_node_satisfies_protocol(tmp_path: Path):
     assert node.attribute.author == "test"
 
 
-def test_attributed_node_get_text_accepts_with_fold_info(tmp_path: Path):
-    """AttributedMarkdownTextFileNode.get_text 必须接受 with_fold_info 参数"""
+def test_attributed_node_get_text_takes_no_fold_parameters(tmp_path: Path):
+    """文件节点属于内容层：get_text() 零参数、返回完整正文、不接受折叠参数"""
     content = '---\nauthor: test\nversion: "2.0"\n---\n# 1. Title\n## 1.1. Sub\nContent'
     path = tmp_path / "attributed.md"
     path.write_text(content)
     node = AttributedMarkdownTextFileNode[_TestAttribute](
         file_path=path, attribute_type=_TestAttribute
     )
-    result = node.get_text(with_fold_info=True, full_text=True)
-    assert "# 1. Title" in result
-    assert "Content" in result
+
+    assert "Content" in node.get_text()
+    # 折叠视图改从标题节点取
+    assert "[1 child title folded]" in node.get_root_title().get_text()
+    with pytest.raises(TypeError):
+        node.get_text(full_text=True)  # type: ignore[call-arg]
 
 
 # ── Phase 3: FolderNode 作为抽象基类的另一实现 ──────────────────────────────
@@ -158,7 +162,8 @@ def test_polymorphic_numbered_protocol_with_folder(tmp_path: Path):
 
 
 def _use_foldable_protocol(node: FoldableMarkdownTextFileBase) -> str:
-    return node.get_text(full_text=False, with_fold_info=True)
+    """折叠视图不再挂在文件节点上，改从根标题节点取"""
+    return node.get_root_title().get_text(full_text=False, with_fold_info=True)
 
 
 def test_polymorphic_foldable_protocol_with_file(tmp_path: Path):
@@ -181,7 +186,7 @@ def test_polymorphic_foldable_protocol_with_folder(tmp_path: Path):
 def _use_attributed_protocol(
     node: AttributedMarkdownTextFileBase[_TestAttribute],
 ) -> str:
-    return f"{node.attribute.author}: {node.get_text(full_text=True)}"
+    return f"{node.attribute.author}: {node.get_text()}"
 
 
 def test_polymorphic_attributed_protocol_with_file(tmp_path: Path):

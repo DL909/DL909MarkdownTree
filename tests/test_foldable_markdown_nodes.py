@@ -265,12 +265,10 @@ def test_foldable_markdown_text_file_node_reload(tmp_path):
     file_path.write_text("# 1. Title\nReloaded content\n## 1.1. New")
     test_file_node.reload()
     assert (
-        test_file_node.get_text(with_fold_info=False, full_text=False) == "# 1. Title\n"
+        test_file_node.get_root_title().get_text(with_fold_info=False, full_text=False)
+        == "# 1. Title\n"
     )
-    assert (
-        test_file_node.get_text(full_text=True)
-        == "# 1. Title\nReloaded content\n## 1.1. New\n"
-    )
+    assert test_file_node.get_text() == "# 1. Title\nReloaded content\n## 1.1. New\n"
 
 
 def test_foldable_markdown_text_file_node_save_while_folded(tmp_path):
@@ -284,11 +282,11 @@ def test_foldable_markdown_text_file_node_save_while_folded(tmp_path):
     assert "folded" not in content
     test_file_node.reload()
     assert (
-        test_file_node.get_text(full_text=True)
+        test_file_node.get_text()
         == "# 1. Title\nContent here\n## 1.1. Sub\nMore content"
     )
-    assert "# 1. Title" in test_file_node.get_text()
-    assert "[text folded]" in test_file_node.get_text()
+    assert "# 1. Title" in test_file_node.get_root_title().get_text()
+    assert "[text folded]" in test_file_node.get_root_title().get_text()
 
 
 def test_foldable_markdown_title_node_multiple_children():
@@ -444,3 +442,27 @@ def test_foldable_add_text_with_empty_text_is_a_noop():
     node.add_text("")
 
     assert node.get_text(full_text=True) == before
+
+
+def test_foldable_file_get_text_is_full_text_without_parameters(tmp_path):
+    """文件节点属于内容层：get_text() 零参数、忽略折叠态、永远返回完整正文"""
+    file_path = tmp_path / "foldable.md"
+    file_path.write_text("# 1. Title\nContent here\n## 1.1. Sub\nMore content")
+    node = FoldableMarkdownTextFileNode(file_path=file_path)
+    node.get_root_title().children[0].fold_mode = FoldMode.SHOW_TITLE
+
+    assert node.get_text() == "# 1. Title\nContent here\n## 1.1. Sub\nMore content"
+    # 阅读视图仍然只在标题节点上
+    assert "[text folded]" in node.get_root_title().get_text()
+
+
+def test_foldable_file_get_text_rejects_fold_parameters(tmp_path):
+    """折叠参数已从文件节点移除，传了必须报错而不是被静默忽略"""
+    file_path = tmp_path / "foldable.md"
+    file_path.write_text("# 1. Title\nContent")
+    node = FoldableMarkdownTextFileNode(file_path=file_path)
+
+    with pytest.raises(TypeError):
+        node.get_text(full_text=True)  # type: ignore[call-arg]
+    with pytest.raises(TypeError):
+        node.get_text(with_fold_info=False)  # type: ignore[call-arg]

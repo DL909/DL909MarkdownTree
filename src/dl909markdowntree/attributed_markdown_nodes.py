@@ -29,10 +29,9 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
     attribute: T
 
     @override
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
-        return self.markdown_text_node.get_text(
-            with_fold_info=with_fold_info, full_text=full_text
-        )
+    def get_text(self) -> str:
+        """文件正文恒为完整内容，折叠只影响阅读视图（见 get_root_title）"""
+        return self.markdown_text_node.get_text(full_text=True)
 
     def get_root_title(self) -> FoldableMarkdownTitleNode:
         return self.markdown_text_node
@@ -47,9 +46,7 @@ class AttributedMarkdownTextFileNode[T: BaseModel](
 
     def save_to_file(self, file_path: Path) -> None:
         with open(file_path, "w", encoding="utf-8") as f:
-            f.write(
-                f"---\n{to_yaml_str(self.attribute)}---\n{self.get_text(full_text=True)}"
-            )
+            f.write(f"---\n{to_yaml_str(self.attribute)}---\n{self.get_text()}")
 
     @override
     def save(self):

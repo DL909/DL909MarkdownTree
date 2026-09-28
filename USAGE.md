@@ -140,7 +140,7 @@ root = doc.get_root_title()
 chapter = root.recursive_find_title_node_by_name("# 1. 概述")
 print(chapter.title)              # 概述
 print(chapter.number)             # [1]
-print(doc.get_text(full_text=True))
+print(doc.get_text())
 ```
 
 注意：**编号 / 折叠 / 属性三类节点要求标题必须带编号**（`# 1. 标题`），
@@ -273,15 +273,18 @@ from dl909markdowntree import FoldableMarkdownTextFileNode
 doc = FoldableMarkdownTextFileNode("notes/book.md")
 doc.set_text("# 1. 第一章\n正文\n## 1.1. 小节\n更多内容")
 
-doc.get_text()
+doc.get_root_title().get_text()
 # '# 1. 第一章 [text folded] [1 child title folded]\n'
 
-doc.get_text(with_fold_info=False)      # 不含折叠标记
+doc.get_root_title().get_text(with_fold_info=False)   # 不含折叠标记
 # '# 1. 第一章\n'
 
-doc.get_text(full_text=True)            # 忽略折叠状态，输出完整内容
+doc.get_text()                            # 恒为完整内容，与折叠状态无关
 # '# 1. 第一章\n正文\n## 1.1. 小节\n更多内容'
 ```
+
+**文件节点只在内容层工作**：`get_text()` 零参数、永远返回完整正文，折叠状态不影响
+落盘与读取。折叠视图属于阅读视角，请从根标题节点取——`doc.get_root_title().get_text()`。
 
 折叠标记格式：`[text folded]`（存在被折叠正文）、`[N child title folded]`
 （被折叠的子标题数，超过 10 显示 `[10+ child title folded]`）。
@@ -430,8 +433,8 @@ from pathlib import Path
 from dl909markdowntree import FoldableMarkdownFolderNode
 
 doc = FoldableMarkdownFolderNode(Path("book.mdf"))
-doc.get_text()                       # 折叠视图
-doc.get_text(full_text=True)         # 完整内容
+doc.get_text()                          # 完整内容（恒为完整，不受折叠影响）
+doc.get_root_title().get_text()         # 折叠视图
 doc.get_root_title().unfold_by_depth(2)   # depth 从自身计起，2 = 自身 + 一级子标题
 doc.save()                           # 同时写出 fold_state.json
 ```
@@ -466,8 +469,8 @@ book.reload()      # 分别重新加载两者
 ```
 
 属性存放在目录下的 `FrontMatter.yaml`。若该文件缺失（如手工创建的目录），
-使用模型默认值。`get_text()` 同样默认返回折叠视图，获取完整内容请用
-`get_text(full_text=True)`。
+使用模型默认值。文件夹节点与文件节点一样，`get_text()` 只在内容层工作、
+恒返回完整正文；折叠视图请用 `get_root_title().get_text()`。
 
 ---
 

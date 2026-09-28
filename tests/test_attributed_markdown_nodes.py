@@ -185,7 +185,7 @@ More text"""
     test_file_node = AttributedMarkdownTextFileNode[_TestAttribute](
         file_path=file_path, attribute_type=_TestAttribute
     )
-    text = test_file_node.get_text(full_text=True)
+    text = test_file_node.get_text()
     assert "# 1. Title" in text
     assert "Some text here" in text
     assert "## 1.1. Subtitle" in text
@@ -203,7 +203,7 @@ author: test
         file_path=file_path, attribute_type=_TestAttribute
     )
     test_file_node.set_text("# 1. New Title\nNew content\n## 1.1. New Subtitle")
-    full_text = test_file_node.get_text(full_text=True)
+    full_text = test_file_node.get_text()
     assert "# 1. New Title" in full_text
     assert "New content" in full_text
     assert "## 1.1. New Subtitle" in full_text
@@ -291,7 +291,7 @@ author: test
         attribute_type=_TestAttribute,
         markdown_text_node=override_node,
     )
-    full_text = test_file_node.get_text(full_text=True)
+    full_text = test_file_node.get_text()
     assert "# 1. Overridden Title" in full_text
     assert "Override content" in full_text
 
@@ -309,7 +309,7 @@ Content"""
     )
     assert test_file_node.attribute.author == "default_author"
     assert test_file_node.attribute.version == "1.0.0"
-    assert "# 1. Title" in test_file_node.get_text(full_text=True)
+    assert "# 1. Title" in test_file_node.get_text()
 
 
 def test_attributed_markdown_text_file_node_empty_tags(tmp_path):
@@ -342,7 +342,7 @@ version: 1.0.0
         file_path=file_path, attribute_type=_TestAttribute
     )
     assert test_file_node.attribute.author == "测试作者"
-    full_text = test_file_node.get_text(full_text=True)
+    full_text = test_file_node.get_text()
     assert "这是一些中文内容" in full_text
     assert "🎉" in full_text
 
@@ -375,7 +375,7 @@ Initial content"""
     for i in range(3):
         test_file_node.attribute.version = f"{i + 2}.0.0"
         test_file_node.set_text(
-            test_file_node.get_text(full_text=True)
+            test_file_node.get_text()
             + "\n"
             + f"# {i + 2}. Title\nVersion {i + 2} content"
         )
@@ -417,7 +417,7 @@ author: test
         )
         test_file_node.markdown_text_node.auto_correct = True
         test_file_node.set_text("# 8. Wrong\n## 9.9. Sub\n# 5. Wrong2")
-        output = test_file_node.get_text(full_text=True)
+        output = test_file_node.get_text()
         assert "# 1. Wrong" in output
         assert "## 1.1. Sub" in output
         assert "# 2. Wrong2" in output
@@ -471,8 +471,8 @@ Some content here"""
         file_path=file_path, attribute_type=_TestAttribute
     )
 
-    assert "Some content here" not in test_file_node.get_text()
-    assert "Some content here" in test_file_node.get_text(full_text=True)
+    assert "Some content here" not in test_file_node.get_root_title().get_text()
+    assert "Some content here" in test_file_node.get_text()
 
 
 def test_attributed_markdown_text_file_node_attribute_constructor(tmp_path):

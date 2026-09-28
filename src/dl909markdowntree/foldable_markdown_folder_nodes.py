@@ -105,10 +105,9 @@ class FoldableMarkdownFolderNode(
                 fold_states_path.unlink()
 
     @override
-    def get_text(self, with_fold_info: bool = True, full_text: bool = False) -> str:
-        return self.markdown_text_node.get_text(
-            with_fold_info=with_fold_info, full_text=full_text
-        )
+    def get_text(self) -> str:
+        """文件夹正文恒为完整内容，折叠只影响阅读视图"""
+        return self.markdown_text_node.get_text(full_text=True)
 
     @override
     def get_root_title(self) -> FoldableMarkdownTitleBase:
