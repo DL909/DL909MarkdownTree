@@ -39,9 +39,6 @@ mcp = ["fastmcp>=0.4.0"]
 langchain = ["langchain-core>=0.3.0"]
 all = ["fastmcp>=0.4.0", "langchain-core>=0.3.0"]
 
-[project.entry-points."commitizen.plugin"]
-cz_dl909 = "dl909markdowntree.cz_plugin:DL909Commitizen"
-
 [dependency-groups]
 dev = [
   "pdbpp>=0.12.1",
@@ -54,7 +51,67 @@ dev = [
 ]
 
 [tool.commitizen]
-name = "cz_dl909"
+name = "cz_customize"
 version_provider = "uv"
 tag_format = "v$version"
 update_changelog_on_bump = true
+
+# commitizen 4.17.0 自带 cz_customize 入口点，上面几项能力都能在这里配出来，
+# 不需要再为它写一个插件类。三条正则用单引号字面量串写：TOML 基本串会把
+# \s \r 当转义处理，\( 更是非法转义，双引号写会把反斜杠吃掉。
+[tool.commitizen.customize]
+# 内置 cz_conventional_commits 的白名单只有 feat|fix|refactor|perf|BREAKING CHANGE，
+# 补齐 Conventional Commits 的 11 种，chore 就是靠这一行被捞进 changelog 的。
+commit_parser = '^((?P<change_type>BREAKING CHANGE|build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(?:\((?P<scope>[^()\r\n]*)\))?(?P<breaking>!)?):\s(?P<message>.*)?'
+changelog_pattern = '^((BREAKING[-\ ]CHANGE|\w+)(\(.+\))?!?):'
+change_type_map = { feat = "Feat", fix = "Fix", refactor = "Refactor", perf = "Perf", docs = "Docs", chore = "Chore", ci = "Ci", style = "Style", test = "Test", build = "Build", revert = "Revert" }
+change_type_order = ["BREAKING CHANGE", "Feat", "Fix", "Refactor", "Perf"]
+# 与 commitizen 自带默认值逐字相同（旧插件从未覆盖过它），保证 cz check 行为零变化。
+# 这行不能省：CustomizeCommitsCz.schema_pattern() 只从 customize 段取值，缺省返回
+# 空串，空正则匹配一切，cz check 会变成永远通过。
+schema_pattern = '(?s)(build|bump|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(\S+\))?!?: ([^\n\r]+)((\n\n.*)|(\s*))?$'
+schema = "<type>(<scope>)!: <subject>\n<BLANK LINE>\n<body>\n<BLANK LINE>\n<footer>"
+example = "refactor(interface): 把折叠视图从文件节点下沉到标题节点\n\n文件节点 get_text() 改零参数。\n\nBREAKING CHANGE: get_text(full_text=True) 改为 get_text()。"
+info = "类型取 Conventional Commits 的 11 种；scope 写类名或模块名，不带空格；破坏性变更写在页脚并以 BREAKING CHANGE: 开头。"
+# 变量名必须与下面 questions 的 name 完全一致，jinja2 对未定义变量渲染成空串而不报错
+message_template = "{{prefix}}{% if scope %}({{scope}}){% endif %}: {{subject}}{% if body %}\n\n{{body}}{% endif %}{% if footer %}\n\n{{footer}}{% endif %}"
+
+# 不设 breaking_change_exclamation_in_title：仓库现状是手写 BREAKING CHANGE: 页脚，
+# 模板因此不插 !，也就没有 is_breaking_change 这个答案可问，故不列该提问。
+[[tool.commitizen.customize.questions]]
+type = "list"
+name = "prefix"
+message = "选择这次改动的类型"
+choices = [
+  { value = "fix", name = "fix: 修 bug，对应 SemVer PATCH", key = "x" },
+  { value = "feat", name = "feat: 新功能，对应 SemVer MINOR", key = "f" },
+  { value = "docs", name = "docs: 只改文档", key = "d" },
+  { value = "style", name = "style: 不影响语义的格式改动", key = "s" },
+  { value = "refactor", name = "refactor: 既不是修 bug 也不是加功能", key = "r" },
+  { value = "perf", name = "perf: 性能优化", key = "p" },
+  { value = "test", name = "test: 补测试或改测试", key = "t" },
+  { value = "build", name = "build: 构建系统或外部依赖", key = "b" },
+  { value = "ci", name = "ci: CI 配置与脚本", key = "c" },
+  { value = "chore", name = "chore: 不改源码与测试的杂项", key = "h" },
+]
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "scope"
+message = "scope（类名或模块名，不带空格；直接回车跳过）:\n"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "subject"
+message = "一句话说明这次改动（小写、结尾不加句号）:\n"
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "body"
+message = "补充说明（直接回车跳过）:\n"
+multiline = true
+
+[[tool.commitizen.customize.questions]]
+type = "input"
+name = "footer"
+message = "页脚：破坏性变更、关联 issue（破坏性变更请以 BREAKING CHANGE: 开头，直接回车跳过）:\n"
