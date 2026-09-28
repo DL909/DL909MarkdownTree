@@ -134,7 +134,15 @@ class NumberedMarkdownTitleNode(MarkdownTitleNode, NumberedMarkdownTitleBase):
 
 class NumberedMarkdownTextFileNode(MarkdownTextFileNode, NumberedMarkdownTextFileBase):
     markdown_text_node: NumberedMarkdownTitleNode  # type: ignore - children type is intentionally narrowed from base class
-    markdown_text_node_type = NumberedMarkdownTitleNode
+    markdown_text_node_type: type[NumberedMarkdownTitleNode] = (  # pyright: ignore[reportIncompatibleVariableOverride] - 与 markdown_text_node 同理，可变属性只能不变
+        NumberedMarkdownTitleNode
+    )
+
+    @override
+    def _create_text_node(
+        self, text: str, auto_correct: bool = True
+    ) -> NumberedMarkdownTitleNode:
+        return self.markdown_text_node_type.from_text(text, auto_correct=auto_correct)
 
     def get_root_title(self) -> NumberedMarkdownTitleBase:
         return self.markdown_text_node

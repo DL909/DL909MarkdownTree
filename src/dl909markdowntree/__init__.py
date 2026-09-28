@@ -1,5 +1,8 @@
 from .attributed_markdown_folder_nodes import AttributedMarkdownFolderNode
-from .attributed_markdown_nodes import AttributedMarkdownTextFileNode
+from .attributed_markdown_nodes import (
+    AttributedMarkdownTextFileNode,
+    BasicAttributedMarkdownTextFileNode,
+)
 from .exceptions import (
     IncorrectNumberError,
     InvalidFrontMatterError,
@@ -48,6 +51,7 @@ __all__ = [
     "AttributedMarkdownFolderNode",
     "AttributedMarkdownTextFileBase",
     "AttributedMarkdownTextFileNode",
+    "BasicAttributedMarkdownTextFileNode",
     "FileNode",
     "FoldMode",
     "FoldableMarkdownFolderNode",

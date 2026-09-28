@@ -226,6 +226,18 @@ class MarkdownTextFileNode(MarkdownTextFileBase):
     markdown_text_node: MarkdownTitleNode
     markdown_text_node_type: type[MarkdownTitleNode] = MarkdownTitleNode
 
+    def _create_text_node(
+        self, text: str, auto_correct: bool = True
+    ) -> MarkdownTitleNode:
+        """由正文构造标题节点树。
+
+        统一构造入口：文件节点原本直接用 markdown_text_node_type.from_text(text)，
+        文件夹节点则有 _create_text_node(text, auto_correct)，两处各写各的。
+        编号能力由此参数接入——MarkdownTitleNode 没有编号可校正，忽略它即可
+        （本方法是私有的，不构成公开契约）。
+        """
+        return self.markdown_text_node_type.from_text(text)
+
     @override
     def get_text(self) -> str:
         return self.markdown_text_node.get_text()
@@ -258,7 +270,7 @@ class MarkdownTextFileNode(MarkdownTextFileBase):
 
     @override
     def reload(self):
-        self.markdown_text_node = self.markdown_text_node_type.from_text(
+        self.markdown_text_node = self._create_text_node(
             self.file_path.read_text(encoding="utf-8")
         )
 

@@ -125,8 +125,8 @@ class FoldableMarkdownTextFileBase(NumberedMarkdownTextFileBase):
     def get_root_title(self) -> FoldableMarkdownTitleBase: ...
 
 
-class AttributedMarkdownTextFileBase[T: BaseModel](FoldableMarkdownTextFileBase):
-    """带属性的 Markdown 文件协议"""
+class AttributedMarkdownTextFileBase[T: BaseModel](MarkdownTextFileBase):
+    """带 FrontMatter 的 Markdown 文件协议：与编号、折叠无关"""
 
     attribute: T
 

@@ -73,14 +73,22 @@ Node
 └── FileNode（绑定 file_path，可 save / reload）
     ├── PlainTextFileNode
     └── MarkdownTextFileNode                      # 基础 Markdown
-        └── NumberedMarkdownTextFileNode          # + 标题编号
-            └── FoldableMarkdownTextFileNode      # + 折叠
-                └── AttributedMarkdownTextFileNode[T]  # + FrontMatter 属性
+        ├── NumberedMarkdownTextFileNode          # + 标题编号
+        │   └── FoldableMarkdownTextFileNode      # + 折叠
+        │       └── AttributedMarkdownTextFileNode[T]  # + FrontMatter 属性
+        └── BasicAttributedMarkdownTextFileNode[T]      # + FrontMatter 属性（不编号不折叠）
 
 NumberedMarkdownFolderNode                         # + 文件夹存储（.mdp 分片）
 └── FoldableMarkdownFolderNode                     # + 折叠状态持久化
     └── AttributedMarkdownFolderNode[T]            # + FrontMatter.yaml
 ```
+
+标题侧是**真**的递进依赖：折叠状态以编号定位，所以 `MarkdownTitleNode` →
+`NumberedMarkdownTitleNode` → `FoldableMarkdownTitleNode` 只能逐层加。
+
+文件侧不是。FrontMatter 只是在正文前拼一段 YAML，与编号、折叠毫无关系，
+所以它是可横切的 mixin——想要哪几项能力，自己拼即可，不必被动接受整条链。
+唯一还没有横切的是「文件夹」：`.mdp` 分片的文件名 `N_title.mdp` 直接硬依赖编号。
 
 每一层都包含上一层的全部能力，按需求选择：
 
@@ -90,6 +98,7 @@ NumberedMarkdownFolderNode                         # + 文件夹存储（.mdp �
 | 标题自动编号（`# 1. 标题`） | `NumberedMarkdownTextFileNode` |
 | 大文档按标题折叠显示 | `FoldableMarkdownTextFileNode` |
 | 需要 YAML FrontMatter 元数据 | `AttributedMarkdownTextFileNode[T]` |
+| 需要 FrontMatter 但标题不编号也不折叠 | `BasicAttributedMarkdownTextFileNode[T]` |
 | 一本书拆分为多个 `.mdp` 文件 | `NumberedMarkdownFolderNode` |
 | 折叠 + 文件夹 | `FoldableMarkdownFolderNode` |
 | 属性 + 折叠 + 文件夹 | `AttributedMarkdownFolderNode[T]` |
@@ -377,6 +386,30 @@ AttributedMarkdownTextFileNode.create_file(
 - FrontMatter 必须由独立的 `---` 行包裹，缺失时抛 `MarkdownTreeError`；
 - 允许空 FrontMatter（`---\n---`），此时使用模型默认值；
 - `save_to_file(path)` 与 `save()` 都写出 `FrontMatter + 完整 Markdown`。
+
+### 7.1 非编号、非折叠的带属性文档
+
+`AttributedMarkdownTextFileNode` 面向编号 + 折叠 + 属性的文档。只需要
+FrontMatter、标题既不重编号也不折叠时用 `BasicAttributedMarkdownTextFileNode`，
+用法完全一致：
+
+```python
+from dl909markdowntree import BasicAttributedMarkdownTextFileNode
+
+doc = BasicAttributedMarkdownTextFileNode[NoteAttr](
+    file_path=Path("note.md"), attribute_type=NoteAttr
+)
+doc.set_text("# 随记\n随手写点什么")
+doc.save()               # 写出 ---\n<yaml>---\n# 随记\n随手写点什么
+print(doc.get_text())    # '# 随记\n随手写点什么'
+```
+
+它只满足 `MarkdownTextFileBase` 与 `AttributedMarkdownTextFileBase`，
+**不**满足 `FoldableMarkdownTextFileBase`——`fold_mode`、`unfold_by_depth`
+这类方法正确地不存在，不会静默失效。
+
+两者的 FrontMatter 形态相同（`.md` 正文前缀）；差别只在标题节点能力。
+文件夹则用另一种形态：属性写在同目录的独立 `FrontMatter.yaml` 里。
 
 ---
 
@@ -722,6 +755,7 @@ mcp.run()                                    # 以 stdio 启动
 | `NumberedMarkdownTextFileNode` | 同上 |
 | `FoldableMarkdownTextFileNode` | 同上 |
 | `AttributedMarkdownTextFileNode[T]` | `(file_path, attribute_type, attribute=None, auto_correct=True, markdown_text_node=None)` |
+| `BasicAttributedMarkdownTextFileNode[T]` | 同上 |
 | `NumberedMarkdownFolderNode` | `(file_path, auto_correct=True, markdown_text_node=None)` |
 | `FoldableMarkdownFolderNode` | 同上 |
 | `AttributedMarkdownFolderNode[T]` | `(file_path, attribute_type, attribute=None, auto_correct=True, markdown_text_node=None)` |
@@ -731,7 +765,7 @@ mcp.run()                                    # 以 stdio 启动
 | 方法 | 说明 |
 | --- | --- |
 | `create_file(...)` | 静态方法，创建（或覆盖）目标文件/目录 |
-| `get_text(...)` | 获取 Markdown 文本（折叠节点支持 `with_fold_info` / `full_text`） |
+| `get_text()` | 获取完整正文。**文件 / 文件夹节点零参数且恒返回完整内容**；折叠视图用 `get_root_title().get_text(with_fold_info, full_text)` |
 | `set_text(text)` | 解析文本并替换节点树 |
 | `save()` / `save_to_file(path)` | 写回磁盘 |
 | `reload(...)` | 从磁盘重新加载 |

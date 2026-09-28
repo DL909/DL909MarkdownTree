@@ -2,11 +2,15 @@ import pytest
 from pydantic import BaseModel
 
 from dl909markdowntree import (
+    AttributedMarkdownFolderNode,
     AttributedMarkdownTextFileNode,
+    BasicAttributedMarkdownTextFileNode,
     FoldableMarkdownTitleNode,
+    FoldMode,
     InvalidFrontMatterError,
     InvalidNumberedTitleLineError,
     MarkdownFileError,
+    MarkdownTitleNode,
     MarkdownTreeError,
 )
 
@@ -592,3 +596,65 @@ def test_corrupt_frontmatter_on_reload_raises_markdown_tree_error(tmp_path):
 
     with pytest.raises(MarkdownTreeError):
         node.reload()
+
+
+def test_basic_attributed_file_node_round_trip(tmp_path):
+    """非编号、非折叠、有属性的文件应能建档、写入、重载，且往返幂等"""
+    path = tmp_path / "note.md"
+    node = BasicAttributedMarkdownTextFileNode[_TestAttribute](
+        file_path=path, attribute_type=_TestAttribute
+    )
+    node.set_text("# Note\nbody line\n## Sub\nsub body")
+    node.save()
+
+    on_disk = path.read_text(encoding="utf-8")
+    assert on_disk.startswith("---\n")
+    assert "author: default_author" in on_disk
+    assert "# Note" in on_disk
+    assert "sub body" in on_disk
+
+    reopened = BasicAttributedMarkdownTextFileNode[_TestAttribute](
+        file_path=path, attribute_type=_TestAttribute
+    )
+    assert reopened.get_text() == "# Note\nbody line\n## Sub\nsub body"
+    assert reopened.attribute == _TestAttribute()
+    # 折叠能力正确地不存在
+    assert isinstance(reopened.get_root_title(), MarkdownTitleNode)
+    assert not hasattr(reopened.get_root_title(), "fold_mode")
+
+
+def test_attributed_to_markdown_returns_full_file_content(tmp_path):
+    """to_markdown 应给出 FrontMatter + 完整正文，不受折叠态影响"""
+    path = tmp_path / "a.md"
+    path.write_text(
+        '---\nauthor: "me"\nversion: "1.0.0"\n---\n# 1. T\nsecret\n## 1.1. S\nhidden',
+        encoding="utf-8",
+    )
+    node = AttributedMarkdownTextFileNode[_TestAttribute](
+        file_path=path, attribute_type=_TestAttribute
+    )
+    node.get_root_title().children[0].fold_mode = FoldMode.SHOW_TITLE
+
+    md = node.to_markdown()
+
+    assert md.startswith("---\n")
+    assert "secret" in md
+    assert "hidden" in md
+    assert "folded" not in md
+
+
+def test_attributed_folder_keeps_frontmatter_yaml_form(tmp_path):
+    """文件夹仍写独立的 FrontMatter.yaml，不受 .md 前缀形态影响"""
+    folder = tmp_path / "book.mdf"
+    folder.mkdir()
+    (folder / "FrontMatter.yaml").write_text(
+        "author: test\nversion: '1.0.0'\ntags: []\n", encoding="utf-8"
+    )
+    (folder / "1_One.mdp").write_text("## 1.1. Sub\ncontent", encoding="utf-8")
+
+    node = AttributedMarkdownFolderNode[_TestAttribute](
+        file_path=folder, attribute_type=_TestAttribute
+    )
+
+    assert node.attribute.author == "test"
+    assert not (folder / "1_One.mdp").read_text(encoding="utf-8").startswith("---")

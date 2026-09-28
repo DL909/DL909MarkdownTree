@@ -6,18 +6,18 @@ from typing import override
 from pydantic import BaseModel
 from pydantic_yaml import to_yaml_str
 
-from .attributed_markdown_nodes import AttributedMarkdownTextFileNode
+from .attributed_markdown_nodes import AttributedMixin
 from .foldable_markdown_folder_nodes import FoldableMarkdownFolderNode
 from .foldable_markdown_nodes import (
-    FoldableMarkdownTitleBase,
     FoldableMarkdownTitleNode,
 )
 from .interface import AttributedMarkdownTextFileBase
 
 
 class AttributedMarkdownFolderNode[T: BaseModel](
+    AttributedMixin[T],
+    AttributedMarkdownTextFileBase[T],
     FoldableMarkdownFolderNode,
-    AttributedMarkdownTextFileBase,
 ):
     markdown_text_node: FoldableMarkdownTitleNode  # pyright: ignore[reportIncompatibleVariableOverride] - children type is intentionally narrowed from base class
     attribute: T
@@ -68,9 +68,7 @@ class AttributedMarkdownFolderNode[T: BaseModel](
         if not yaml_path.exists():
             return attribute_type()
         yaml_data = yaml_path.read_text(encoding="utf-8")
-        return AttributedMarkdownTextFileNode._parse_attribute(
-            attribute_type, yaml_data, yaml_path
-        )
+        return self._parse_attribute(attribute_type, yaml_data, yaml_path)
 
     @override
     def save_to_file(self, file_path: Path):
@@ -85,7 +83,3 @@ class AttributedMarkdownFolderNode[T: BaseModel](
                 type(self.attribute), Path(self.file_path)
             )
         super().reload()
-
-    @override
-    def get_root_title(self) -> FoldableMarkdownTitleBase:
-        return super().get_root_title()

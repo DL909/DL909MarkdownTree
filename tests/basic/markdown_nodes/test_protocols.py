@@ -9,6 +9,7 @@ from dl909markdowntree import (
     AttributedMarkdownFolderNode,
     AttributedMarkdownTextFileBase,
     AttributedMarkdownTextFileNode,
+    BasicAttributedMarkdownTextFileNode,
     FoldableMarkdownFolderNode,
     FoldableMarkdownTextFileBase,
     FoldableMarkdownTextFileNode,
@@ -81,6 +82,20 @@ def test_attributed_node_get_text_takes_no_fold_parameters(tmp_path: Path):
     assert "[1 child title folded]" in node.get_root_title().get_text()
     with pytest.raises(TypeError):
         node.get_text(full_text=True)  # type: ignore[call-arg]
+
+
+def test_basic_attributed_file_node_satisfies_minimal_protocol(tmp_path: Path):
+    """非编号非折叠的带属性文件只满足最小协议，不满足折叠协议"""
+    path = tmp_path / "plain-attributed.md"
+    path.write_text('---\nauthor: test\nversion: "2.0.0"\n---\n# Title\nContent')
+    node = BasicAttributedMarkdownTextFileNode[_TestAttribute](
+        file_path=path, attribute_type=_TestAttribute
+    )
+    assert isinstance(node, MarkdownTextFileBase)
+    assert isinstance(node, AttributedMarkdownTextFileBase)
+    assert not isinstance(node, FoldableMarkdownTextFileBase)
+    assert node.attribute.author == "test"
+    assert "# Title" in node.get_text()
 
 
 # ── Phase 3: FolderNode 作为抽象基类的另一实现 ──────────────────────────────
