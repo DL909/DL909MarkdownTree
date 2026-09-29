@@ -1,3 +1,56 @@
+## v3.0.0 (2026-09-29)
+
+### BREAKING CHANGE
+
+- get_markdown_text_node() 自 v2.0.3 起就是公开 API，
+本次移除。改用公开属性 markdown_text_node，或 get_root_title()。
+同一批未发布的破坏性变更还有：文件节点 get_text() 改零参数、
+AttributedMarkdownTextFileBase 不再保证可折叠。
+
+### Fix
+
+- **tools**: correct replace_lines targeting and protect every rollback
+- **Node,FolderNode**: reparent from_self copies, keep reload's base signature
+- **MarkdownTitle**: use one heading regex so a stray "# " cannot brick a file
+- **AttributedMarkdown**: accept unterminated frontmatter and wrap errors
+- **FolderNode**: keep mdp trailing newlines and warn on lossy filenames
+- **TitlePathPermissionChecker**: rebind entries when a title is renamed
+- **FolderNode**: initialize children on folder nodes
+- **MarkdownTitle**: stop add_text indexing empty strings
+- **tools**: require write for unfold, reject forged titles, read full text
+
+### Refactor
+
+- **cz**: 用 cz_customize 配置取代自写插件
+- **interface**: 删掉与基类重复的抽象声明，移除 get_markdown_text_node
+- **Attributed**: 把属性抽成 mixin，补上非编号非折叠的带属性文件
+- **interface**: 把折叠视图从文件节点下沉到标题节点
+- **FolderNode**: settle each section by delete-then-write when saving
+- **NumberedMarkdown,interface**: copy number lists, complete annotations
+
+### Perf
+
+- **permissions**: index node grants and forbid Permission.NONE as a grant
+
+### Ci
+
+- pin pyright pythonVersion and enforce ruff format
+
+### Docs
+
+- **plan**: 用 cz_customize 配置取代自写插件
+- **plan**: cz 插件独立化的计划
+- **plan**: 回填实施偏差
+- **plan**: 属性 mixin 化的实施计划
+- **spec**: 记录属性 mixin 化重构的设计规格
+- **TODO**: mark all 23 review findings as fixed with their commits
+- **USAGE**: correct the parser notes and state the intended limitations
+- **TODO**: record code review findings and priorities
+
+### Test
+
+- cover cz_plugin and the remaining branches, fix its import cycle
+
 ## v2.0.3 (2026-09-27)
 
 ### Fix
